@@ -425,6 +425,8 @@ models/
 └── embeddings/
 ```
 
+## 6.5 Workflow and Policy Layer
+
 ---
 
 # 7. Verification
