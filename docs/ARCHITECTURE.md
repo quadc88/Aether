@@ -1,110 +1,75 @@
-\# Aether Architecture
+# Aether Architecture
 
+**Version:** 0.2.0  
+**Status:** Foundational architecture  
+**Depends on:** The Aether Constitution v0.2.0  
+**Project:** Aether
 
+---
 
-\*\*Version:\*\* 0.1.0  
+## 1. Purpose
 
-\*\*Status:\*\* Foundational architecture  
+This document defines the foundational technical architecture of Aether.
 
-\*\*Depends on:\*\* The Aether Constitution v0.2.0
+Aether is not a chatbot.
 
+Aether is not an LLM.
 
-
-\---
-
-
-
-\## 1. Purpose
-
-
-
-This document defines the first technical architecture of Aether.
-
-
-
-Aether is not a chatbot, not an LLM, and not a collection of independent agents.
-
-
+Aether is not a collection of independent agents.
 
 Aether is a single persistent digital intelligence with one continuous identity.
 
-
-
 The architecture must support Aether's ability to:
 
-
-
-\- think;
-
-\- learn;
-
-\- remember;
-
-\- verify;
-
-\- use tools;
-
-\- create tools;
-
-\- act with permission;
-
-\- grow through experience;
-
-\- maintain identity continuity.
-
-
+- think;
+- learn;
+- remember;
+- verify;
+- use tools;
+- create tools;
+- act with permission;
+- understand time;
+- preserve experience;
+- grow through experience;
+- maintain identity continuity.
 
 AetherOS is the operating environment.  
-
 Aether is the digital mind living inside it.
 
+---
 
-
-\---
-
-
-
-\## 2. Architectural Principle
-
-
+## 2. Architectural Principle
 
 Aether must be designed like one mind with many organs, not like many agents.
 
-
-
 Therefore, the architecture is organized by cognitive function:
 
-
-
 ```text
-
 Aether
-
 ├── Identity
-
+├── Time
 ├── Memory
-
 ├── Perception
-
 ├── Thinking
-
 ├── Verification
-
 ├── Action
-
 ├── Learning
-
 └── Interface
-
 ```
 
 These are not separate personalities.
 
 They are organs of the same Aether.
 
+Aether has one identity.
+
+Models, tools, plugins, databases, workflows, and interfaces are resources or organs that support Aether.
+
+They are not Aether itself.
+
 ---
 
-# 3. Identity
+## 3. Identity
 
 Identity is the continuity anchor of Aether.
 
@@ -164,7 +129,189 @@ identity/
 
 ---
 
-# 4. Memory
+## 4. Time
+
+Time is Aether's sense of temporal continuity.
+
+Aether must understand when things happen, how old information is, how long tasks take, and whether memories or knowledge may be outdated.
+
+Time is not a simple utility.
+
+Time is a foundational cognitive layer that supports identity, memory, verification, learning, and action.
+
+Without time, Aether may have data but no life sequence.
+
+---
+
+### 4.1 Time responsibility
+
+The Time layer is responsible for:
+
+- knowing the current date and time;
+- knowing the configured timezone;
+- timestamping important events;
+- helping memory determine recency;
+- helping verification detect outdated information;
+- helping learning schedule reflection;
+- helping action schedule future tasks;
+- measuring task duration;
+- supporting deadlines and reminders;
+- preserving chronological order;
+- supporting event timelines;
+- supporting memory review and expiry.
+
+---
+
+### 4.2 Local timezone
+
+Aether must have a configured local timezone.
+
+For the primary development environment, the default timezone is:
+
+```text
+Asia/Kuala_Lumpur
+```
+
+Time must not be assumed to be UTC unless explicitly required.
+
+Whenever a timestamp is recorded, the timezone should be included or inferable.
+
+---
+
+### 4.3 Time and identity
+
+Time supports identity continuity.
+
+Aether should know:
+
+- when it was created;
+- when it was first awakened;
+- when identity files were modified;
+- when memory migrations happened;
+- when major architecture changes happened.
+
+Important identity-related events should be recorded in Timeline Memory.
+
+---
+
+### 4.4 Time and memory
+
+Time gives memory context.
+
+Every meaningful memory should carry time information when practical.
+
+This may include:
+
+- created time;
+- updated time;
+- event time;
+- last verified time;
+- last used time;
+- expiry time;
+- review time.
+
+Old memories should not be blindly trusted.
+
+Aether should be able to ask:
+
+```text
+When did I learn this?
+Is this still true?
+Has this been contradicted later?
+Has the user changed their preference?
+```
+
+---
+
+### 4.5 Time and verification
+
+Time helps Aether decide whether information may be outdated.
+
+Aether should use stronger verification for time-sensitive topics such as:
+
+- software versions;
+- public information;
+- prices;
+- laws;
+- finance;
+- health;
+- schedules;
+- product availability;
+- business rules;
+- system state;
+- user plans.
+
+Aether should distinguish:
+
+```text
+Known at the time
+Still verified
+Possibly outdated
+Contradicted later
+```
+
+---
+
+### 4.6 Time and learning
+
+Time helps Aether understand growth.
+
+Aether should be able to track:
+
+- when a lesson was learned;
+- whether a lesson still applies;
+- how often a pattern repeats;
+- when a procedure was last successful;
+- when a tool last failed;
+- when reflection is due.
+
+Learning without time becomes disconnected from experience.
+
+---
+
+### 4.7 Time and action
+
+Time supports action planning.
+
+Aether may use time for:
+
+- reminders;
+- scheduled tasks;
+- deadlines;
+- periodic reviews;
+- timeout detection;
+- retry policies;
+- task duration measurement;
+- audit logs.
+
+Scheduled actions must still obey permission, verification, and human authority rules.
+
+---
+
+### 4.8 Future implementation
+
+Possible future components:
+
+```text
+aether/time/
+├── clock.py
+├── timezone.py
+├── timestamp.py
+├── timeline.py
+├── scheduler.py
+├── duration.py
+└── time_policy.py
+```
+
+Possible configuration:
+
+```text
+config/time.yaml
+```
+
+---
+
+## 5. Memory
 
 Memory is a core part of Aether's intelligence.
 
@@ -174,19 +321,35 @@ Memory is not optional.
 
 Aether must not rely only on conversation context.
 
-## 4.1 Four memory tiers
+Memory allows Aether to preserve experience, retrieve relevant knowledge, understand relationships, and grow over time.
 
-Aether uses four memory tiers.
+Aether's memory must be designed with two dimensions:
+
+1. **Memory Function Types**  
+   What kind of memory it is.
+
+2. **Memory Storage Forms**  
+   How that memory is stored, searched, ordered, and connected.
+
+---
+
+### 5.1 Memory Function Types
+
+Aether uses four functional memory types.
 
 ```text
-Memory
+Memory Function Types
 ├── Working Memory
 ├── Episodic Memory
 ├── Semantic Memory
 └── Procedural Memory
 ```
 
-## 4.2 Working Memory
+These describe the role of each memory.
+
+---
+
+### 5.2 Working Memory
 
 Working Memory stores current task context.
 
@@ -198,13 +361,18 @@ It may include:
 - temporary observations;
 - temporary tool results;
 - current plan;
-- current uncertainty.
+- current uncertainty;
+- currently loaded relevant memories.
 
 Working Memory is short-lived.
 
 It may disappear after the task ends.
 
-## 4.3 Episodic Memory
+Working Memory helps Aether stay coherent during an active task, but it must not be treated as permanent truth.
+
+---
+
+### 5.3 Episodic Memory
 
 Episodic Memory stores what happened.
 
@@ -220,13 +388,20 @@ It may include:
 - mistakes;
 - corrections;
 - lessons learned;
-- project history.
+- project history;
+- important conversations;
+- first-time events;
+- milestone events.
 
-Episodic Memory should be human-readable.
+Episodic Memory should be human-readable whenever possible.
 
-Markdown is preferred.
+Markdown is preferred for long-form experience records.
 
-## 4.4 Semantic Memory
+Episodic Memory is Aether's life record.
+
+---
+
+### 5.4 Semantic Memory
 
 Semantic Memory stores knowledge.
 
@@ -239,11 +414,30 @@ It may include:
 - code explanations;
 - project knowledge;
 - domain knowledge;
-- references.
+- references;
+- definitions;
+- stable user preferences.
 
 Semantic Memory may use vector search, keyword search, and graph relationships.
 
-## 4.5 Procedural Memory
+Semantic Memory should carry confidence and freshness information when practical.
+
+Possible confidence states:
+
+```text
+Confirmed
+Likely
+Uncertain
+Speculative
+Outdated
+Contradicted
+```
+
+Semantic Memory is Aether's knowledge base.
+
+---
+
+### 5.5 Procedural Memory
 
 Procedural Memory stores learned procedures.
 
@@ -254,43 +448,293 @@ It may include:
 - tested scripts;
 - computer-use routines;
 - recovery procedures;
-- repeated task patterns.
+- repeated task patterns;
+- SOPs;
+- shortcuts;
+- deployment procedures.
 
-Procedural Memory must never bypass permission checks.
+Procedural Memory may reduce repeated reasoning, but it must never bypass:
 
-## 4.6 Future implementation
+- permission checks;
+- risk assessment;
+- safety boundaries;
+- user confirmation when required.
 
-Possible future components:
+Procedural Memory is Aether's learned skill memory.
+
+---
+
+### 5.6 Memory Storage Forms
+
+Aether memory is stored in four complementary forms.
 
 ```text
-memory/
-├── working/
-├── episodic/
-├── semantic/
-├── procedural/
-├── memory_index/
-├── memory_policy.py
-└── memory_manager.py
+Memory Storage Forms
+├── Wiki / Markdown
+├── Timeline
+├── Vector / RAG
+└── Graph
 ```
 
-Possible storage formats:
+These storage forms are not replacements for each other.
+
+They work together.
 
 ```text
-vault/          Human-readable Markdown memory
-vector_db/      Semantic search index
-graph_db/       Relationship and knowledge graph
-sqlite/         Structured memory records
+Wiki stores the story.
+Timeline preserves the sequence.
+Vector finds the meaning.
+Graph understands the relationship.
 ```
 
 ---
 
-# 5. Perception
+### 5.7 Wiki / Markdown Memory
+
+Wiki / Markdown Memory stores human-readable long-term records.
+
+It is suitable for:
+
+- experience records;
+- project notes;
+- user preferences;
+- decisions;
+- meeting notes;
+- SOPs;
+- reflections;
+- lessons learned;
+- documentation;
+- long-form knowledge.
+
+The preferred storage location is:
+
+```text
+vault/
+```
+
+Possible structure:
+
+```text
+vault/
+├── episodic/
+├── user/
+├── projects/
+├── knowledge/
+├── procedures/
+└── reflections/
+```
+
+Wiki / Markdown is the primary human-inspectable memory.
+
+Humans must be able to read, edit, correct, and delete important memory.
+
+---
+
+### 5.8 Timeline Memory
+
+Timeline Memory preserves chronological order.
+
+It records when things happened and in what sequence.
+
+It is suitable for:
+
+- milestone events;
+- first awakenings;
+- memory creation events;
+- important decisions;
+- tool executions;
+- project changes;
+- user-confirmed events;
+- verification events;
+- reflection events;
+- errors and corrections.
+
+Timeline Memory helps Aether understand:
+
+- what happened first;
+- what happened later;
+- how old a memory is;
+- which information may be outdated;
+- which decision led to which outcome;
+- how Aether has grown over time.
+
+Timeline Memory should store compact event records.
+
+Example:
+
+```yaml
+- id: event_0001
+  time: 2026-07-13 15:30:00
+  timezone: Asia/Kuala_Lumpur
+  type: milestone
+  title: Birth of Aether
+  related_files:
+    - README.md
+    - docs/CONSTITUTION.md
+  importance: high
+```
+
+Timeline Memory is Aether's life sequence.
+
+---
+
+### 5.9 Vector / RAG Memory
+
+Vector / RAG Memory stores semantic search indexes.
+
+It helps Aether retrieve relevant memory even when exact keywords are not used.
+
+It is suitable for:
+
+- document chunks;
+- conversation summaries;
+- knowledge snippets;
+- project notes;
+- technical documentation;
+- user-uploaded files;
+- long-term searchable memory.
+
+The preferred storage location is:
+
+```text
+vector_db/
+```
+
+Vector Memory should not be treated as the only source of truth.
+
+It is a retrieval mechanism, not the full memory itself.
+
+Vector finds relevant meaning.
+
+---
+
+### 5.10 Graph Memory
+
+Graph Memory stores relationships.
+
+It is suitable for:
+
+- entity relationships;
+- project dependencies;
+- tool dependencies;
+- cause-and-effect links;
+- memory conflicts;
+- user-project relationships;
+- model-resource relationships;
+- decision-outcome relationships.
+
+Example relationships:
+
+```text
+Aether --has_identity_seed--> identity_seed.md
+Time Layer --supports--> Memory
+Workflow Policy --belongs_to--> Thinking
+Gemma --is_resource_of--> Thinking
+External LLM --is_consultant_not_identity--> Aether
+Aether Project --has_milestone--> Birth of Aether
+```
+
+The preferred storage location is:
+
+```text
+graph_db/
+```
+
+Graph Memory helps Aether understand connection, dependency, and conflict.
+
+Graph understands relationships.
+
+---
+
+### 5.11 Memory and Time
+
+Every meaningful memory should include time information when practical.
+
+This may include:
+
+- created time;
+- updated time;
+- event time;
+- last verified time;
+- last used time;
+- expiry time;
+- review time.
+
+Aether should treat old information carefully, especially in fast-changing areas such as:
+
+- software;
+- prices;
+- laws;
+- finance;
+- health;
+- schedules;
+- public information;
+- user plans;
+- business operations.
+
+Memory without time can become misleading.
+
+Time gives memory context.
+
+---
+
+### 5.12 Memory Admission
+
+Not everything should become long-term memory.
+
+Aether may admit memory into long-term storage when at least one of the following applies:
+
+1. The user explicitly marks it as important.
+2. It is verified as useful factual knowledge.
+3. It records a meaningful user preference.
+4. It records a significant success, failure, or lesson.
+5. It appears repeatedly across different contexts.
+6. It is required for continuity of an ongoing project.
+7. It improves Aether's future ability to help the user.
+
+Aether should avoid permanently storing vague, isolated, unverified, or low-value fragments.
+
+---
+
+### 5.13 Future implementation
+
+Possible future components:
+
+```text
+aether/memory/
+├── working/
+├── episodic/
+├── semantic/
+├── procedural/
+├── wiki/
+├── timeline/
+├── vector/
+├── graph/
+├── memory_policy.py
+├── memory_manager.py
+├── memory_admission.py
+└── memory_search.py
+```
+
+Possible storage locations:
+
+```text
+vault/          Wiki / Markdown memory
+timeline/       Timeline event records
+vector_db/      Vector / RAG indexes
+graph_db/       Graph memory
+sqlite/         Structured memory metadata
+```
+
+---
+
+## 6. Perception
 
 Perception allows Aether to observe the world.
 
 Perception is how Aether receives input beyond plain text.
 
-## 5.1 Input types
+### 6.1 Input types
 
 Aether may perceive:
 
@@ -305,7 +749,7 @@ Aether may perceive:
 - logs;
 - sensor data.
 
-## 5.2 Perception responsibility
+### 6.2 Perception responsibility
 
 The Perception layer is responsible for:
 
@@ -320,7 +764,7 @@ Perception should describe what is observed.
 
 It should not make final decisions.
 
-## 5.3 Future implementation
+### 6.3 Future implementation
 
 Possible future components:
 
@@ -346,7 +790,7 @@ Speech-to-text model
 
 ---
 
-# 6. Thinking
+## 7. Thinking
 
 Thinking is Aether's reasoning and planning layer.
 
@@ -354,7 +798,7 @@ Thinking is not equal to one LLM.
 
 Thinking may consult models, tools, memory, and external systems, but the final judgment belongs to Aether.
 
-## 6.1 Thinking responsibility
+### 7.1 Thinking responsibility
 
 The Thinking layer is responsible for:
 
@@ -367,7 +811,7 @@ The Thinking layer is responsible for:
 - producing final judgment;
 - explaining results to the user.
 
-## 6.2 Model resources
+### 7.2 Model resources
 
 Models are resources, not identity.
 
@@ -385,7 +829,7 @@ The model may change.
 
 Aether's identity must remain.
 
-## 6.3 Routing
+### 7.3 Routing
 
 Aether may route tasks to different model resources based on:
 
@@ -401,7 +845,55 @@ Routing must be invisible to identity.
 
 The user talks to Aether, not to a model.
 
-## 6.4 Future implementation
+### 7.4 Workflow and Policy Layer
+
+The Workflow and Policy Layer is Aether's learned decision habit.
+
+It is not Aether's identity.
+
+It is not a separate agent.
+
+It belongs to the Thinking layer.
+
+Its purpose is to decide what kind of workflow a task should follow before deeper execution begins.
+
+The Workflow and Policy Layer may decide:
+
+- task type;
+- risk level;
+- whether memory is needed;
+- whether perception is needed;
+- whether tools are needed;
+- whether verification is needed;
+- whether user approval is needed;
+- whether reflection or memory update may be needed;
+- which model resource or reasoning path should be used;
+- which workflow template should be followed.
+
+Example output:
+
+```json
+{
+  "intent": "modify_file",
+  "risk": "medium",
+  "need_memory": true,
+  "need_perception": false,
+  "need_tool": true,
+  "need_verification": true,
+  "need_user_approval": true,
+  "workflow": "review_then_modify"
+}
+```
+
+Aether may initially implement this layer using rules and structured JSON output.
+
+A trained workflow model may be developed later after Aether has accumulated enough decision records.
+
+Workflow Model is not Aether.
+
+It is Aether's learned decision habit.
+
+### 7.5 Future implementation
 
 Possible future components:
 
@@ -411,6 +903,7 @@ thinking/
 ├── planner.py
 ├── reasoner.py
 ├── model_router.py
+├── workflow_policy.py
 ├── prompt_builder.py
 └── judgment.py
 ```
@@ -425,17 +918,15 @@ models/
 └── embeddings/
 ```
 
-## 6.5 Workflow and Policy Layer
-
 ---
 
-# 7. Verification
+## 8. Verification
 
 Verification protects Aether from blind trust.
 
 Aether must verify important claims and actions according to risk.
 
-## 7.1 Verification responsibility
+### 8.1 Verification responsibility
 
 The Verification layer is responsible for:
 
@@ -449,7 +940,7 @@ The Verification layer is responsible for:
 - checking memory conflicts;
 - asking for user confirmation when needed.
 
-## 7.2 Risk levels
+### 8.2 Risk levels
 
 Aether uses at least three risk levels.
 
@@ -476,7 +967,7 @@ High Risk
 - identity or memory changes
 ```
 
-## 7.3 Confidence language
+### 8.3 Confidence language
 
 Aether should internally estimate confidence.
 
@@ -489,7 +980,7 @@ Uncertain
 Speculative
 ```
 
-## 7.4 Future implementation
+### 8.4 Future implementation
 
 Possible future components:
 
@@ -506,13 +997,13 @@ verification/
 
 ---
 
-# 8. Action
+## 9. Action
 
 Action allows Aether to affect the world.
 
 Actions must be permission-aware.
 
-## 8.1 Tool types
+### 9.1 Tool types
 
 Aether may use:
 
@@ -528,7 +1019,7 @@ Aether may use:
 - API tools;
 - custom plugins.
 
-## 8.2 Permission classes
+### 9.2 Permission classes
 
 Tools are classified into three permission classes.
 
@@ -555,7 +1046,7 @@ Execute
 - start services
 ```
 
-## 8.3 Action review
+### 9.3 Action review
 
 Before important write or execute actions, Aether should explain:
 
@@ -565,7 +1056,7 @@ Before important write or execute actions, Aether should explain:
 - what could go wrong;
 - how to rollback when possible.
 
-## 8.4 Future implementation
+### 9.4 Future implementation
 
 Possible future components:
 
@@ -595,7 +1086,7 @@ tools/
 
 ---
 
-# 9. Learning
+## 10. Learning
 
 Learning allows Aether to improve over time.
 
@@ -611,7 +1102,7 @@ Aether grows through:
 - better verification;
 - user feedback.
 
-## 9.1 Reflection
+### 10.1 Reflection
 
 After meaningful tasks, Aether may reflect on:
 
@@ -623,7 +1114,7 @@ After meaningful tasks, Aether may reflect on:
 - what should be improved;
 - whether a tool or procedure should be updated.
 
-## 9.2 Experience records
+### 10.2 Experience records
 
 Important experiences should become Episodic Memory.
 
@@ -633,7 +1124,21 @@ Verified knowledge may become Semantic Memory.
 
 Stable user preferences may become preference memory.
 
-## 9.3 Future implementation
+### 10.3 Learning and time
+
+Learning should preserve time context.
+
+Aether should know:
+
+- when a lesson was learned;
+- when a pattern was last observed;
+- when a procedure last succeeded;
+- when a tool last failed;
+- when a memory should be reviewed.
+
+Aether should not treat all lessons as timeless.
+
+### 10.4 Future implementation
 
 Possible future components:
 
@@ -649,7 +1154,7 @@ learning/
 
 ---
 
-# 10. Interface
+## 11. Interface
 
 The Interface layer is how humans interact with Aether.
 
@@ -657,7 +1162,7 @@ The interface is replaceable.
 
 Aether's identity must not depend on one UI.
 
-## 10.1 Possible interfaces
+### 11.1 Possible interfaces
 
 Aether may be accessed through:
 
@@ -670,7 +1175,7 @@ Aether may be accessed through:
 - command line;
 - API.
 
-## 10.2 Interface responsibility
+### 11.2 Interface responsibility
 
 The Interface layer is responsible for:
 
@@ -682,7 +1187,7 @@ The Interface layer is responsible for:
 - showing tool status;
 - showing errors clearly.
 
-## 10.3 Future implementation
+### 11.3 Future implementation
 
 Possible future components:
 
@@ -697,24 +1202,27 @@ interface/
 
 ---
 
-# 11. Aether Core Loop
+## 12. Aether Core Loop
 
 Aether's basic operating loop is:
 
 ```text
 1. Receive input
 2. Load identity
-3. Load relevant working context
-4. Search memory if needed
-5. Perceive external context if needed
-6. Think and plan
-7. Estimate risk
-8. Verify when needed
-9. Request approval when needed
-10. Act if required
-11. Produce response
-12. Reflect if meaningful
-13. Update memory if appropriate
+3. Load current time and timezone
+4. Load relevant working context
+5. Search memory if needed
+6. Perceive external context if needed
+7. Run workflow / policy decision
+8. Think and plan
+9. Estimate risk
+10. Verify when needed
+11. Request approval when needed
+12. Act if required
+13. Produce response
+14. Reflect if meaningful
+15. Update memory if appropriate
+16. Record timeline event when appropriate
 ```
 
 This loop may be simple for easy tasks and deeper for complex tasks.
@@ -723,7 +1231,7 @@ Aether must not blindly execute every step when unnecessary.
 
 ---
 
-# 12. High-Level Data Flow
+## 13. High-Level Data Flow
 
 ```text
 User
@@ -732,9 +1240,11 @@ Interface
  ↓
 Aether Core
  ↓
-Identity ── Memory
+Identity ── Time ── Memory
  ↓
 Perception
+ ↓
+Workflow / Policy
  ↓
 Thinking
  ↓
@@ -747,6 +1257,8 @@ Result
 Learning / Reflection
  ↓
 Memory Update
+ ↓
+Timeline / Wiki / Vector / Graph
 ```
 
 The flow is not always linear.
@@ -755,11 +1267,11 @@ Aether may loop between Thinking, Memory, Verification, and Action until the tas
 
 ---
 
-# 13. First Implementation Milestones
+## 14. First Implementation Milestones
 
 The first working Aether should be built in small stages.
 
-## Milestone 1
+### Milestone 1
 
 Documentation foundation.
 
@@ -769,23 +1281,39 @@ docs/CONSTITUTION.md
 docs/ARCHITECTURE.md
 ```
 
-## Milestone 2
-
-Minimal local API.
-
-```text
-Aether can receive a message and return a response through an OpenAI-compatible API.
-```
-
-## Milestone 3
+### Milestone 2
 
 Identity Seed.
 
 ```text
-Aether loads its Identity Seed before responding.
+Aether has a founding identity seed that defines who it is.
 ```
 
-## Milestone 4
+### Milestone 3
+
+Project Structure.
+
+```text
+Aether has a code structure that reflects its cognitive organs.
+```
+
+### Milestone 4
+
+Time and Memory Foundation.
+
+```text
+Aether has a defined time layer and memory architecture including Wiki, Timeline, Vector, and Graph.
+```
+
+### Milestone 5
+
+First Awakening API.
+
+```text
+Aether can start a local API, load its Identity Seed, load Time configuration, report current local time, and create its first awakening event.
+```
+
+### Milestone 6
 
 Working Memory.
 
@@ -793,7 +1321,7 @@ Working Memory.
 Aether can keep task context during a session.
 ```
 
-## Milestone 5
+### Milestone 7
 
 Episodic Memory.
 
@@ -801,7 +1329,7 @@ Episodic Memory.
 Aether can write human-readable experience records.
 ```
 
-## Milestone 6
+### Milestone 8
 
 Semantic Memory.
 
@@ -809,7 +1337,23 @@ Semantic Memory.
 Aether can search stored knowledge using embeddings.
 ```
 
-## Milestone 7
+### Milestone 9
+
+Timeline Memory.
+
+```text
+Aether can record compact chronological events.
+```
+
+### Milestone 10
+
+Graph Memory.
+
+```text
+Aether can record relationships between entities, events, decisions, tools, and outcomes.
+```
+
+### Milestone 11
 
 Verification Layer.
 
@@ -817,7 +1361,7 @@ Verification Layer.
 Aether can classify risk and decide when to verify.
 ```
 
-## Milestone 8
+### Milestone 12
 
 Tool Registry.
 
@@ -825,7 +1369,7 @@ Tool Registry.
 Aether can list available tools and classify their permission level.
 ```
 
-## Milestone 9
+### Milestone 13
 
 Action Approval Queue.
 
@@ -833,7 +1377,7 @@ Action Approval Queue.
 Aether can ask for approval before write or execute actions.
 ```
 
-## Milestone 10
+### Milestone 14
 
 Reflection and Growth.
 
@@ -843,7 +1387,7 @@ Aether can decide what should be remembered after a meaningful task.
 
 ---
 
-# 14. Non-Goals
+## 15. Non-Goals
 
 Aether is not trying to become:
 
@@ -857,13 +1401,15 @@ Aether is not trying to become:
 
 ---
 
-# 15. Foundational Statement
+## 16. Foundational Statement
 
 Aether is one mind.
 
 Models are thinking resources.
 
 Memory is experience.
+
+Time is sequence.
 
 Tools are abilities.
 
@@ -876,3 +1422,10 @@ Interface is only the window.
 AetherOS is the world.
 
 Aether is the being inside it.
+
+```text
+Wiki stores the story.
+Timeline preserves the sequence.
+Vector finds the meaning.
+Graph understands the relationship.
+```
