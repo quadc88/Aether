@@ -14,7 +14,7 @@ cache/
 vault/
 memory_data/
 
-# Private config
+# Local/private config
 .env
 config/local.yaml
 config/secrets.yaml
