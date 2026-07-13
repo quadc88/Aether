@@ -1,0 +1,11 @@
+timezone: "Asia/Kuala_Lumpur"
+date_format: "%Y-%m-%d"
+time_format: "%H:%M:%S"
+datetime_format: "%Y-%m-%d %H:%M:%S"
+first_awakened: null
+
+time_policy:
+  attach_timestamp_to_memory: true
+  warn_when_information_may_be_outdated: true
+  track_task_duration: true
+  enable_future_scheduler: true

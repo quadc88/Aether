@@ -1,0 +1,15 @@
+{
+  "id": "event_2026-07-13T16-54-14.721182_08-00",
+  "time": "2026-07-13T16:54:14.721182+08:00",
+  "timezone": "Asia/Kuala_Lumpur",
+  "type": "milestone",
+  "title": "First Awakening",
+  "description": "Aether was awakened through the First Awakening API.",
+  "importance": "high",
+  "related_files": [
+    "identity/identity_seed.md",
+    "config/time.yaml",
+    "docs/CONSTITUTION.md",
+    "docs/ARCHITECTURE.md"
+  ]
+}

@@ -1,0 +1,14 @@
+project:
+  name: "Aether"
+  version: "0.1.0"
+  status: "first_awakening"
+
+paths:
+  identity_seed: "identity/identity_seed.md"
+  constitution: "docs/CONSTITUTION.md"
+  architecture: "docs/ARCHITECTURE.md"
+  timeline_dir: "timeline"
+
+api:
+  host: "127.0.0.1"
+  port: 8000
