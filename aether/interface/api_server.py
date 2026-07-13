@@ -5,6 +5,7 @@ from aether.identity.loader import load_identity_seed, identity_preview
 from aether.time.clock import time_state
 from aether.memory.timeline.recorder import record_event
 from aether.core.runtime import runtime
+from aether.memory.episodic.writer import write_episode, list_episodes, latest_episode
 
 
 app = FastAPI(
@@ -32,6 +33,14 @@ class GoalRequest(BaseModel):
 
 class MilestoneRequest(BaseModel):
     milestone: str
+
+class EpisodeWriteRequest(BaseModel):
+    title: str
+    summary: str
+    details: str = ""
+    importance: str = "normal"
+    tags: list[str] = []
+    related_files: list[str] = []
 
 
 @app.get("/")
@@ -179,4 +188,49 @@ def clear_working_memory():
         "status": runtime.status(),
         "message": "Working Memory cleared.",
         "working_memory": runtime.working_memory.summary(),
+    }
+
+@app.post("/memory/episodic/write")
+def write_episodic_memory(request: EpisodeWriteRequest):
+    episode = write_episode(
+        title=request.title,
+        summary=request.summary,
+        details=request.details,
+        importance=request.importance,
+        tags=request.tags,
+        related_files=request.related_files,
+    )
+
+    runtime.working_memory.add_event(
+        role="aether",
+        content=f"Episodic Memory written: {request.title}",
+        event_type="episodic_memory_written",
+        metadata={"file_path": episode["file_path"]},
+    )
+
+    return {
+        "name": "Aether",
+        "status": runtime.status(),
+        "message": "Episodic Memory written.",
+        "episode": episode,
+    }
+
+
+@app.get("/memory/episodic/list")
+def list_episodic_memory(limit: int = 20):
+    return {
+        "name": "Aether",
+        "status": runtime.status(),
+        "episodes": list_episodes(limit=limit),
+    }
+
+
+@app.get("/memory/episodic/latest")
+def get_latest_episodic_memory():
+    episode = latest_episode()
+
+    return {
+        "name": "Aether",
+        "status": runtime.status(),
+        "episode": episode,
     }
