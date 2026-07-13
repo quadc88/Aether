@@ -6,7 +6,11 @@ from aether.time.clock import time_state
 from aether.memory.timeline.recorder import record_event
 from aether.core.runtime import runtime
 from aether.memory.episodic.writer import write_episode, list_episodes, latest_episode
-
+from aether.memory.semantic.indexer import (
+    build_semantic_index,
+    search_semantic_memory,
+    semantic_memory_status,
+)
 
 app = FastAPI(
     title="Aether API",
@@ -41,6 +45,10 @@ class EpisodeWriteRequest(BaseModel):
     importance: str = "normal"
     tags: list[str] = []
     related_files: list[str] = []
+
+class SemanticSearchRequest(BaseModel):
+    query: str
+    limit: int = 5
 
 
 @app.get("/")
@@ -233,4 +241,53 @@ def get_latest_episodic_memory():
         "name": "Aether",
         "status": runtime.status(),
         "episode": episode,
+    }
+
+@app.post("/memory/semantic/index")
+def index_semantic_memory():
+    result = build_semantic_index()
+
+    runtime.working_memory.add_event(
+        role="aether",
+        content=f"Semantic Memory index built with {result['document_count']} documents.",
+        event_type="semantic_memory_indexed",
+        metadata={"index_path": result["index_path"]},
+    )
+
+    return {
+        "name": "Aether",
+        "status": runtime.status(),
+        "message": "Semantic Memory index built.",
+        "result": result,
+    }
+
+
+@app.get("/memory/semantic/status")
+def get_semantic_memory_status():
+    return {
+        "name": "Aether",
+        "status": runtime.status(),
+        "semantic_memory": semantic_memory_status(),
+    }
+
+
+@app.post("/memory/semantic/search")
+def search_memory(request: SemanticSearchRequest):
+    results = search_semantic_memory(
+        query=request.query,
+        limit=request.limit,
+    )
+
+    runtime.working_memory.add_event(
+        role="user",
+        content=f"Semantic memory search: {request.query}",
+        event_type="semantic_memory_search",
+        metadata={"result_count": len(results)},
+    )
+
+    return {
+        "name": "Aether",
+        "status": runtime.status(),
+        "query": request.query,
+        "results": results,
     }
