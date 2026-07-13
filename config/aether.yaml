@@ -4,10 +4,19 @@ project:
   status: "first_awakening"
 
 paths:
+  data_root: "C:/AetherData"
+
   identity_seed: "identity/identity_seed.md"
   constitution: "docs/CONSTITUTION.md"
   architecture: "docs/ARCHITECTURE.md"
-  timeline_dir: "timeline"
+
+  vault_dir: "C:/AetherData/vault"
+  timeline_dir: "C:/AetherData/timeline"
+  vector_db_dir: "C:/AetherData/vector_db"
+  graph_db_dir: "C:/AetherData/graph_db"
+  logs_dir: "C:/AetherData/logs"
+  private_dir: "C:/AetherData/private"
+  backups_dir: "C:/AetherData/backups"
 
 api:
   host: "127.0.0.1"

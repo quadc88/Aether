@@ -1,13 +1,31 @@
 from pathlib import Path
 import json
+import yaml
+
 from aether.time.clock import now_iso, get_timezone
 
 
-TIMELINE_DIR = Path("timeline")
+def load_aether_config(path: str = "config/aether.yaml") -> dict:
+    config_path = Path(path)
+
+    if not config_path.exists():
+        return {}
+
+    with config_path.open("r", encoding="utf-8") as file:
+        return yaml.safe_load(file) or {}
 
 
-def ensure_timeline_dir():
-    TIMELINE_DIR.mkdir(parents=True, exist_ok=True)
+def get_timeline_dir() -> Path:
+    config = load_aether_config()
+    paths = config.get("paths", {})
+    timeline_dir = paths.get("timeline_dir", "timeline")
+    return Path(timeline_dir)
+
+
+def ensure_timeline_dir() -> Path:
+    timeline_dir = get_timeline_dir()
+    timeline_dir.mkdir(parents=True, exist_ok=True)
+    return timeline_dir
 
 
 def record_event(
@@ -17,7 +35,7 @@ def record_event(
     importance: str = "normal",
     related_files: list[str] | None = None,
 ) -> dict:
-    ensure_timeline_dir()
+    timeline_dir = ensure_timeline_dir()
 
     timestamp = now_iso()
     safe_timestamp = timestamp.replace(":", "-").replace("+", "_")
@@ -34,7 +52,7 @@ def record_event(
         "related_files": related_files or [],
     }
 
-    file_path = TIMELINE_DIR / f"{event_id}.json"
+    file_path = timeline_dir / f"{event_id}.json"
 
     with file_path.open("w", encoding="utf-8") as file:
         json.dump(event, file, indent=2, ensure_ascii=False)

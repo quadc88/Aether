@@ -2,10 +2,24 @@
 __pycache__/
 *.pyc
 
+# Runtime data
 logs/
+timeline/
 vector_db/
-.env
+graph_db/
+sqlite/
+cache/
 
+# Long-term memory
+vault/
+memory_data/
+
+# Private config
+.env
+config/local.yaml
+config/secrets.yaml
+
+# OS files
 *.log
 .DS_Store
 Thumbs.db
