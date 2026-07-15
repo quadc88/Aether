@@ -17,6 +17,14 @@ from aether.memory.semantic.indexer import (
     search_semantic_memory,
     semantic_memory_status,
 )
+from aether.memory.graph.store import (
+    add_edge,
+    graph_status,
+    list_edges,
+    list_nodes,
+    search_graph,
+    upsert_node,
+)
 
 app = FastAPI(
     title="Aether API",
@@ -57,6 +65,24 @@ class SemanticSearchRequest(BaseModel):
     limit: int = 5
 
 class TimelineSearchRequest(BaseModel):
+    query: str
+    limit: int = 20
+
+
+class GraphNodeRequest(BaseModel):
+    label: str
+    node_type: str = "entity"
+    properties: dict = {}
+
+
+class GraphEdgeRequest(BaseModel):
+    source: str
+    relation: str
+    target: str
+    properties: dict = {}
+
+
+class GraphSearchRequest(BaseModel):
     query: str
     limit: int = 20
 
@@ -358,3 +384,106 @@ def search_timeline_memory(request: TimelineSearchRequest):
         "query": request.query,
         "results": results,
     }
+
+
+@app.get("/memory/graph/status")
+def get_graph_memory_status():
+    return {"name": "Aether", "status": runtime.status(), "graph_memory": graph_status()}
+
+
+@app.post("/memory/graph/node")
+def create_graph_node(request: GraphNodeRequest):
+    node = upsert_node(request.label, request.node_type, request.properties)
+    runtime.working_memory.add_event(
+        role="aether",
+        content=f"Graph node upserted: {request.label}",
+        event_type="graph_node_upserted",
+        metadata={"node_id": node["id"]},
+    )
+    return {"name": "Aether", "status": runtime.status(), "node": node}
+
+
+@app.post("/memory/graph/edge")
+def create_graph_edge(request: GraphEdgeRequest):
+    edge = add_edge(request.source, request.relation, request.target, request.properties)
+    created_new = edge.pop("created_new")
+    timeline_event = None
+    if created_new:
+        timeline_event = record_event(
+            event_type="graph_memory",
+            title=f"Graph relationship added: {request.source} --{request.relation}--> {request.target}",
+            description=f"Aether recorded a graph relationship from {request.source} to {request.target} using relation {request.relation}.",
+            importance="normal",
+        )
+    runtime.working_memory.add_event(
+        role="aether",
+        content=f"Graph relationship {'added' if created_new else 'already exists'}: {request.source} --{request.relation}--> {request.target}",
+        event_type="graph_edge_added",
+        metadata={"edge_id": edge["id"], "created_new": created_new},
+    )
+    return {"name": "Aether", "status": runtime.status(), "edge": edge, "created_new": created_new, "timeline_event": timeline_event}
+
+
+@app.get("/memory/graph/nodes")
+def get_graph_nodes(limit: int = 50):
+    return {"name": "Aether", "status": runtime.status(), "nodes": list_nodes(limit)}
+
+
+@app.get("/memory/graph/edges")
+def get_graph_edges(limit: int = 50):
+    return {"name": "Aether", "status": runtime.status(), "edges": list_edges(limit)}
+
+
+@app.post("/memory/graph/search")
+def search_graph_memory(request: GraphSearchRequest):
+    results = search_graph(request.query, request.limit)
+    runtime.working_memory.add_event(
+        role="user",
+        content=f"Graph memory search: {request.query}",
+        event_type="graph_memory_search",
+        metadata={"node_count": len(results["nodes"]), "edge_count": len(results["edges"])},
+    )
+    return {"name": "Aether", "status": runtime.status(), "query": request.query, "results": results}
+
+
+@app.post("/memory/graph/seed")
+def seed_graph_memory():
+    relationships = [
+        ("Aether", "has_identity_seed", "identity/identity_seed.md"),
+        ("Aether", "follows", "docs/CONSTITUTION.md"),
+        ("Aether", "has_architecture", "docs/ARCHITECTURE.md"),
+        ("Time Layer", "supports", "Memory"),
+        ("Timeline Memory", "belongs_to", "Memory"),
+        ("Semantic Memory", "belongs_to", "Memory"),
+        ("Episodic Memory", "belongs_to", "Memory"),
+        ("Graph Memory", "belongs_to", "Memory"),
+        ("Workflow Policy", "belongs_to", "Thinking"),
+        ("External LLM", "is_consultant_not_identity", "Aether"),
+    ]
+    edges = []
+    new_edge_count = 0
+    for source, relation, target in relationships:
+        edge = add_edge(source, relation, target)
+        created_new = edge.pop("created_new")
+        if created_new:
+            new_edge_count += 1
+            record_event(
+                event_type="graph_memory",
+                title=f"Graph relationship added: {source} --{relation}--> {target}",
+                description=f"Aether recorded a graph relationship from {source} to {target} using relation {relation}.",
+                importance="normal",
+            )
+        runtime.working_memory.add_event(
+            role="aether",
+            content=f"Graph relationship {'added' if created_new else 'already exists'}: {source} --{relation}--> {target}",
+            event_type="graph_edge_added",
+            metadata={"edge_id": edge["id"], "created_new": created_new},
+        )
+        edges.append(edge)
+    runtime.working_memory.add_event(
+        role="aether",
+        content=f"Graph Memory seed completed with {new_edge_count} new relationships.",
+        event_type="graph_edge_added",
+        metadata={"new_edge_count": new_edge_count},
+    )
+    return {"name": "Aether", "status": runtime.status(), "new_edge_count": new_edge_count, "edges": edges, "graph_memory": graph_status()}
