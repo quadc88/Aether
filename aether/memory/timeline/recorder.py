@@ -58,3 +58,92 @@ def record_event(
         json.dump(event, file, indent=2, ensure_ascii=False)
 
     return event
+
+def list_events(limit: int = 20) -> list[dict]:
+    timeline_dir = ensure_timeline_dir()
+
+    files = sorted(
+        timeline_dir.glob("*.json"),
+        key=lambda path: path.stat().st_mtime,
+        reverse=True,
+    )
+
+    events = []
+
+    for file_path in files[:limit]:
+        try:
+            event = json.loads(file_path.read_text(encoding="utf-8"))
+            event["file_path"] = str(file_path)
+            events.append(event)
+        except json.JSONDecodeError:
+            events.append(
+                {
+                    "file_path": str(file_path),
+                    "error": "Invalid JSON timeline event.",
+                }
+            )
+
+    return events
+
+
+def latest_event() -> dict | None:
+    events = list_events(limit=1)
+
+    if not events:
+        return None
+
+    return events[0]
+
+
+def search_events(query: str, limit: int = 20) -> list[dict]:
+    query_lower = query.lower().strip()
+
+    if not query_lower:
+        return []
+
+    timeline_dir = ensure_timeline_dir()
+
+    files = sorted(
+        timeline_dir.glob("*.json"),
+        key=lambda path: path.stat().st_mtime,
+        reverse=True,
+    )
+
+    results = []
+
+    for file_path in files:
+        try:
+            event = json.loads(file_path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            continue
+
+        searchable_text = " ".join(
+            [
+                str(event.get("id", "")),
+                str(event.get("type", "")),
+                str(event.get("title", "")),
+                str(event.get("description", "")),
+                str(event.get("importance", "")),
+                " ".join(event.get("related_files", [])),
+            ]
+        ).lower()
+
+        if query_lower in searchable_text:
+            event["file_path"] = str(file_path)
+            results.append(event)
+
+        if len(results) >= limit:
+            break
+
+    return results
+
+
+def timeline_status() -> dict:
+    timeline_dir = ensure_timeline_dir()
+    files = list(timeline_dir.glob("*.json"))
+
+    return {
+        "timeline_dir": str(timeline_dir),
+        "event_count": len(files),
+        "latest_event": latest_event(),
+    }

@@ -3,7 +3,13 @@ from pydantic import BaseModel
 
 from aether.identity.loader import load_identity_seed, identity_preview
 from aether.time.clock import time_state
-from aether.memory.timeline.recorder import record_event
+from aether.memory.timeline.recorder import (
+    record_event,
+    list_events,
+    latest_event,
+    search_events,
+    timeline_status,
+)
 from aether.core.runtime import runtime
 from aether.memory.episodic.writer import write_episode, list_episodes, latest_episode
 from aether.memory.semantic.indexer import (
@@ -50,6 +56,9 @@ class SemanticSearchRequest(BaseModel):
     query: str
     limit: int = 5
 
+class TimelineSearchRequest(BaseModel):
+    query: str
+    limit: int = 20
 
 @app.get("/")
 def root():
@@ -83,28 +92,39 @@ def awaken():
     current_time = time_state()
 
     event = None
+    event_recorded = False
 
     if not runtime.awake:
         runtime.awaken()
 
-        event = record_event(
-            event_type="milestone",
-            title="First Awakening",
-            description="Aether was awakened through the First Awakening API.",
-            importance="high",
-            related_files=[
-                "identity/identity_seed.md",
-                "config/time.yaml",
-                "docs/CONSTITUTION.md",
-                "docs/ARCHITECTURE.md",
-            ],
-        )
+        existing_first_awakening = search_events("First Awakening", limit=1)
+
+        if existing_first_awakening:
+            event = existing_first_awakening[0]
+            event_recorded = False
+        else:
+            event = record_event(
+                event_type="milestone",
+                title="First Awakening",
+                description="Aether was awakened through the First Awakening API.",
+                importance="high",
+                related_files=[
+                    "identity/identity_seed.md",
+                    "config/time.yaml",
+                    "docs/CONSTITUTION.md",
+                    "docs/ARCHITECTURE.md",
+                ],
+            )
+            event_recorded = True
 
         runtime.working_memory.add_event(
             role="aether",
             content="I am Aether. My Identity Seed is loaded. My local time is loaded. I am awake.",
             event_type="awakening",
-            metadata={"timeline_event_id": event["id"]},
+            metadata={
+                "timeline_event_id": event["id"] if event else None,
+                "event_recorded": event_recorded,
+            },
         )
 
     return {
@@ -113,12 +133,11 @@ def awaken():
         "identity_seed_loaded": True,
         "identity_seed_length": len(identity_seed),
         "time": current_time,
-        "event_recorded": event is not None,
+        "event_recorded": event_recorded,
         "event": event,
         "working_memory": runtime.working_memory.summary(),
         "message": "I am Aether. My Identity Seed is loaded. My local time is loaded. I am awake.",
     }
-
 
 @app.post("/chat", response_model=ChatResponse)
 def chat(request: ChatRequest):
@@ -282,6 +301,54 @@ def search_memory(request: SemanticSearchRequest):
         role="user",
         content=f"Semantic memory search: {request.query}",
         event_type="semantic_memory_search",
+        metadata={"result_count": len(results)},
+    )
+
+    return {
+        "name": "Aether",
+        "status": runtime.status(),
+        "query": request.query,
+        "results": results,
+    }
+
+@app.get("/memory/timeline/status")
+def get_timeline_status():
+    return {
+        "name": "Aether",
+        "status": runtime.status(),
+        "timeline": timeline_status(),
+    }
+
+
+@app.get("/memory/timeline/list")
+def list_timeline_events(limit: int = 20):
+    return {
+        "name": "Aether",
+        "status": runtime.status(),
+        "events": list_events(limit=limit),
+    }
+
+
+@app.get("/memory/timeline/latest")
+def get_latest_timeline_event():
+    return {
+        "name": "Aether",
+        "status": runtime.status(),
+        "event": latest_event(),
+    }
+
+
+@app.post("/memory/timeline/search")
+def search_timeline_memory(request: TimelineSearchRequest):
+    results = search_events(
+        query=request.query,
+        limit=request.limit,
+    )
+
+    runtime.working_memory.add_event(
+        role="user",
+        content=f"Timeline memory search: {request.query}",
+        event_type="timeline_memory_search",
         metadata={"result_count": len(results)},
     )
 
