@@ -25,6 +25,7 @@ from aether.memory.graph.store import (
     search_graph,
     upsert_node,
 )
+from aether.verification.risk import classify_risk, verification_plan
 
 app = FastAPI(
     title="Aether API",
@@ -85,6 +86,10 @@ class GraphEdgeRequest(BaseModel):
 class GraphSearchRequest(BaseModel):
     query: str
     limit: int = 20
+
+
+class VerificationRequest(BaseModel):
+    text: str
 
 @app.get("/")
 def root():
@@ -487,3 +492,53 @@ def seed_graph_memory():
         metadata={"new_edge_count": new_edge_count},
     )
     return {"name": "Aether", "status": runtime.status(), "new_edge_count": new_edge_count, "edges": edges, "graph_memory": graph_status()}
+
+
+@app.post("/verification/classify")
+def classify_verification_risk(request: VerificationRequest):
+    return {"name": "Aether", "status": runtime.status(), "classification": classify_risk(request.text)}
+
+
+@app.post("/verification/plan")
+def create_verification_plan(request: VerificationRequest):
+    plan = verification_plan(request.text)
+    runtime.working_memory.add_event(
+        role="aether",
+        content=f"Verification plan created for {plan['action_type']} request.",
+        event_type="verification_plan_created",
+        metadata={
+            "risk_level": plan["risk_level"],
+            "action_type": plan["action_type"],
+            "requires_verification": plan["requires_verification"],
+            "requires_user_approval": plan["requires_user_approval"],
+        },
+    )
+
+    warnings = []
+    timeline_event = None
+    graph_relationship = None
+    if plan["risk_level"] == "high":
+        timeline_event = record_event(
+            event_type="verification",
+            title=f"High-risk verification plan: {plan['action_type']}",
+            description="Aether created a verification plan for a high-risk request.",
+            importance="high",
+        )
+        try:
+            graph_relationship = add_edge(
+                "Aether",
+                "created_verification_plan_for",
+                plan["action_type"],
+            )
+            graph_relationship.pop("created_new", None)
+        except Exception as error:
+            warnings.append(f"Graph Memory integration was unavailable: {error}")
+
+    return {
+        "name": "Aether",
+        "status": runtime.status(),
+        "plan": plan,
+        "timeline_event": timeline_event,
+        "graph_relationship": graph_relationship,
+        "warnings": warnings,
+    }
