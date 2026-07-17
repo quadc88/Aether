@@ -11,6 +11,7 @@ from aether.action.tool_planner import create_tool_invocation_plan
 from aether.action.tool_registry import get_tool, register_tool
 from aether.action.restricted_file_reader import read_restricted_file, seed_restricted_file_tool
 from aether.action.restricted_file_browser import browse_restricted_path, search_restricted_files, seed_restricted_browser_tools
+from aether.action.self_inspector import create_project_self_inspection, seed_self_inspection_tool
 from aether.time.clock import get_timezone, now_iso
 
 
@@ -24,6 +25,7 @@ SANDBOX_TOOL_IDS = {
     "file.restricted_read",
     "file.restricted_browse",
     "file.restricted_search",
+    "project.self_inspect",
 }
 
 
@@ -107,7 +109,8 @@ def seed_sandbox_tools() -> dict:
         ))
     restricted_file_tool = seed_restricted_file_tool()
     browser_tools = seed_restricted_browser_tools()
-    return {"tools": tools, "created_count": created_count, "restricted_file_tool": restricted_file_tool, "browser_tools": browser_tools}
+    self_inspection_tool = seed_self_inspection_tool()
+    return {"tools": tools, "created_count": created_count, "restricted_file_tool": restricted_file_tool, "browser_tools": browser_tools, "self_inspection_tool": self_inspection_tool}
 
 
 def _safe_result(tool_id: str, payload: dict) -> dict:
@@ -146,6 +149,11 @@ def _safe_result(tool_id: str, payload: dict) -> dict:
         return search_restricted_files(
             query=payload.get("query", ""), root=payload.get("root", "C:/Aether"),
             max_results=payload.get("max_results", 50), metadata=payload.get("metadata"),
+        )
+    if tool_id == "project.self_inspect":
+        return create_project_self_inspection(
+            root=payload.get("root", "C:/Aether"), max_files_to_read=payload.get("max_files_to_read", 20),
+            max_chars_per_file=payload.get("max_chars_per_file", 6000), metadata=payload.get("metadata"),
         )
     raise ValueError("Unsupported sandbox tool.")
 
@@ -194,6 +202,8 @@ def execute_tool(
             if selected_tool_id in {"file.restricted_read", "file.restricted_browse", "file.restricted_search"} and result["status"] != "success":
                 status = result["status"]
                 error = result["reason"]
+            if selected_tool_id == "project.self_inspect" and result["status"] in {"blocked", "failed"}:
+                status = result["status"]
         except Exception as exception:
             status = "failed"
             error = str(exception)

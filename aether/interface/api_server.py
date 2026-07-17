@@ -74,6 +74,12 @@ from aether.action.restricted_file_browser import (
     list_file_browses,
     search_restricted_files,
 )
+from aether.action.self_inspector import (
+    create_project_self_inspection,
+    get_self_inspection_report,
+    list_self_inspection_reports,
+    self_inspection_status,
+)
 
 app = FastAPI(
     title="Aether API",
@@ -237,6 +243,17 @@ class RestrictedFileSearchRequest(BaseModel):
 
 class RestrictedFileBrowseListRequest(BaseModel):
     limit: int = 50
+
+
+class SelfInspectionRequest(BaseModel):
+    root: str = "C:/Aether"
+    max_files_to_read: int = 20
+    max_chars_per_file: int = 6000
+    metadata: dict = {}
+
+
+class SelfInspectionListRequest(BaseModel):
+    limit: int = 20
 
 @app.get("/")
 def root():
@@ -1058,6 +1075,9 @@ def execute_action_tool(request: ToolExecutionRequest):
     file_access_audit = None
     if execution["tool_id"] == "file.restricted_read" and isinstance(execution["result"], dict) and "id" in execution["result"]:
         file_access_audit = _record_restricted_file_access(execution["result"])
+    self_inspection_audit = None
+    if execution["tool_id"] == "project.self_inspect" and isinstance(execution["result"], dict) and "id" in execution["result"]:
+        self_inspection_audit = _record_self_inspection_report(execution["result"])
     timeline_event = None
     if (
         execution["status"] in {"blocked", "approval_required", "failed"}
@@ -1084,7 +1104,7 @@ def execute_action_tool(request: ToolExecutionRequest):
             relationship.pop("created_new", None)
     except Exception as error:
         warnings.append(f"Graph Memory integration was unavailable: {error}")
-    return {"name": "Aether", "status": runtime.status(), "execution": execution, "timeline_event": timeline_event, "file_access_audit": file_access_audit, "graph_relationships": graph_relationships, "warnings": warnings}
+    return {"name": "Aether", "status": runtime.status(), "execution": execution, "timeline_event": timeline_event, "file_access_audit": file_access_audit, "self_inspection_audit": self_inspection_audit, "graph_relationships": graph_relationships, "warnings": warnings}
 
 
 @app.get("/action/tool-executor/status")
@@ -1235,3 +1255,59 @@ def list_action_file_browses(limit: int = 50):
 @app.get("/action/file/browser/{browse_id}")
 def get_action_file_browse(browse_id: str):
     return {"name": "Aether", "status": runtime.status(), "browse": get_file_browse(browse_id)}
+
+
+def _record_self_inspection_report(report: dict) -> tuple[dict, list[dict], list[str]]:
+    runtime.working_memory.add_event(
+        role="aether",
+        content=f"Project self-inspection report created: {report['id']} ({report['status']}).",
+        event_type="self_inspection_report_created",
+        metadata={
+            "report_id": report["id"], "status": report["status"],
+            "files_read": report["summary"]["files_read"], "endpoint_count": report["summary"]["endpoint_count"],
+            "warning_count": len(report["warnings"]),
+        },
+    )
+    timeline_event = record_event(
+        event_type="self_inspection",
+        title="Project self-inspection report created",
+        description=f"Aether created project self-inspection report {report['id']} with status {report['status']}.",
+        importance="high" if report["status"] in {"failed", "blocked"} else "normal",
+    )
+    warnings = []
+    graph_relationships = []
+    try:
+        graph_relationships.extend(
+            [
+                add_edge("Aether", "created_self_inspection_report", report["id"]),
+                add_edge(report["id"], "inspected_project", "Aether"),
+                add_edge(report["id"], "has_status", report["status"]),
+            ]
+        )
+        for relationship in graph_relationships:
+            relationship.pop("created_new", None)
+    except Exception as error:
+        warnings.append(f"Graph Memory integration was unavailable: {error}")
+    return timeline_event, graph_relationships, warnings
+
+
+@app.post("/action/self-inspection/create")
+def create_action_self_inspection(request: SelfInspectionRequest):
+    report = create_project_self_inspection(request.root, request.max_files_to_read, request.max_chars_per_file, request.metadata)
+    timeline_event, graph_relationships, warnings = _record_self_inspection_report(report)
+    return {"name": "Aether", "status": runtime.status(), "report": report, "timeline_event": timeline_event, "graph_relationships": graph_relationships, "warnings": warnings}
+
+
+@app.get("/action/self-inspection/status")
+def get_action_self_inspection_status():
+    return {"name": "Aether", "status": runtime.status(), "self_inspection": self_inspection_status()}
+
+
+@app.get("/action/self-inspection/list")
+def list_action_self_inspections(limit: int = 20):
+    return {"name": "Aether", "status": runtime.status(), "reports": list_self_inspection_reports(limit)}
+
+
+@app.get("/action/self-inspection/{report_id}")
+def get_action_self_inspection(report_id: str):
+    return {"name": "Aether", "status": runtime.status(), "report": get_self_inspection_report(report_id)}

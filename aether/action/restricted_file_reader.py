@@ -1,6 +1,7 @@
 """Restricted, read-only access to small public Aether project text files."""
 
 from pathlib import Path
+import re
 import json
 import uuid
 
@@ -20,10 +21,17 @@ ALLOWED_ROOTS = [
 ALLOWED_EXTENSIONS = {".py", ".md", ".txt", ".yaml", ".yml", ".json", ".toml", ".ini", ".cfg"}
 SENSITIVE_PATTERNS = {
     ".env", "secret", "secrets", "credential", "credentials", "password", "passwords",
-    "private_key", "id_rsa", "id_ed25519", ".pem", ".key", "token", "tokens",
-    "api_key", "apikey", "cookie", "cookies", "browser", "appdata", "windows",
+    "private", "private_key", "id_rsa", "id_ed25519", ".pem", ".key", "key", "keys",
+    "token", "tokens", "api_key", "apikey", "cookie", "cookies", "appdata", "windows",
     "system32", "users", "c:/users", "c:\\users",
 }
+SENSITIVE_NAME_TOKENS = {
+    "secret", "secrets", "credential", "credentials", "password", "passwords", "private",
+    "private_key", "id_rsa", "id_ed25519", "key", "keys", "token", "tokens", "api_key",
+    "apikey", "cookie", "cookies",
+}
+BASIC_SENSITIVE_DIRECTORY_NAMES = {"appdata", "windows", "system32", "users"}
+BROWSER_PROFILE_MARKERS = {"profile", "profiles", "cache", "cookies", "cookie", "userdata", "user data"}
 MAX_FILE_SIZE_BYTES = 64 * 1024
 
 
@@ -85,16 +93,32 @@ def normalize_path(path: str) -> str:
     return str(Path(path).expanduser().resolve(strict=False))
 
 
+def is_sensitive_path(path: Path) -> bool:
+    """Block sensitive path components without rejecting harmless source filenames."""
+    normalized = str(path).replace("\\", "/").lower()
+    parts = [part for part in normalized.split("/") if part]
+    path_tokens = {token for part in parts for token in re.split(r"[^a-z0-9]+", part) if token}
+    filename = path.name.lower()
+    name_tokens = {token for token in re.split(r"[^a-z0-9]+", filename) if token}
+
+    if path_tokens & (BASIC_SENSITIVE_DIRECTORY_NAMES | SENSITIVE_NAME_TOKENS):
+        return True
+    if filename == ".env" or filename.startswith(".env.") or path.suffix.lower() in {".pem", ".key"}:
+        return True
+    if name_tokens & SENSITIVE_NAME_TOKENS:
+        return True
+    return "browser" in path_tokens and bool(path_tokens & BROWSER_PROFILE_MARKERS)
+
+
 def list_allowed_roots() -> list[str]:
     return [str(root.resolve(strict=False)) for root in ALLOWED_ROOTS]
 
 
 def is_path_allowed(path: str) -> dict:
     normalized_path = Path(normalize_path(path))
-    normalized_text = str(normalized_path).replace("\\", "/").lower()
     extension = normalized_path.suffix.lower()
 
-    if any(pattern in normalized_text for pattern in SENSITIVE_PATTERNS):
+    if is_sensitive_path(normalized_path):
         return {"allowed": False, "reason": "Path appears sensitive and is blocked.", "normalized_path": str(normalized_path), "extension": extension}
     if not any(normalized_path.is_relative_to(root.resolve(strict=False)) for root in ALLOWED_ROOTS):
         return {"allowed": False, "reason": "Path is outside allowed roots.", "normalized_path": str(normalized_path), "extension": extension}

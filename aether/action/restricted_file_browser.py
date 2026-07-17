@@ -6,7 +6,7 @@ import uuid
 
 import yaml
 
-from aether.action.restricted_file_reader import ALLOWED_EXTENSIONS, ALLOWED_ROOTS, SENSITIVE_PATTERNS, normalize_path
+from aether.action.restricted_file_reader import ALLOWED_EXTENSIONS, ALLOWED_ROOTS, is_sensitive_path, normalize_path
 from aether.action.tool_registry import get_tool, register_tool
 from aether.time.clock import get_timezone, now_iso
 
@@ -72,8 +72,7 @@ def _is_under_allowed_root(path: Path) -> bool:
 
 def is_browse_path_allowed(path: str) -> dict:
     normalized_path = Path(normalize_path(path))
-    normalized_text = str(normalized_path).replace("\\", "/").lower()
-    if any(pattern in normalized_text for pattern in SENSITIVE_PATTERNS):
+    if is_sensitive_path(normalized_path):
         return {"allowed": False, "reason": "Path appears sensitive and is blocked.", "normalized_path": str(normalized_path)}
     if not _is_under_allowed_root(normalized_path):
         return {"allowed": False, "reason": "Path is outside allowed roots.", "normalized_path": str(normalized_path)}
@@ -86,8 +85,7 @@ def is_browse_path_allowed(path: str) -> dict:
 
 def is_entry_visible(path: Path) -> bool:
     resolved_path = path.resolve(strict=False)
-    normalized_text = str(resolved_path).replace("\\", "/").lower()
-    if not _is_under_allowed_root(resolved_path) or any(pattern in normalized_text for pattern in SENSITIVE_PATTERNS):
+    if not _is_under_allowed_root(resolved_path) or is_sensitive_path(resolved_path):
         return False
     if resolved_path.is_dir():
         return True

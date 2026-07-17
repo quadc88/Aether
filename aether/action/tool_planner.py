@@ -13,6 +13,7 @@ from aether.verification.risk import verification_plan
 
 
 INFERENCE_RULES = [
+    ("project.self_inspect", ["inspect project", "self inspection", "project report", "check aether structure", "检查项目", "自我检查", "项目报告", "检查 aether 结构"], "Request appears to involve project self-inspection."),
     ("file.restricted_search", ["find file", "search file", "locate file", "找文件", "搜索文件", "查找文件", "找到 api_server"], "Request appears to involve finding a project file."),
     ("file.restricted_browse", ["list files", "show folder", "browse project", "project tree", "file structure", "列出文件", "显示目录", "浏览项目", "项目结构", "文件结构", "看看有哪些文件"], "Request appears to involve browsing project files."),
     ("file.delete", ["delete file", "remove folder", "删除", "移除"], "Request appears to involve deleting files."),
