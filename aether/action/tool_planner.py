@@ -15,7 +15,7 @@ from aether.verification.risk import verification_plan
 INFERENCE_RULES = [
     ("file.delete", ["delete file", "remove folder", "删除", "移除"], "Request appears to involve deleting files."),
     ("file.write", ["write file", "save file", "create file", "修改文件", "写入文件"], "Request appears to involve writing files."),
-    ("file.read", ["read file", "open file", "查看文件", "读取文件"], "Request appears to involve reading files."),
+    ("file.restricted_read", ["read file", "open file", "inspect file", "查看文件", "读取文件", "打开文件", "检查文件", "看一下文件"], "Request appears to involve reading files."),
     ("shell.run", ["run command", "execute command", "terminal", "cmd", "powershell", "运行命令"], "Request appears to involve running a command."),
     ("email.send", ["send email", "send message", "发送邮件", "发信息"], "Request appears to involve sending a message."),
     ("email.draft", ["draft email", "write email draft", "草稿", "起草邮件"], "Request appears to involve drafting an email."),

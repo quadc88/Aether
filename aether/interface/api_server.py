@@ -59,6 +59,13 @@ from aether.action.tool_executor import (
     seed_sandbox_tools,
     tool_executor_status,
 )
+from aether.action.restricted_file_reader import (
+    file_access_status,
+    get_file_access,
+    list_allowed_roots,
+    list_file_accesses,
+    read_restricted_file,
+)
 
 app = FastAPI(
     title="Aether API",
@@ -191,6 +198,16 @@ class ToolExecutionRequest(BaseModel):
 
 
 class ToolExecutionListRequest(BaseModel):
+    limit: int = 50
+
+
+class RestrictedFileReadRequest(BaseModel):
+    path: str
+    max_chars: int = 12000
+    metadata: dict = {}
+
+
+class RestrictedFileAccessListRequest(BaseModel):
     limit: int = 50
 
 @app.get("/")
@@ -1010,6 +1027,9 @@ def execute_action_tool(request: ToolExecutionRequest):
             "requires_user_approval": execution["plan"]["decision"]["requires_user_approval"],
         },
     )
+    file_access_audit = None
+    if execution["tool_id"] == "file.restricted_read" and isinstance(execution["result"], dict) and "id" in execution["result"]:
+        file_access_audit = _record_restricted_file_access(execution["result"])
     timeline_event = None
     if (
         execution["status"] in {"blocked", "approval_required", "failed"}
@@ -1036,7 +1056,7 @@ def execute_action_tool(request: ToolExecutionRequest):
             relationship.pop("created_new", None)
     except Exception as error:
         warnings.append(f"Graph Memory integration was unavailable: {error}")
-    return {"name": "Aether", "status": runtime.status(), "execution": execution, "timeline_event": timeline_event, "graph_relationships": graph_relationships, "warnings": warnings}
+    return {"name": "Aether", "status": runtime.status(), "execution": execution, "timeline_event": timeline_event, "file_access_audit": file_access_audit, "graph_relationships": graph_relationships, "warnings": warnings}
 
 
 @app.get("/action/tool-executor/status")
@@ -1052,3 +1072,66 @@ def list_action_tool_executions(limit: int = 50):
 @app.get("/action/tool-executor/{execution_id}")
 def get_action_tool_execution(execution_id: str):
     return {"name": "Aether", "status": runtime.status(), "execution": get_execution(execution_id)}
+
+
+def _record_restricted_file_access(access: dict) -> tuple[dict | None, list[dict], list[str]]:
+    runtime.working_memory.add_event(
+        role="aether",
+        content=f"Restricted file read attempted: {access['path']} ({access['status']}).",
+        event_type="restricted_file_read_attempted",
+        metadata={
+            "access_id": access["id"],
+            "path": access["path"],
+            "status": access["status"],
+            "allowed": access["allowed"],
+            "reason": access["reason"],
+        },
+    )
+    timeline_event = record_event(
+        event_type="file_access",
+        title=f"Restricted file read: {access['status']}",
+        description=f"Aether attempted restricted file read for {access['path']} with status {access['status']}.",
+        importance="high" if access["status"] == "blocked" else "normal",
+    )
+    warnings = []
+    graph_relationships = []
+    try:
+        graph_relationships.extend(
+            [
+                add_edge("Aether", "attempted_file_access", access["id"]),
+                add_edge(access["id"], "has_status", access["status"]),
+                add_edge(access["id"], "target_path", access["normalized_path"]),
+            ]
+        )
+        for relationship in graph_relationships:
+            relationship.pop("created_new", None)
+    except Exception as error:
+        warnings.append(f"Graph Memory integration was unavailable: {error}")
+    return timeline_event, graph_relationships, warnings
+
+
+@app.post("/action/file/read")
+def read_action_file(request: RestrictedFileReadRequest):
+    access = read_restricted_file(request.path, request.max_chars, request.metadata)
+    timeline_event, graph_relationships, warnings = _record_restricted_file_access(access)
+    return {"name": "Aether", "status": runtime.status(), "access": access, "timeline_event": timeline_event, "graph_relationships": graph_relationships, "warnings": warnings}
+
+
+@app.get("/action/file/allowed-roots")
+def get_action_file_allowed_roots():
+    return {"name": "Aether", "status": runtime.status(), "allowed_roots": list_allowed_roots()}
+
+
+@app.get("/action/file/access/status")
+def get_action_file_access_status():
+    return {"name": "Aether", "status": runtime.status(), "file_access": file_access_status()}
+
+
+@app.get("/action/file/access/list")
+def list_action_file_accesses(limit: int = 50):
+    return {"name": "Aether", "status": runtime.status(), "accesses": list_file_accesses(limit)}
+
+
+@app.get("/action/file/access/{access_id}")
+def get_action_file_access(access_id: str):
+    return {"name": "Aether", "status": runtime.status(), "access": get_file_access(access_id)}
