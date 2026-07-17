@@ -15,6 +15,7 @@ from aether.action.self_inspector import create_project_self_inspection, seed_se
 from aether.action.patch_proposal import create_patch_proposal, seed_patch_proposal_tool
 from aether.action.patch_review import review_patch_proposal, seed_patch_review_tool
 from aether.action.patch_apply import apply_patch_proposal, seed_patch_apply_tool
+from aether.action.patch_rollback import rollback_patch_apply, seed_patch_rollback_tool
 from aether.time.clock import get_timezone, now_iso
 
 
@@ -32,6 +33,7 @@ SANDBOX_TOOL_IDS = {
     "file.patch_proposal",
     "file.patch_review",
     "file.patch_apply",
+    "file.patch_rollback",
 }
 
 
@@ -119,7 +121,8 @@ def seed_sandbox_tools() -> dict:
     patch_proposal_tool = seed_patch_proposal_tool()
     patch_review_tool = seed_patch_review_tool()
     patch_apply_tool = seed_patch_apply_tool()
-    return {"tools": tools, "created_count": created_count, "restricted_file_tool": restricted_file_tool, "browser_tools": browser_tools, "self_inspection_tool": self_inspection_tool, "patch_proposal_tool": patch_proposal_tool, "patch_review_tool": patch_review_tool, "patch_apply_tool": patch_apply_tool}
+    patch_rollback_tool = seed_patch_rollback_tool()
+    return {"tools": tools, "created_count": created_count, "restricted_file_tool": restricted_file_tool, "browser_tools": browser_tools, "self_inspection_tool": self_inspection_tool, "patch_proposal_tool": patch_proposal_tool, "patch_review_tool": patch_review_tool, "patch_apply_tool": patch_apply_tool, "patch_rollback_tool": patch_rollback_tool}
 
 
 def _safe_result(tool_id: str, payload: dict) -> dict:
@@ -170,6 +173,8 @@ def _safe_result(tool_id: str, payload: dict) -> dict:
         return review_patch_proposal(payload.get("proposal_id", ""), payload.get("decision", ""), payload.get("review_reason", ""), payload.get("reviewer", "user"), payload.get("metadata"))
     if tool_id == "file.patch_apply":
         return apply_patch_proposal(payload.get("proposal_id", ""), payload.get("dry_run", True), payload.get("metadata"))
+    if tool_id == "file.patch_rollback":
+        return rollback_patch_apply(payload.get("apply_id", ""), payload.get("dry_run", True), payload.get("metadata"))
     raise ValueError("Unsupported sandbox tool.")
 
 

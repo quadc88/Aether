@@ -83,6 +83,7 @@ from aether.action.self_inspector import (
 from aether.action.patch_proposal import create_patch_proposal, get_patch_proposal, list_patch_proposals, mark_patch_proposal_status, patch_proposal_status
 from aether.action.patch_review import get_patch_review, list_patch_reviews, patch_review_status, review_patch_proposal
 from aether.action.patch_apply import apply_patch_proposal, get_patch_apply, list_patch_applies, patch_apply_status
+from aether.action.patch_rollback import rollback_patch_apply, get_patch_rollback, list_patch_rollbacks, patch_rollback_status
 
 app = FastAPI(
     title="Aether API",
@@ -281,6 +282,10 @@ class PatchReviewRequest(BaseModel):
     metadata: dict = {}
 class PatchApplyRequest(BaseModel):
     proposal_id: str
+    dry_run: bool = True
+    metadata: dict = {}
+class PatchRollbackRequest(BaseModel):
+    apply_id: str
     dry_run: bool = True
     metadata: dict = {}
 
@@ -1388,3 +1393,12 @@ def get_action_patch_apply_status():return {"name":"Aether","status":runtime.sta
 def list_action_patch_applies(proposal_id: str|None=None,limit:int=50):return {"name":"Aether","status":runtime.status(),"applies":list_patch_applies(proposal_id,limit)}
 @app.get("/action/patch-apply/{apply_id}")
 def get_action_patch_apply(apply_id:str):return {"name":"Aether","status":runtime.status(),"apply":get_patch_apply(apply_id)}
+@app.post("/action/patch-rollback/rollback")
+def rollback_action_patch(request: PatchRollbackRequest):
+ r=rollback_patch_apply(request.apply_id,request.dry_run,request.metadata);runtime.working_memory.add_event(role="aether",content=f"Patch rollback attempted: {r['status']}",event_type="patch_rollback_attempted",metadata={k:r.get(k) for k in ("id","apply_id","proposal_id","target_path","status","dry_run","rolled_back","changed")});return {"name":"Aether","status":runtime.status(),"rollback":r}
+@app.get("/action/patch-rollback/status")
+def get_action_patch_rollback_status():return {"name":"Aether","status":runtime.status(),"patch_rollbacks":patch_rollback_status()}
+@app.get("/action/patch-rollback/list")
+def list_action_patch_rollbacks(apply_id:str|None=None,limit:int=50):return {"name":"Aether","status":runtime.status(),"rollbacks":list_patch_rollbacks(apply_id,limit)}
+@app.get("/action/patch-rollback/{rollback_id}")
+def get_action_patch_rollback(rollback_id:str):return {"name":"Aether","status":runtime.status(),"rollback":get_patch_rollback(rollback_id)}

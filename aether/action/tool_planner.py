@@ -13,6 +13,7 @@ from aether.verification.risk import verification_plan
 
 
 INFERENCE_RULES = [
+    ("file.patch_rollback", ["rollback patch", "revert patch", "restore backup", "undo patch", "回滚补丁", "撤回补丁", "还原备份", "撤销修改"], "Request appears to roll back a patch apply."),
     ("file.patch_apply", ["apply patch", "apply proposal", "apply approved patch", "执行补丁", "应用补丁", "应用修改提案", "写入已批准修改"], "Request appears to apply an approved patch proposal."),
     ("file.patch_review", ["review patch", "approve patch proposal", "reject patch proposal", "request patch changes", "审核补丁", "批准修改提案", "拒绝修改提案", "要求修改", "审核文件修改"], "Request appears to involve reviewing a patch proposal."),
     ("file.patch_proposal", ["propose file change", "create patch", "draft patch", "patch proposal", "修改建议", "生成补丁", "创建修改方案", "文件修改提案", "edit file", "write file", "save file", "overwrite file"], "Request is handled safely by drafting a patch proposal first."),
