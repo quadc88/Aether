@@ -101,8 +101,13 @@ def create_tool_invocation_plan(
     proposed_action: str | None = None,
     metadata: dict | None = None,
     create_approval_if_required: bool = False,
+    tool_id: str | None = None,
 ) -> dict:
-    candidate_tool = infer_candidate_tool(text)
+    candidate_tool = (
+        {"tool_id": tool_id, "match_confidence": "confirmed", "reason": "Tool was explicitly requested."}
+        if tool_id
+        else infer_candidate_tool(text)
+    )
     verification = verification_plan(text)
     tool_id = candidate_tool["tool_id"]
     tool = get_tool(tool_id) if tool_id else None

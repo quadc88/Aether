@@ -52,6 +52,13 @@ from aether.action.tool_planner import (
     list_tool_plans,
     tool_planner_status,
 )
+from aether.action.tool_executor import (
+    execute_tool,
+    get_execution,
+    list_executions,
+    seed_sandbox_tools,
+    tool_executor_status,
+)
 
 app = FastAPI(
     title="Aether API",
@@ -170,6 +177,20 @@ class ToolPlanRequest(BaseModel):
 
 
 class ToolPlanListRequest(BaseModel):
+    limit: int = 50
+
+
+class ToolExecutionRequest(BaseModel):
+    text: str
+    tool_id: str | None = None
+    input_payload: dict = {}
+    proposed_action: str | None = None
+    create_approval_if_required: bool = False
+    dry_run: bool = True
+    metadata: dict = {}
+
+
+class ToolExecutionListRequest(BaseModel):
     limit: int = 50
 
 @app.get("/")
@@ -952,3 +973,82 @@ def list_action_tool_plans(limit: int = 50):
 @app.get("/action/tool-plan/{plan_id}")
 def get_action_tool_plan(plan_id: str):
     return {"name": "Aether", "status": runtime.status(), "plan": get_tool_plan(plan_id)}
+
+
+@app.post("/action/tool-executor/seed-sandbox-tools")
+def seed_action_sandbox_tools():
+    result = seed_sandbox_tools()
+    runtime.working_memory.add_event(
+        role="aether",
+        content=f"Sandbox tools seeded: {result['created_count']} new tools.",
+        event_type="sandbox_tools_seeded",
+        metadata={"tool_count": len(result["tools"]), "created_count": result["created_count"]},
+    )
+    return {"name": "Aether", "status": runtime.status(), "result": result}
+
+
+@app.post("/action/tool-executor/execute")
+def execute_action_tool(request: ToolExecutionRequest):
+    execution = execute_tool(
+        text=request.text,
+        tool_id=request.tool_id,
+        input_payload=request.input_payload,
+        proposed_action=request.proposed_action,
+        create_approval_if_required=request.create_approval_if_required,
+        dry_run=request.dry_run,
+        metadata=request.metadata,
+    )
+    runtime.working_memory.add_event(
+        role="aether",
+        content=f"Tool execution attempted: {execution['tool_id'] or 'no tool'} ({execution['status']}).",
+        event_type="tool_execution_attempted",
+        metadata={
+            "execution_id": execution["id"],
+            "tool_id": execution["tool_id"],
+            "status": execution["status"],
+            "dry_run": execution["dry_run"],
+            "requires_user_approval": execution["plan"]["decision"]["requires_user_approval"],
+        },
+    )
+    timeline_event = None
+    if (
+        execution["status"] in {"blocked", "approval_required", "failed"}
+        or not execution["dry_run"]
+        or execution["tool_id"] not in {"echo.test", "file.preview_read", "web.search.mock", "shell.plan_only", "memory.write.dry_run", "approval.status"}
+    ):
+        timeline_event = record_event(
+            event_type="tool_execution",
+            title=f"Tool execution attempt: {execution['tool_id']}",
+            description=f"Aether attempted tool execution with status {execution['status']}.",
+            importance="high" if execution["status"] in {"blocked", "approval_required", "failed"} else "normal",
+        )
+    warnings = []
+    graph_relationships = []
+    try:
+        graph_relationships.extend(
+            [
+                add_edge("Aether", "attempted_tool_execution", execution["id"]),
+                add_edge(execution["id"], "used_tool", execution["tool_id"] or "no_tool"),
+                add_edge(execution["id"], "has_status", execution["status"]),
+            ]
+        )
+        for relationship in graph_relationships:
+            relationship.pop("created_new", None)
+    except Exception as error:
+        warnings.append(f"Graph Memory integration was unavailable: {error}")
+    return {"name": "Aether", "status": runtime.status(), "execution": execution, "timeline_event": timeline_event, "graph_relationships": graph_relationships, "warnings": warnings}
+
+
+@app.get("/action/tool-executor/status")
+def get_action_tool_executor_status():
+    return {"name": "Aether", "status": runtime.status(), "tool_executor": tool_executor_status()}
+
+
+@app.get("/action/tool-executor/list")
+def list_action_tool_executions(limit: int = 50):
+    return {"name": "Aether", "status": runtime.status(), "executions": list_executions(limit)}
+
+
+@app.get("/action/tool-executor/{execution_id}")
+def get_action_tool_execution(execution_id: str):
+    return {"name": "Aether", "status": runtime.status(), "execution": get_execution(execution_id)}
