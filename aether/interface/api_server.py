@@ -81,6 +81,7 @@ from aether.action.self_inspector import (
     self_inspection_status,
 )
 from aether.action.patch_proposal import create_patch_proposal, get_patch_proposal, list_patch_proposals, mark_patch_proposal_status, patch_proposal_status
+from aether.action.patch_review import get_patch_review, list_patch_reviews, patch_review_status, review_patch_proposal
 
 app = FastAPI(
     title="Aether API",
@@ -270,6 +271,13 @@ class PatchProposalStatusUpdateRequest(BaseModel):
     proposal_id: str
     status: str
     reason: str = ""
+
+class PatchReviewRequest(BaseModel):
+    proposal_id: str
+    decision: str
+    review_reason: str = ""
+    reviewer: str = "user"
+    metadata: dict = {}
 
 @app.get("/")
 def root():
@@ -1350,3 +1358,16 @@ def get_action_patch_proposal(proposal_id: str):
 @app.post("/action/patch-proposal/mark-status")
 def mark_action_patch_proposal_status(request: PatchProposalStatusUpdateRequest):
     return {"name": "Aether", "status": runtime.status(), "proposal": mark_patch_proposal_status(request.proposal_id, request.status, request.reason)}
+
+@app.post("/action/patch-review/review")
+def review_action_patch_proposal(request: PatchReviewRequest):
+    review = review_patch_proposal(request.proposal_id, request.decision, request.review_reason, request.reviewer, request.metadata)
+    runtime.working_memory.add_event(role="aether", content=f"Patch review created: {request.decision}", event_type="patch_review_created", metadata={"review_id": review.get("id"), "proposal_id": request.proposal_id, "decision": request.decision, "status": review.get("status"), "proposal_status_after": review.get("proposal_status_after"), "risk_level": review.get("risk_level"), "approval_status": review.get("approval_status")})
+    return {"name":"Aether","status":runtime.status(),"review":review}
+
+@app.get("/action/patch-review/status")
+def get_action_patch_review_status(): return {"name":"Aether","status":runtime.status(),"patch_reviews":patch_review_status()}
+@app.get("/action/patch-review/list")
+def list_action_patch_reviews(proposal_id: str | None = None, limit: int = 50): return {"name":"Aether","status":runtime.status(),"reviews":list_patch_reviews(proposal_id,limit)}
+@app.get("/action/patch-review/{review_id}")
+def get_action_patch_review(review_id: str): return {"name":"Aether","status":runtime.status(),"review":get_patch_review(review_id)}

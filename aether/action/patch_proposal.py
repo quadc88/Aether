@@ -12,7 +12,7 @@ from aether.time.clock import get_timezone, now_iso
 from aether.verification.risk import verification_plan
 
 CRITICAL_PATHS = {"identity/identity_seed.md", "docs/constitution.md", "docs/architecture.md", "aether/interface/api_server.py", "aether/action/tool_executor.py", "aether/action/restricted_file_reader.py", "aether/action/restricted_file_browser.py", "aether/action/approval_queue.py", "aether/verification/risk.py"}
-VALID_STATUSES = {"draft", "approval_required", "approved", "rejected", "superseded"}
+VALID_STATUSES = {"draft", "approval_required", "approved", "rejected", "superseded", "changes_requested", "blocked"}
 
 def load_aether_config(path: str = "config/aether.yaml") -> dict:
     p = Path(path)

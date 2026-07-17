@@ -13,6 +13,7 @@ from aether.verification.risk import verification_plan
 
 
 INFERENCE_RULES = [
+    ("file.patch_review", ["review patch", "approve patch proposal", "reject patch proposal", "request patch changes", "审核补丁", "批准修改提案", "拒绝修改提案", "要求修改", "审核文件修改"], "Request appears to involve reviewing a patch proposal."),
     ("file.patch_proposal", ["propose file change", "create patch", "draft patch", "patch proposal", "修改建议", "生成补丁", "创建修改方案", "文件修改提案", "edit file", "write file", "save file", "overwrite file"], "Request is handled safely by drafting a patch proposal first."),
     ("project.self_inspect", ["inspect project", "self inspection", "project report", "check aether structure", "检查项目", "自我检查", "项目报告", "检查 aether 结构"], "Request appears to involve project self-inspection."),
     ("file.restricted_search", ["find file", "search file", "locate file", "找文件", "搜索文件", "查找文件", "找到 api_server"], "Request appears to involve finding a project file."),
