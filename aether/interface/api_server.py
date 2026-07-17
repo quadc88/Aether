@@ -82,6 +82,7 @@ from aether.action.self_inspector import (
 )
 from aether.action.patch_proposal import create_patch_proposal, get_patch_proposal, list_patch_proposals, mark_patch_proposal_status, patch_proposal_status
 from aether.action.patch_review import get_patch_review, list_patch_reviews, patch_review_status, review_patch_proposal
+from aether.action.patch_apply import apply_patch_proposal, get_patch_apply, list_patch_applies, patch_apply_status
 
 app = FastAPI(
     title="Aether API",
@@ -277,6 +278,10 @@ class PatchReviewRequest(BaseModel):
     decision: str
     review_reason: str = ""
     reviewer: str = "user"
+    metadata: dict = {}
+class PatchApplyRequest(BaseModel):
+    proposal_id: str
+    dry_run: bool = True
     metadata: dict = {}
 
 @app.get("/")
@@ -1371,3 +1376,15 @@ def get_action_patch_review_status(): return {"name":"Aether","status":runtime.s
 def list_action_patch_reviews(proposal_id: str | None = None, limit: int = 50): return {"name":"Aether","status":runtime.status(),"reviews":list_patch_reviews(proposal_id,limit)}
 @app.get("/action/patch-review/{review_id}")
 def get_action_patch_review(review_id: str): return {"name":"Aether","status":runtime.status(),"review":get_patch_review(review_id)}
+
+@app.post("/action/patch-apply/apply")
+def apply_action_patch(request: PatchApplyRequest):
+    result=apply_patch_proposal(request.proposal_id,request.dry_run,request.metadata)
+    runtime.working_memory.add_event(role="aether",content=f"Patch apply attempted: {result['status']}",event_type="patch_apply_attempted",metadata={k:result.get(k) for k in ("id","proposal_id","target_path","status","dry_run","applied","changed","risk_level")})
+    return {"name":"Aether","status":runtime.status(),"apply":result}
+@app.get("/action/patch-apply/status")
+def get_action_patch_apply_status():return {"name":"Aether","status":runtime.status(),"patch_applies":patch_apply_status()}
+@app.get("/action/patch-apply/list")
+def list_action_patch_applies(proposal_id: str|None=None,limit:int=50):return {"name":"Aether","status":runtime.status(),"applies":list_patch_applies(proposal_id,limit)}
+@app.get("/action/patch-apply/{apply_id}")
+def get_action_patch_apply(apply_id:str):return {"name":"Aether","status":runtime.status(),"apply":get_patch_apply(apply_id)}

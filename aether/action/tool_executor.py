@@ -14,6 +14,7 @@ from aether.action.restricted_file_browser import browse_restricted_path, search
 from aether.action.self_inspector import create_project_self_inspection, seed_self_inspection_tool
 from aether.action.patch_proposal import create_patch_proposal, seed_patch_proposal_tool
 from aether.action.patch_review import review_patch_proposal, seed_patch_review_tool
+from aether.action.patch_apply import apply_patch_proposal, seed_patch_apply_tool
 from aether.time.clock import get_timezone, now_iso
 
 
@@ -30,6 +31,7 @@ SANDBOX_TOOL_IDS = {
     "project.self_inspect",
     "file.patch_proposal",
     "file.patch_review",
+    "file.patch_apply",
 }
 
 
@@ -116,7 +118,8 @@ def seed_sandbox_tools() -> dict:
     self_inspection_tool = seed_self_inspection_tool()
     patch_proposal_tool = seed_patch_proposal_tool()
     patch_review_tool = seed_patch_review_tool()
-    return {"tools": tools, "created_count": created_count, "restricted_file_tool": restricted_file_tool, "browser_tools": browser_tools, "self_inspection_tool": self_inspection_tool, "patch_proposal_tool": patch_proposal_tool, "patch_review_tool": patch_review_tool}
+    patch_apply_tool = seed_patch_apply_tool()
+    return {"tools": tools, "created_count": created_count, "restricted_file_tool": restricted_file_tool, "browser_tools": browser_tools, "self_inspection_tool": self_inspection_tool, "patch_proposal_tool": patch_proposal_tool, "patch_review_tool": patch_review_tool, "patch_apply_tool": patch_apply_tool}
 
 
 def _safe_result(tool_id: str, payload: dict) -> dict:
@@ -165,6 +168,8 @@ def _safe_result(tool_id: str, payload: dict) -> dict:
         return create_patch_proposal(payload.get("target_path", ""), payload.get("request_text", ""), payload.get("proposed_change_summary", ""), payload.get("proposed_excerpt", ""), payload.get("reason", ""), payload.get("original_excerpt"), payload.get("create_approval_if_required", False), payload.get("metadata"))
     if tool_id == "file.patch_review":
         return review_patch_proposal(payload.get("proposal_id", ""), payload.get("decision", ""), payload.get("review_reason", ""), payload.get("reviewer", "user"), payload.get("metadata"))
+    if tool_id == "file.patch_apply":
+        return apply_patch_proposal(payload.get("proposal_id", ""), payload.get("dry_run", True), payload.get("metadata"))
     raise ValueError("Unsupported sandbox tool.")
 
 
