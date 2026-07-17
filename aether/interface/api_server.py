@@ -26,6 +26,15 @@ from aether.memory.graph.store import (
     upsert_node,
 )
 from aether.verification.risk import classify_risk, verification_plan
+from aether.action.approval_queue import (
+    approval_queue_status,
+    approve_item,
+    cancel_item,
+    create_approval_item,
+    get_approval_item,
+    list_approval_items,
+    reject_item,
+)
 
 app = FastAPI(
     title="Aether API",
@@ -90,6 +99,22 @@ class GraphSearchRequest(BaseModel):
 
 class VerificationRequest(BaseModel):
     text: str
+
+
+class ApprovalCreateRequest(BaseModel):
+    request_text: str
+    proposed_action: str
+    metadata: dict = {}
+
+
+class ApprovalDecisionRequest(BaseModel):
+    approval_id: str
+    decision_reason: str = ""
+
+
+class ApprovalListRequest(BaseModel):
+    status: str | None = None
+    limit: int = 50
 
 @app.get("/")
 def root():
@@ -542,3 +567,116 @@ def create_verification_plan(request: VerificationRequest):
         "graph_relationship": graph_relationship,
         "warnings": warnings,
     }
+
+
+def _add_approval_working_memory_event(item: dict, event_type: str) -> None:
+    runtime.working_memory.add_event(
+        role="aether",
+        content=f"Approval item {item['status']}: {item['id']}",
+        event_type=event_type,
+        metadata={
+            "approval_id": item["id"],
+            "action_type": item["action_type"],
+            "risk_level": item["risk_level"],
+            "status": item["status"],
+        },
+    )
+
+
+@app.post("/action/approval/create")
+def create_action_approval(request: ApprovalCreateRequest):
+    plan = verification_plan(request.request_text)
+    item = create_approval_item(
+        request_text=request.request_text,
+        proposed_action=request.proposed_action,
+        verification_plan=plan,
+        metadata=request.metadata,
+    )
+    _add_approval_working_memory_event(item, "approval_item_created")
+    warnings = []
+    timeline_event = None
+    graph_relationship = None
+    if item["risk_level"] == "high":
+        timeline_event = record_event(
+            event_type="action_approval",
+            title=f"Approval item created: {item['action_type']}",
+            description=f"Aether created an approval item for a {item['risk_level']}-risk action.",
+            importance="high",
+        )
+    try:
+        graph_relationship = add_edge("Aether", "created_approval_item_for", item["action_type"])
+        graph_relationship.pop("created_new", None)
+    except Exception as error:
+        warnings.append(f"Graph Memory integration was unavailable: {error}")
+    return {
+        "name": "Aether",
+        "status": runtime.status(),
+        "item": item,
+        "approval_optional": not item["requires_user_approval"],
+        "queue_status": approval_queue_status(),
+        "timeline_event": timeline_event,
+        "graph_relationship": graph_relationship,
+        "warnings": warnings,
+    }
+
+
+@app.get("/action/approval/status")
+def get_action_approval_status():
+    return {"name": "Aether", "status": runtime.status(), "approval_queue": approval_queue_status()}
+
+
+@app.get("/action/approval/list")
+def list_action_approvals(status: str | None = None, limit: int = 50):
+    return {"name": "Aether", "status": runtime.status(), "items": list_approval_items(status, limit)}
+
+
+@app.get("/action/approval/{approval_id}")
+def get_action_approval(approval_id: str):
+    return {"name": "Aether", "status": runtime.status(), "item": get_approval_item(approval_id)}
+
+
+def _record_approval_decision(approval_id: str, decision_reason: str, decision: str) -> dict:
+    decision_functions = {"approved": approve_item, "rejected": reject_item, "cancelled": cancel_item}
+    item = decision_functions[decision](approval_id, decision_reason)
+    if item is None:
+        return {"name": "Aether", "status": runtime.status(), "item": None, "warnings": ["Approval item was not found."]}
+    if item.get("warning"):
+        return {"name": "Aether", "status": runtime.status(), "item": item, "warnings": [item["warning"]]}
+
+    _add_approval_working_memory_event(item, f"approval_item_{decision}")
+    timeline_event = record_event(
+        event_type="action_approval_decision",
+        title=f"Approval item {decision}: {approval_id}",
+        description=f"User decision recorded for approval item {approval_id}.",
+        importance="high",
+    )
+    warnings = []
+    graph_relationship = None
+    try:
+        graph_relationship = add_edge(approval_id, "has_decision", decision)
+        graph_relationship.pop("created_new", None)
+    except Exception as error:
+        warnings.append(f"Graph Memory integration was unavailable: {error}")
+    return {
+        "name": "Aether",
+        "status": runtime.status(),
+        "item": item,
+        "timeline_event": timeline_event,
+        "graph_relationship": graph_relationship,
+        "warnings": warnings,
+    }
+
+
+@app.post("/action/approval/approve")
+def approve_action_approval(request: ApprovalDecisionRequest):
+    return _record_approval_decision(request.approval_id, request.decision_reason, "approved")
+
+
+@app.post("/action/approval/reject")
+def reject_action_approval(request: ApprovalDecisionRequest):
+    return _record_approval_decision(request.approval_id, request.decision_reason, "rejected")
+
+
+@app.post("/action/approval/cancel")
+def cancel_action_approval(request: ApprovalDecisionRequest):
+    return _record_approval_decision(request.approval_id, request.decision_reason, "cancelled")
