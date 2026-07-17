@@ -12,6 +12,7 @@ from aether.action.tool_registry import get_tool, register_tool
 from aether.action.restricted_file_reader import read_restricted_file, seed_restricted_file_tool
 from aether.action.restricted_file_browser import browse_restricted_path, search_restricted_files, seed_restricted_browser_tools
 from aether.action.self_inspector import create_project_self_inspection, seed_self_inspection_tool
+from aether.action.patch_proposal import create_patch_proposal, seed_patch_proposal_tool
 from aether.time.clock import get_timezone, now_iso
 
 
@@ -26,6 +27,7 @@ SANDBOX_TOOL_IDS = {
     "file.restricted_browse",
     "file.restricted_search",
     "project.self_inspect",
+    "file.patch_proposal",
 }
 
 
@@ -110,7 +112,8 @@ def seed_sandbox_tools() -> dict:
     restricted_file_tool = seed_restricted_file_tool()
     browser_tools = seed_restricted_browser_tools()
     self_inspection_tool = seed_self_inspection_tool()
-    return {"tools": tools, "created_count": created_count, "restricted_file_tool": restricted_file_tool, "browser_tools": browser_tools, "self_inspection_tool": self_inspection_tool}
+    patch_proposal_tool = seed_patch_proposal_tool()
+    return {"tools": tools, "created_count": created_count, "restricted_file_tool": restricted_file_tool, "browser_tools": browser_tools, "self_inspection_tool": self_inspection_tool, "patch_proposal_tool": patch_proposal_tool}
 
 
 def _safe_result(tool_id: str, payload: dict) -> dict:
@@ -155,6 +158,8 @@ def _safe_result(tool_id: str, payload: dict) -> dict:
             root=payload.get("root", "C:/Aether"), max_files_to_read=payload.get("max_files_to_read", 20),
             max_chars_per_file=payload.get("max_chars_per_file", 6000), metadata=payload.get("metadata"),
         )
+    if tool_id == "file.patch_proposal":
+        return create_patch_proposal(payload.get("target_path", ""), payload.get("request_text", ""), payload.get("proposed_change_summary", ""), payload.get("proposed_excerpt", ""), payload.get("reason", ""), payload.get("original_excerpt"), payload.get("create_approval_if_required", False), payload.get("metadata"))
     raise ValueError("Unsupported sandbox tool.")
 
 

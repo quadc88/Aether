@@ -80,6 +80,7 @@ from aether.action.self_inspector import (
     list_self_inspection_reports,
     self_inspection_status,
 )
+from aether.action.patch_proposal import create_patch_proposal, get_patch_proposal, list_patch_proposals, mark_patch_proposal_status, patch_proposal_status
 
 app = FastAPI(
     title="Aether API",
@@ -254,6 +255,21 @@ class SelfInspectionRequest(BaseModel):
 
 class SelfInspectionListRequest(BaseModel):
     limit: int = 20
+
+class PatchProposalRequest(BaseModel):
+    target_path: str
+    request_text: str
+    proposed_change_summary: str
+    proposed_excerpt: str
+    reason: str = ""
+    original_excerpt: str | None = None
+    create_approval_if_required: bool = False
+    metadata: dict = {}
+
+class PatchProposalStatusUpdateRequest(BaseModel):
+    proposal_id: str
+    status: str
+    reason: str = ""
 
 @app.get("/")
 def root():
@@ -1311,3 +1327,26 @@ def list_action_self_inspections(limit: int = 20):
 @app.get("/action/self-inspection/{report_id}")
 def get_action_self_inspection(report_id: str):
     return {"name": "Aether", "status": runtime.status(), "report": get_self_inspection_report(report_id)}
+
+
+@app.post("/action/patch-proposal/create")
+def create_action_patch_proposal(request: PatchProposalRequest):
+    proposal = create_patch_proposal(request.target_path, request.request_text, request.proposed_change_summary, request.proposed_excerpt, request.reason, request.original_excerpt, request.create_approval_if_required, request.metadata)
+    runtime.working_memory.add_event(role="aether", content=f"Patch proposal created: {proposal['target_path']}", event_type="patch_proposal_created", metadata={key: proposal.get(key) for key in ("id", "target_path", "status", "risk_level", "requires_user_approval", "approval_id")})
+    return {"name": "Aether", "status": runtime.status(), "proposal": proposal}
+
+@app.get("/action/patch-proposal/status")
+def get_action_patch_proposal_status():
+    return {"name": "Aether", "status": runtime.status(), "patch_proposals": patch_proposal_status()}
+
+@app.get("/action/patch-proposal/list")
+def list_action_patch_proposals(status: str | None = None, limit: int = 50):
+    return {"name": "Aether", "status": runtime.status(), "proposals": list_patch_proposals(status, limit)}
+
+@app.get("/action/patch-proposal/{proposal_id}")
+def get_action_patch_proposal(proposal_id: str):
+    return {"name": "Aether", "status": runtime.status(), "proposal": get_patch_proposal(proposal_id)}
+
+@app.post("/action/patch-proposal/mark-status")
+def mark_action_patch_proposal_status(request: PatchProposalStatusUpdateRequest):
+    return {"name": "Aether", "status": runtime.status(), "proposal": mark_patch_proposal_status(request.proposal_id, request.status, request.reason)}
