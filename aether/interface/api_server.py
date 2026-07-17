@@ -66,6 +66,14 @@ from aether.action.restricted_file_reader import (
     list_file_accesses,
     read_restricted_file,
 )
+from aether.action.restricted_file_browser import (
+    browse_restricted_path,
+    file_browser_status,
+    get_file_browse,
+    list_browser_allowed_roots,
+    list_file_browses,
+    search_restricted_files,
+)
 
 app = FastAPI(
     title="Aether API",
@@ -208,6 +216,26 @@ class RestrictedFileReadRequest(BaseModel):
 
 
 class RestrictedFileAccessListRequest(BaseModel):
+    limit: int = 50
+
+
+class RestrictedFileBrowseRequest(BaseModel):
+    path: str = "C:/Aether"
+    max_depth: int = 3
+    max_entries: int = 200
+    include_files: bool = True
+    include_dirs: bool = True
+    metadata: dict = {}
+
+
+class RestrictedFileSearchRequest(BaseModel):
+    query: str
+    root: str = "C:/Aether"
+    max_results: int = 50
+    metadata: dict = {}
+
+
+class RestrictedFileBrowseListRequest(BaseModel):
     limit: int = 50
 
 @app.get("/")
@@ -1135,3 +1163,75 @@ def list_action_file_accesses(limit: int = 50):
 @app.get("/action/file/access/{access_id}")
 def get_action_file_access(access_id: str):
     return {"name": "Aether", "status": runtime.status(), "access": get_file_access(access_id)}
+
+
+def _record_restricted_file_browse(browse: dict) -> tuple[dict, list[dict], list[str]]:
+    is_search = browse.get("operation") == "search"
+    target = browse.get("root") if is_search else browse.get("path")
+    normalized_target = browse.get("normalized_root") if is_search else browse.get("normalized_path")
+    count = browse.get("result_count") if is_search else browse.get("entry_count")
+    runtime.working_memory.add_event(
+        role="aether",
+        content=f"Restricted file {'search' if is_search else 'browse'} attempted: {target} ({browse['status']}).",
+        event_type="restricted_file_search_attempted" if is_search else "restricted_file_browse_attempted",
+        metadata={
+            "browse_id": browse["id"], "path": target, "status": browse["status"],
+            "allowed": browse["allowed"], "reason": browse["reason"], "count": count,
+        },
+    )
+    timeline_event = record_event(
+        event_type="file_browser",
+        title=f"Restricted file {'search' if is_search else 'browse'}: {browse['status']}",
+        description=f"Aether attempted restricted file {'search' if is_search else 'browse'} for {target} with status {browse['status']}.",
+        importance="high" if browse["status"] == "blocked" else "normal",
+    )
+    warnings = []
+    graph_relationships = []
+    try:
+        graph_relationships.append(add_edge("Aether", "attempted_file_search" if is_search else "attempted_file_browse", browse["id"]))
+        if is_search:
+            graph_relationships.append(add_edge(browse["id"], "has_query", browse["query"]))
+        else:
+            graph_relationships.append(add_edge(browse["id"], "target_path", normalized_target))
+        graph_relationships.append(add_edge(browse["id"], "has_status", browse["status"]))
+        for relationship in graph_relationships:
+            relationship.pop("created_new", None)
+    except Exception as error:
+        warnings.append(f"Graph Memory integration was unavailable: {error}")
+    return timeline_event, graph_relationships, warnings
+
+
+@app.post("/action/file/browse")
+def browse_action_file(request: RestrictedFileBrowseRequest):
+    browse = browse_restricted_path(
+        request.path, request.max_depth, request.max_entries, request.include_files, request.include_dirs, request.metadata
+    )
+    timeline_event, graph_relationships, warnings = _record_restricted_file_browse(browse)
+    return {"name": "Aether", "status": runtime.status(), "browse": browse, "timeline_event": timeline_event, "graph_relationships": graph_relationships, "warnings": warnings}
+
+
+@app.post("/action/file/search")
+def search_action_file(request: RestrictedFileSearchRequest):
+    browse = search_restricted_files(request.query, request.root, request.max_results, request.metadata)
+    timeline_event, graph_relationships, warnings = _record_restricted_file_browse(browse)
+    return {"name": "Aether", "status": runtime.status(), "search": browse, "timeline_event": timeline_event, "graph_relationships": graph_relationships, "warnings": warnings}
+
+
+@app.get("/action/file/browser/allowed-roots")
+def get_action_file_browser_allowed_roots():
+    return {"name": "Aether", "status": runtime.status(), "allowed_roots": list_browser_allowed_roots()}
+
+
+@app.get("/action/file/browser/status")
+def get_action_file_browser_status():
+    return {"name": "Aether", "status": runtime.status(), "file_browser": file_browser_status()}
+
+
+@app.get("/action/file/browser/list")
+def list_action_file_browses(limit: int = 50):
+    return {"name": "Aether", "status": runtime.status(), "browses": list_file_browses(limit)}
+
+
+@app.get("/action/file/browser/{browse_id}")
+def get_action_file_browse(browse_id: str):
+    return {"name": "Aether", "status": runtime.status(), "browse": get_file_browse(browse_id)}

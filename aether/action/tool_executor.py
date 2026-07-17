@@ -10,6 +10,7 @@ from aether.action.approval_queue import approval_queue_status
 from aether.action.tool_planner import create_tool_invocation_plan
 from aether.action.tool_registry import get_tool, register_tool
 from aether.action.restricted_file_reader import read_restricted_file, seed_restricted_file_tool
+from aether.action.restricted_file_browser import browse_restricted_path, search_restricted_files, seed_restricted_browser_tools
 from aether.time.clock import get_timezone, now_iso
 
 
@@ -21,6 +22,8 @@ SANDBOX_TOOL_IDS = {
     "memory.write.dry_run",
     "approval.status",
     "file.restricted_read",
+    "file.restricted_browse",
+    "file.restricted_search",
 }
 
 
@@ -103,7 +106,8 @@ def seed_sandbox_tools() -> dict:
             allow_auto_execute=allow_auto_execute,
         ))
     restricted_file_tool = seed_restricted_file_tool()
-    return {"tools": tools, "created_count": created_count, "restricted_file_tool": restricted_file_tool}
+    browser_tools = seed_restricted_browser_tools()
+    return {"tools": tools, "created_count": created_count, "restricted_file_tool": restricted_file_tool, "browser_tools": browser_tools}
 
 
 def _safe_result(tool_id: str, payload: dict) -> dict:
@@ -131,6 +135,17 @@ def _safe_result(tool_id: str, payload: dict) -> dict:
             path=payload.get("path", ""),
             max_chars=payload.get("max_chars", 12000),
             metadata=payload.get("metadata"),
+        )
+    if tool_id == "file.restricted_browse":
+        return browse_restricted_path(
+            path=payload.get("path", "C:/Aether"), max_depth=payload.get("max_depth", 3),
+            max_entries=payload.get("max_entries", 200), include_files=payload.get("include_files", True),
+            include_dirs=payload.get("include_dirs", True), metadata=payload.get("metadata"),
+        )
+    if tool_id == "file.restricted_search":
+        return search_restricted_files(
+            query=payload.get("query", ""), root=payload.get("root", "C:/Aether"),
+            max_results=payload.get("max_results", 50), metadata=payload.get("metadata"),
         )
     raise ValueError("Unsupported sandbox tool.")
 
@@ -176,7 +191,7 @@ def execute_tool(
     else:
         try:
             result = _safe_result(selected_tool_id, payload)
-            if selected_tool_id == "file.restricted_read" and result["status"] != "success":
+            if selected_tool_id in {"file.restricted_read", "file.restricted_browse", "file.restricted_search"} and result["status"] != "success":
                 status = result["status"]
                 error = result["reason"]
         except Exception as exception:

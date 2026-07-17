@@ -13,6 +13,8 @@ from aether.verification.risk import verification_plan
 
 
 INFERENCE_RULES = [
+    ("file.restricted_search", ["find file", "search file", "locate file", "找文件", "搜索文件", "查找文件", "找到 api_server"], "Request appears to involve finding a project file."),
+    ("file.restricted_browse", ["list files", "show folder", "browse project", "project tree", "file structure", "列出文件", "显示目录", "浏览项目", "项目结构", "文件结构", "看看有哪些文件"], "Request appears to involve browsing project files."),
     ("file.delete", ["delete file", "remove folder", "删除", "移除"], "Request appears to involve deleting files."),
     ("file.write", ["write file", "save file", "create file", "修改文件", "写入文件"], "Request appears to involve writing files."),
     ("file.restricted_read", ["read file", "open file", "inspect file", "查看文件", "读取文件", "打开文件", "检查文件", "看一下文件"], "Request appears to involve reading files."),
