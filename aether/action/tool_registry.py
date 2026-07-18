@@ -214,6 +214,8 @@ def tool_registry_status() -> dict:
 
 
 DEFAULT_TOOLS = [
+    ("project.mutation_log.record", "Record Project Mutation", "Record a private project mutation.", "project", "medium", True, False, False),
+    ("project.mutation_log.summary", "Summarize Project Mutations", "Summarize private project mutation history.", "project", "low", False, False, True),
     ("file.read", "Read File", "Read a local file from an approved path.", "file", "medium", True, False, False),
     ("file.write", "Write File", "Write content to a local file.", "file", "medium", True, True, False),
     ("file.delete", "Delete File", "Delete files from an approved path.", "file", "high", True, True, False),

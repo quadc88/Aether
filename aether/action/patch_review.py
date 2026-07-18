@@ -7,6 +7,7 @@ from aether.action.tool_registry import get_tool, register_tool
 from aether.memory.timeline.recorder import record_event
 from aether.memory.graph.store import add_edge
 from aether.time.clock import get_timezone, now_iso
+from aether.action.mutation_log import record_patch_review_mutation
 
 DECISIONS={"approve":"approved","reject":"rejected","request_changes":"changes_requested","supersede":"superseded","mark_draft":"draft"}
 def load_aether_config(path="config/aether.yaml"):
@@ -37,6 +38,8 @@ def review_patch_proposal(proposal_id, decision, review_reason="", reviewer="use
   for s,rel,t in [("Aether","created_patch_review",r["id"]),(r["id"],"reviews_proposal",proposal_id),(r["id"],"has_decision",decision),(r["id"],"has_status",status)]:add_edge(s,rel,t)
   if after=="approved":add_edge(proposal_id,"review_status","approved")
  except Exception as e:r["warnings"].append(f"Graph Memory integration was unavailable: {e}")
+ try: record_patch_review_mutation(r)
+ except Exception as e:r["warnings"].append(f"Mutation Log integration was unavailable: {e}")
  return r
 def list_patch_reviews(proposal_id=None,limit=50): return sorted([r for r in load_patch_reviews()["reviews"] if not proposal_id or r["proposal_id"]==proposal_id],key=lambda r:r["created"],reverse=True)[:max(0,limit)]
 def get_patch_review(review_id): return next((r for r in load_patch_reviews()["reviews"] if r["id"]==review_id),None)

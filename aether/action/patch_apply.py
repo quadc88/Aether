@@ -7,6 +7,7 @@ from aether.action.restricted_file_reader import read_restricted_file
 from aether.action.tool_registry import get_tool, register_tool
 from aether.memory.timeline.recorder import record_event
 from aether.memory.graph.store import add_edge
+from aether.action.mutation_log import record_patch_apply_mutation
 from aether.time.clock import get_timezone,now_iso
 
 GOVERNANCE=("identity/identity_seed.md","docs/constitution.md","docs/architecture.md")
@@ -35,6 +36,9 @@ def apply_patch_proposal(proposal_id,dry_run=True,metadata=None):
   try:
    for s,rel,target in [("Aether","attempted_patch_apply",r["id"]),(r["id"],"applies_proposal",proposal_id),(r["id"],"targets_file",r["normalized_path"] or "unknown"),(r["id"],"has_status",r["status"])]: add_edge(s,rel,target)
   except Exception as error:r["warnings"].append(f"Graph Memory integration was unavailable: {error}")
+  if r["status"]=="success" and r["applied"]:
+   try: record_patch_apply_mutation(r)
+   except Exception as error:r["warnings"].append(f"Mutation Log integration was unavailable: {error}")
   return r
  if not p:r["warnings"].append("Patch proposal not found.");return done()
  if p["status"]!="approved":r["status"]="blocked";r["warnings"].append("Patch proposal is not approved.");return done()

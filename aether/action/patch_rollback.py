@@ -7,6 +7,7 @@ from aether.action.tool_registry import get_tool,register_tool
 from aether.time.clock import get_timezone,now_iso
 from aether.memory.timeline.recorder import record_event
 from aether.memory.graph.store import add_edge
+from aether.action.mutation_log import record_patch_rollback_mutation
 GOV=("identity/identity_seed.md","docs/constitution.md","docs/architecture.md")
 def load_aether_config(path="config/aether.yaml"):
  p=Path(path);return yaml.safe_load(p.read_text(encoding="utf-8")) or {} if p.exists() else {}
@@ -35,6 +36,9 @@ def rollback_patch_apply(apply_id,dry_run=True,metadata=None):
   try:
    for s,rel,target in [("Aether","attempted_patch_rollback",r["id"]),(r["id"],"rolls_back_apply",apply_id),(r["id"],"targets_file",r["normalized_path"] or "unknown"),(r["id"],"has_status",r["status"])]:add_edge(s,rel,target)
   except Exception as e:r["warnings"].append(f"Graph Memory integration was unavailable: {e}")
+  if r["status"]=="success" and r["rolled_back"]:
+   try: record_patch_rollback_mutation(r)
+   except Exception as e:r["warnings"].append(f"Mutation Log integration was unavailable: {e}")
   return r
  if not a:r["warnings"].append("Patch apply record not found.");return done()
  if a.get("status")!="success" or not a.get("applied") or not a.get("backup_path"):r["status"]="blocked";r["warnings"].append("Patch apply record is not eligible for rollback.");return done()

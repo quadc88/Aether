@@ -84,6 +84,7 @@ from aether.action.patch_proposal import create_patch_proposal, get_patch_propos
 from aether.action.patch_review import get_patch_review, list_patch_reviews, patch_review_status, review_patch_proposal
 from aether.action.patch_apply import apply_patch_proposal, get_patch_apply, list_patch_applies, patch_apply_status
 from aether.action.patch_rollback import rollback_patch_apply, get_patch_rollback, list_patch_rollbacks, patch_rollback_status
+from aether.action.mutation_log import record_mutation, record_milestone_completed, mutation_log_status, list_mutations, summarize_mutations, get_mutation
 
 app = FastAPI(
     title="Aether API",
@@ -287,6 +288,17 @@ class PatchApplyRequest(BaseModel):
 class PatchRollbackRequest(BaseModel):
     apply_id: str
     dry_run: bool = True
+    metadata: dict = {}
+class MutationRecordRequest(BaseModel):
+    mutation_type: str
+    title: str
+    summary: str
+    milestone: str | None = None
+    target_path: str | None = None
+    metadata: dict = {}
+class MilestoneCompletedRequest(BaseModel):
+    milestone: str
+    summary: str
     metadata: dict = {}
 
 @app.get("/")
@@ -1402,3 +1414,15 @@ def get_action_patch_rollback_status():return {"name":"Aether","status":runtime.
 def list_action_patch_rollbacks(apply_id:str|None=None,limit:int=50):return {"name":"Aether","status":runtime.status(),"rollbacks":list_patch_rollbacks(apply_id,limit)}
 @app.get("/action/patch-rollback/{rollback_id}")
 def get_action_patch_rollback(rollback_id:str):return {"name":"Aether","status":runtime.status(),"rollback":get_patch_rollback(rollback_id)}
+@app.post("/action/mutation-log/record")
+def record_action_mutation(request:MutationRecordRequest):return {"name":"Aether","mutation":record_mutation(request.mutation_type,request.title,request.summary,milestone=request.milestone,target_path=request.target_path,metadata=request.metadata,source="manual")}
+@app.post("/action/mutation-log/milestone-completed")
+def record_action_milestone(request:MilestoneCompletedRequest):return {"name":"Aether","mutation":record_milestone_completed(request.milestone,request.summary,request.metadata)}
+@app.get("/action/mutation-log/status")
+def get_action_mutation_status():return {"name":"Aether","mutation_log":mutation_log_status()}
+@app.get("/action/mutation-log/list")
+def list_action_mutations(mutation_type:str|None=None,milestone:str|None=None,target_path:str|None=None,limit:int=50):return {"name":"Aether","mutations":list_mutations(mutation_type,milestone,target_path,limit)}
+@app.get("/action/mutation-log/summary")
+def summarize_action_mutations(limit:int=100):return {"name":"Aether","summary":summarize_mutations(limit)}
+@app.get("/action/mutation-log/{mutation_id}")
+def get_action_mutation(mutation_id:str):return {"name":"Aether","mutation":get_mutation(mutation_id)}

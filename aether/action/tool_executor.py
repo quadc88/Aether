@@ -16,6 +16,7 @@ from aether.action.patch_proposal import create_patch_proposal, seed_patch_propo
 from aether.action.patch_review import review_patch_proposal, seed_patch_review_tool
 from aether.action.patch_apply import apply_patch_proposal, seed_patch_apply_tool
 from aether.action.patch_rollback import rollback_patch_apply, seed_patch_rollback_tool
+from aether.action.mutation_log import record_mutation, summarize_mutations
 from aether.time.clock import get_timezone, now_iso
 
 
@@ -34,6 +35,7 @@ SANDBOX_TOOL_IDS = {
     "file.patch_review",
     "file.patch_apply",
     "file.patch_rollback",
+    "project.mutation_log.record", "project.mutation_log.summary",
 }
 
 
@@ -175,6 +177,8 @@ def _safe_result(tool_id: str, payload: dict) -> dict:
         return apply_patch_proposal(payload.get("proposal_id", ""), payload.get("dry_run", True), payload.get("metadata"))
     if tool_id == "file.patch_rollback":
         return rollback_patch_apply(payload.get("apply_id", ""), payload.get("dry_run", True), payload.get("metadata"))
+    if tool_id == "project.mutation_log.record": return record_mutation(**payload)
+    if tool_id == "project.mutation_log.summary": return summarize_mutations(payload.get("limit", 100))
     raise ValueError("Unsupported sandbox tool.")
 
 

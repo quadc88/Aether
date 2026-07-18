@@ -13,6 +13,8 @@ from aether.verification.risk import verification_plan
 
 
 INFERENCE_RULES = [
+    ("project.mutation_log.summary", ["summarize project changes", "show changelog", "mutation summary", "总结项目变更", "查看变更日志", "总结成长记录"], "Request appears to summarize mutation history."),
+    ("project.mutation_log.record", ["record project change", "mutation log", "changelog", "project history", "record milestone", "记录项目变更", "变更日志", "成长记录", "项目历史", "记录 milestone"], "Request appears to record project history."),
     ("file.patch_rollback", ["rollback patch", "revert patch", "restore backup", "undo patch", "回滚补丁", "撤回补丁", "还原备份", "撤销修改"], "Request appears to roll back a patch apply."),
     ("file.patch_apply", ["apply patch", "apply proposal", "apply approved patch", "执行补丁", "应用补丁", "应用修改提案", "写入已批准修改"], "Request appears to apply an approved patch proposal."),
     ("file.patch_review", ["review patch", "approve patch proposal", "reject patch proposal", "request patch changes", "审核补丁", "批准修改提案", "拒绝修改提案", "要求修改", "审核文件修改"], "Request appears to involve reviewing a patch proposal."),

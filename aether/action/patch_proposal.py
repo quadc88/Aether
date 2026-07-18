@@ -10,6 +10,7 @@ from aether.memory.graph.store import add_edge
 from aether.memory.timeline.recorder import record_event
 from aether.time.clock import get_timezone, now_iso
 from aether.verification.risk import verification_plan
+from aether.action.mutation_log import record_patch_proposal_mutation
 
 CRITICAL_PATHS = {"identity/identity_seed.md", "docs/constitution.md", "docs/architecture.md", "aether/interface/api_server.py", "aether/action/tool_executor.py", "aether/action/restricted_file_reader.py", "aether/action/restricted_file_browser.py", "aether/action/approval_queue.py", "aether/verification/risk.py"}
 VALID_STATUSES = {"draft", "approval_required", "approved", "rejected", "superseded", "changes_requested", "blocked"}
@@ -63,6 +64,8 @@ def create_patch_proposal(target_path: str, request_text: str, proposed_change_s
         for s,r,t in [("Aether","created_patch_proposal",proposal["id"]),(proposal["id"],"targets_file",normalized),(proposal["id"],"has_status",proposal["status"]),(proposal["id"],"has_risk_level",risk)]: add_edge(s,r,t)
         if approval: add_edge(proposal["id"],"created_approval_item",approval["id"])
     except Exception as error: proposal["warnings"].append(f"Graph Memory integration was unavailable: {error}"); save_patch_proposals(data)
+    try: record_patch_proposal_mutation(proposal)
+    except Exception as error: proposal["warnings"].append(f"Mutation Log integration was unavailable: {error}")
     return proposal
 
 def list_patch_proposals(status: str | None = None, limit: int = 50) -> list[dict]:
