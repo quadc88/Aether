@@ -13,6 +13,10 @@ from aether.verification.risk import verification_plan
 
 
 INFERENCE_RULES = [
+    ("project.changelog.status", ["changelog status", "changelog exporter status", "变更日志状态"], "Request appears to inspect changelog status."),
+    ("project.changelog.export_private", ["private changelog report", "detailed private changelog", "私人变更报告", "详细变更日志"], "Request appears to export a private changelog."),
+    ("project.changelog.export_milestone", ["export milestone report", "generate milestone report", "milestone changelog", "导出 milestone 报告", "生成 milestone 报告"], "Request appears to export a milestone report."),
+    ("project.changelog.export_public", ["export changelog", "generate changelog", "write changelog", "changelog export", "导出变更日志", "生成变更日志", "写入 changelog"], "Request appears to export a public changelog."),
     ("project.self_modification.summary", ["summarize self modification session", "self modification summary", "总结自我修改", "自我修改总结"], "Request appears to summarize a self-modification session."),
     ("project.self_modification.rollback", ["rollback self modification", "revert self modification", "回滚自我修改", "撤销自我修改"], "Request appears to roll back a self-modification session."),
     ("project.self_modification.apply", ["apply self modification", "应用自我修改"], "Request appears to apply a self-modification session."),

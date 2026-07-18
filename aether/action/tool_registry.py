@@ -214,6 +214,10 @@ def tool_registry_status() -> dict:
 
 
 DEFAULT_TOOLS = [
+    ("project.changelog.export_public", "Export Public Changelog", "Export a sanitized public changelog.", "project", "medium", True, False, False),
+    ("project.changelog.export_milestone", "Export Milestone Changelog", "Export a sanitized milestone report.", "project", "medium", True, False, False),
+    ("project.changelog.export_private", "Export Private Changelog", "Export a private changelog report.", "project", "medium", True, False, False),
+    ("project.changelog.status", "Changelog Export Status", "Show changelog exporter status.", "project", "low", False, False, True),
     ("project.self_modification.create", "Create Self-Modification Session", "Create a guarded self-modification session.", "project", "medium", True, False, False),
     ("project.self_modification.review", "Review Self-Modification Session", "Record a session review.", "project", "medium", True, False, False),
     ("project.self_modification.dry_run", "Dry Run Self-Modification", "Dry-run an approved session.", "project", "medium", True, False, False),

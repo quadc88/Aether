@@ -18,6 +18,7 @@ from aether.action.patch_apply import apply_patch_proposal, seed_patch_apply_too
 from aether.action.patch_rollback import rollback_patch_apply, seed_patch_rollback_tool
 from aether.action.mutation_log import record_mutation, summarize_mutations
 from aether.action.self_modification_cycle import create_self_modification_session, review_self_modification_session, dry_run_self_modification_session, apply_self_modification_session, rollback_self_modification_session, summarize_self_modification_session
+from aether.action.changelog_exporter import export_public_changelog, export_milestone_report, export_private_changelog_report, changelog_export_status
 from aether.time.clock import get_timezone, now_iso
 
 
@@ -38,6 +39,7 @@ SANDBOX_TOOL_IDS = {
     "file.patch_rollback",
     "project.mutation_log.record", "project.mutation_log.summary",
     "project.self_modification.create", "project.self_modification.review", "project.self_modification.dry_run", "project.self_modification.apply", "project.self_modification.rollback", "project.self_modification.summary",
+    "project.changelog.export_public", "project.changelog.export_milestone", "project.changelog.export_private", "project.changelog.status",
 }
 
 
@@ -187,6 +189,10 @@ def _safe_result(tool_id: str, payload: dict) -> dict:
     if tool_id == "project.self_modification.apply": return apply_self_modification_session(payload.get("session_id", ""),payload.get("metadata"))
     if tool_id == "project.self_modification.rollback": return rollback_self_modification_session(payload.get("session_id", ""),payload.get("metadata"))
     if tool_id == "project.self_modification.summary": return summarize_self_modification_session(payload.get("session_id", ""))
+    if tool_id == "project.changelog.export_public": return export_public_changelog(payload.get("output_path", "docs/history/CHANGELOG.md"),payload.get("milestone"),payload.get("limit",200),payload.get("metadata"))
+    if tool_id == "project.changelog.export_milestone": return export_milestone_report(payload.get("milestone", ""),payload.get("output_dir", "docs/history/milestones"),payload.get("metadata"))
+    if tool_id == "project.changelog.export_private": return export_private_changelog_report(payload.get("milestone"),payload.get("limit",500),payload.get("metadata"))
+    if tool_id == "project.changelog.status": return changelog_export_status()
     raise ValueError("Unsupported sandbox tool.")
 
 

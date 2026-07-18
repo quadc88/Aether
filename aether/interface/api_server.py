@@ -86,6 +86,7 @@ from aether.action.patch_apply import apply_patch_proposal, get_patch_apply, lis
 from aether.action.patch_rollback import rollback_patch_apply, get_patch_rollback, list_patch_rollbacks, patch_rollback_status
 from aether.action.mutation_log import record_mutation, record_milestone_completed, mutation_log_status, list_mutations, summarize_mutations, get_mutation
 from aether.action.self_modification_cycle import create_self_modification_session, review_self_modification_session, dry_run_self_modification_session, apply_self_modification_session, rollback_self_modification_session, self_modification_status, list_self_modification_sessions, get_self_modification_session, summarize_self_modification_session
+from aether.action.changelog_exporter import export_public_changelog, export_milestone_report, export_private_changelog_report, changelog_export_status
 
 app = FastAPI(
     title="Aether API",
@@ -307,6 +308,10 @@ class SelfModificationReviewRequest(BaseModel):
     session_id:str; decision:str; review_reason:str=""; reviewer:str="user"; metadata:dict={}
 class SelfModificationActionRequest(BaseModel):
     session_id:str; metadata:dict={}
+class ChangelogExportRequest(BaseModel):
+    output_path:str="docs/history/CHANGELOG.md"; milestone:str|None=None; limit:int=200; metadata:dict={}
+class MilestoneReportExportRequest(BaseModel):
+    milestone:str; output_dir:str="docs/history/milestones"; metadata:dict={}
 
 @app.get("/")
 def root():
@@ -1451,3 +1456,11 @@ def list_self_modification(status:str|None=None,target_path:str|None=None,limit:
 def summarize_self_modification(session_id:str):return {"name":"Aether","summary":summarize_self_modification_session(session_id)}
 @app.get("/action/self-modification/{session_id}")
 def get_self_modification(session_id:str):return {"name":"Aether","session":get_self_modification_session(session_id)}
+@app.post("/action/changelog/export-public")
+def export_public_changelog_action(request:ChangelogExportRequest):return export_public_changelog(request.output_path,request.milestone,request.limit,request.metadata)
+@app.post("/action/changelog/export-milestone")
+def export_milestone_changelog_action(request:MilestoneReportExportRequest):return export_milestone_report(request.milestone,request.output_dir,request.metadata)
+@app.post("/action/changelog/export-private")
+def export_private_changelog_action(request:ChangelogExportRequest):return export_private_changelog_report(request.milestone,request.limit,request.metadata)
+@app.get("/action/changelog/status")
+def get_changelog_status():return changelog_export_status()
