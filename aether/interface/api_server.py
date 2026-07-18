@@ -85,6 +85,7 @@ from aether.action.patch_review import get_patch_review, list_patch_reviews, pat
 from aether.action.patch_apply import apply_patch_proposal, get_patch_apply, list_patch_applies, patch_apply_status
 from aether.action.patch_rollback import rollback_patch_apply, get_patch_rollback, list_patch_rollbacks, patch_rollback_status
 from aether.action.mutation_log import record_mutation, record_milestone_completed, mutation_log_status, list_mutations, summarize_mutations, get_mutation
+from aether.action.self_modification_cycle import create_self_modification_session, review_self_modification_session, dry_run_self_modification_session, apply_self_modification_session, rollback_self_modification_session, self_modification_status, list_self_modification_sessions, get_self_modification_session, summarize_self_modification_session
 
 app = FastAPI(
     title="Aether API",
@@ -300,6 +301,12 @@ class MilestoneCompletedRequest(BaseModel):
     milestone: str
     summary: str
     metadata: dict = {}
+class SelfModificationCreateRequest(BaseModel):
+    goal:str; target_path:str; proposed_change_summary:str; proposed_excerpt:str; reason:str=""; original_excerpt:str|None=None; create_approval_if_required:bool=False; metadata:dict={}
+class SelfModificationReviewRequest(BaseModel):
+    session_id:str; decision:str; review_reason:str=""; reviewer:str="user"; metadata:dict={}
+class SelfModificationActionRequest(BaseModel):
+    session_id:str; metadata:dict={}
 
 @app.get("/")
 def root():
@@ -1426,3 +1433,21 @@ def list_action_mutations(mutation_type:str|None=None,milestone:str|None=None,ta
 def summarize_action_mutations(limit:int=100):return {"name":"Aether","summary":summarize_mutations(limit)}
 @app.get("/action/mutation-log/{mutation_id}")
 def get_action_mutation(mutation_id:str):return {"name":"Aether","mutation":get_mutation(mutation_id)}
+@app.post("/action/self-modification/create")
+def create_self_modification(request:SelfModificationCreateRequest):return {"name":"Aether","session":create_self_modification_session(request.goal,request.target_path,request.proposed_change_summary,request.proposed_excerpt,request.reason,request.original_excerpt,request.create_approval_if_required,request.metadata)}
+@app.post("/action/self-modification/review")
+def review_self_modification(request:SelfModificationReviewRequest):return {"name":"Aether","session":review_self_modification_session(request.session_id,request.decision,request.review_reason,request.reviewer,request.metadata)}
+@app.post("/action/self-modification/dry-run")
+def dry_run_self_modification(request:SelfModificationActionRequest):return {"name":"Aether","session":dry_run_self_modification_session(request.session_id,request.metadata)}
+@app.post("/action/self-modification/apply")
+def apply_self_modification(request:SelfModificationActionRequest):return {"name":"Aether","session":apply_self_modification_session(request.session_id,request.metadata)}
+@app.post("/action/self-modification/rollback")
+def rollback_self_modification(request:SelfModificationActionRequest):return {"name":"Aether","session":rollback_self_modification_session(request.session_id,request.metadata)}
+@app.get("/action/self-modification/status")
+def get_self_modification_status():return {"name":"Aether","self_modification":self_modification_status()}
+@app.get("/action/self-modification/list")
+def list_self_modification(status:str|None=None,target_path:str|None=None,limit:int=50):return {"name":"Aether","sessions":list_self_modification_sessions(status,target_path,limit)}
+@app.get("/action/self-modification/{session_id}/summary")
+def summarize_self_modification(session_id:str):return {"name":"Aether","summary":summarize_self_modification_session(session_id)}
+@app.get("/action/self-modification/{session_id}")
+def get_self_modification(session_id:str):return {"name":"Aether","session":get_self_modification_session(session_id)}

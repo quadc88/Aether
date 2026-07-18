@@ -214,6 +214,12 @@ def tool_registry_status() -> dict:
 
 
 DEFAULT_TOOLS = [
+    ("project.self_modification.create", "Create Self-Modification Session", "Create a guarded self-modification session.", "project", "medium", True, False, False),
+    ("project.self_modification.review", "Review Self-Modification Session", "Record a session review.", "project", "medium", True, False, False),
+    ("project.self_modification.dry_run", "Dry Run Self-Modification", "Dry-run an approved session.", "project", "medium", True, False, False),
+    ("project.self_modification.apply", "Apply Self-Modification", "Apply an approved session.", "project", "high", True, True, False),
+    ("project.self_modification.rollback", "Rollback Self-Modification", "Rollback an applied session.", "project", "high", True, True, False),
+    ("project.self_modification.summary", "Summarize Self-Modification", "Summarize a self-modification session.", "project", "low", False, False, True),
     ("project.mutation_log.record", "Record Project Mutation", "Record a private project mutation.", "project", "medium", True, False, False),
     ("project.mutation_log.summary", "Summarize Project Mutations", "Summarize private project mutation history.", "project", "low", False, False, True),
     ("file.read", "Read File", "Read a local file from an approved path.", "file", "medium", True, False, False),

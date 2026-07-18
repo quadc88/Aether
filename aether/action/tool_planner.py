@@ -13,6 +13,12 @@ from aether.verification.risk import verification_plan
 
 
 INFERENCE_RULES = [
+    ("project.self_modification.summary", ["summarize self modification session", "self modification summary", "总结自我修改", "自我修改总结"], "Request appears to summarize a self-modification session."),
+    ("project.self_modification.rollback", ["rollback self modification", "revert self modification", "回滚自我修改", "撤销自我修改"], "Request appears to roll back a self-modification session."),
+    ("project.self_modification.apply", ["apply self modification", "应用自我修改"], "Request appears to apply a self-modification session."),
+    ("project.self_modification.dry_run", ["dry run self modification", "test self modification", "自我修改 dry run", "测试自我修改"], "Request appears to dry-run a self-modification session."),
+    ("project.self_modification.review", ["review self modification", "approve self modification", "审核自我修改", "批准自我修改"], "Request appears to review a self-modification session."),
+    ("project.self_modification.create", ["self modification", "self modify", "improve aether safely", "safe self update", "自我修改", "安全自我修改", "改进 aether", "安全更新 aether"], "Request appears to create a self-modification session."),
     ("project.mutation_log.summary", ["summarize project changes", "show changelog", "mutation summary", "总结项目变更", "查看变更日志", "总结成长记录"], "Request appears to summarize mutation history."),
     ("project.mutation_log.record", ["record project change", "mutation log", "changelog", "project history", "record milestone", "记录项目变更", "变更日志", "成长记录", "项目历史", "记录 milestone"], "Request appears to record project history."),
     ("file.patch_rollback", ["rollback patch", "revert patch", "restore backup", "undo patch", "回滚补丁", "撤回补丁", "还原备份", "撤销修改"], "Request appears to roll back a patch apply."),

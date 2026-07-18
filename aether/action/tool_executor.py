@@ -17,6 +17,7 @@ from aether.action.patch_review import review_patch_proposal, seed_patch_review_
 from aether.action.patch_apply import apply_patch_proposal, seed_patch_apply_tool
 from aether.action.patch_rollback import rollback_patch_apply, seed_patch_rollback_tool
 from aether.action.mutation_log import record_mutation, summarize_mutations
+from aether.action.self_modification_cycle import create_self_modification_session, review_self_modification_session, dry_run_self_modification_session, apply_self_modification_session, rollback_self_modification_session, summarize_self_modification_session
 from aether.time.clock import get_timezone, now_iso
 
 
@@ -36,6 +37,7 @@ SANDBOX_TOOL_IDS = {
     "file.patch_apply",
     "file.patch_rollback",
     "project.mutation_log.record", "project.mutation_log.summary",
+    "project.self_modification.create", "project.self_modification.review", "project.self_modification.dry_run", "project.self_modification.apply", "project.self_modification.rollback", "project.self_modification.summary",
 }
 
 
@@ -179,6 +181,12 @@ def _safe_result(tool_id: str, payload: dict) -> dict:
         return rollback_patch_apply(payload.get("apply_id", ""), payload.get("dry_run", True), payload.get("metadata"))
     if tool_id == "project.mutation_log.record": return record_mutation(**payload)
     if tool_id == "project.mutation_log.summary": return summarize_mutations(payload.get("limit", 100))
+    if tool_id == "project.self_modification.create": return create_self_modification_session(payload.get("goal", ""),payload.get("target_path", ""),payload.get("proposed_change_summary", ""),payload.get("proposed_excerpt", ""),payload.get("reason", ""),payload.get("original_excerpt"),payload.get("create_approval_if_required", False),payload.get("metadata"))
+    if tool_id == "project.self_modification.review": return review_self_modification_session(payload.get("session_id", ""),payload.get("decision", ""),payload.get("review_reason", ""),payload.get("reviewer", "user"),payload.get("metadata"))
+    if tool_id == "project.self_modification.dry_run": return dry_run_self_modification_session(payload.get("session_id", ""),payload.get("metadata"))
+    if tool_id == "project.self_modification.apply": return apply_self_modification_session(payload.get("session_id", ""),payload.get("metadata"))
+    if tool_id == "project.self_modification.rollback": return rollback_self_modification_session(payload.get("session_id", ""),payload.get("metadata"))
+    if tool_id == "project.self_modification.summary": return summarize_self_modification_session(payload.get("session_id", ""))
     raise ValueError("Unsupported sandbox tool.")
 
 
