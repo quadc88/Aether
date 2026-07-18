@@ -88,6 +88,7 @@ from aether.action.mutation_log import record_mutation, record_milestone_complet
 from aether.action.self_modification_cycle import create_self_modification_session, review_self_modification_session, dry_run_self_modification_session, apply_self_modification_session, rollback_self_modification_session, self_modification_status, list_self_modification_sessions, get_self_modification_session, summarize_self_modification_session
 from aether.action.changelog_exporter import export_public_changelog, export_milestone_report, export_private_changelog_report, changelog_export_status
 from aether.action.code_reviewer import create_code_review, get_code_review, list_code_reviews, code_review_status, summarize_code_review
+from aether.action.review_bridge import create_bridge_from_finding, get_review_bridge_record, list_review_bridge_records, review_bridge_status, summarize_review_bridge_record
 
 app = FastAPI(
     title="Aether API",
@@ -313,6 +314,8 @@ class ChangelogExportRequest(BaseModel):
     output_path:str="docs/history/CHANGELOG.md"; milestone:str|None=None; limit:int=200; metadata:dict={}
 class CodeReviewCreateRequest(BaseModel):
     scope:str; target_paths:list[str]|None=None; max_files:int=20; max_chars_per_file:int=12000; include_tests:bool=True; metadata:dict={}
+class ReviewBridgeCreateRequest(BaseModel):
+    report_id:str; finding_id:str; proposed_excerpt:str; original_excerpt:str|None=None; proposed_change_summary:str|None=None; reason:str|None=None; create_approval_if_required:bool=False; metadata:dict={}
 class MilestoneReportExportRequest(BaseModel):
     milestone:str; output_dir:str="docs/history/milestones"; metadata:dict={}
 
@@ -1477,3 +1480,13 @@ def list_code_review_action(status:str|None=None,limit:int=50):return {"name":"A
 def summarize_code_review_action(report_id:str):return {"name":"Aether","summary":summarize_code_review(report_id)}
 @app.get("/action/code-review/{report_id}")
 def get_code_review_action(report_id:str):return {"name":"Aether","report":get_code_review(report_id)}
+@app.post("/action/review-bridge/create")
+def create_review_bridge_action(request:ReviewBridgeCreateRequest):return {"name":"Aether","record":create_bridge_from_finding(request.report_id,request.finding_id,request.proposed_excerpt,request.original_excerpt,request.proposed_change_summary,request.reason,request.create_approval_if_required,request.metadata)}
+@app.get("/action/review-bridge/status")
+def get_review_bridge_status_action():return {"name":"Aether","review_bridge":review_bridge_status()}
+@app.get("/action/review-bridge/list")
+def list_review_bridge_action(status:str|None=None,review_report_id:str|None=None,limit:int=50):return {"name":"Aether","records":list_review_bridge_records(status,review_report_id,limit)}
+@app.get("/action/review-bridge/{record_id}/summary")
+def summarize_review_bridge_action(record_id:str):return {"name":"Aether","summary":summarize_review_bridge_record(record_id)}
+@app.get("/action/review-bridge/{record_id}")
+def get_review_bridge_action(record_id:str):return {"name":"Aether","record":get_review_bridge_record(record_id)}

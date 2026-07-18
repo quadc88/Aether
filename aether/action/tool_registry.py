@@ -214,6 +214,9 @@ def tool_registry_status() -> dict:
 
 
 DEFAULT_TOOLS = [
+    ("project.review_bridge.create", "Create Review Bridge", "Create a guarded session from a code-review finding.", "project", "medium", True, False, False),
+    ("project.review_bridge.summary", "Summarize Review Bridge", "Summarize a review bridge.", "project", "low", False, False, True),
+    ("project.review_bridge.status", "Review Bridge Status", "Show review bridge status.", "project", "low", False, False, True),
     ("project.code_review.create", "Create Restricted Code Review", "Review approved project files read-only.", "project", "medium", True, False, False),
     ("project.code_review.summary", "Summarize Code Review", "Summarize a restricted code review.", "project", "low", False, False, True),
     ("project.code_review.status", "Code Review Status", "Show restricted code review status.", "project", "low", False, False, True),

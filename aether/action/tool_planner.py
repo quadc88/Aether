@@ -13,6 +13,9 @@ from aether.verification.risk import verification_plan
 
 
 INFERENCE_RULES = [
+    ("project.review_bridge.status", ["review bridge status", "审查桥接状态"], "Request appears to inspect bridge status."),
+    ("project.review_bridge.summary", ["summarize review bridge", "review bridge summary", "总结审查桥接"], "Request appears to summarize a review bridge."),
+    ("project.review_bridge.create", ["bridge code review finding", "create self modification from finding", "turn finding into proposal", "review bridge", "从代码审查生成修改", "从 finding 创建自我修改", "把审查结果转成修改建议"], "Request appears to bridge a review finding."),
     ("project.code_review.status", ["code review status", "代码审查状态"], "Request appears to inspect code-review status."),
     ("project.code_review.summary", ["summarize code review", "code review summary", "总结代码审查"], "Request appears to summarize a code review."),
     ("project.code_review.create", ["code review", "review code", "inspect code", "check project code", "audit source code", "审查代码", "代码审查", "检查源代码", "项目代码审计"], "Request appears to create a restricted code review."),
