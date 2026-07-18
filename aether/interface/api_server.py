@@ -87,6 +87,7 @@ from aether.action.patch_rollback import rollback_patch_apply, get_patch_rollbac
 from aether.action.mutation_log import record_mutation, record_milestone_completed, mutation_log_status, list_mutations, summarize_mutations, get_mutation
 from aether.action.self_modification_cycle import create_self_modification_session, review_self_modification_session, dry_run_self_modification_session, apply_self_modification_session, rollback_self_modification_session, self_modification_status, list_self_modification_sessions, get_self_modification_session, summarize_self_modification_session
 from aether.action.changelog_exporter import export_public_changelog, export_milestone_report, export_private_changelog_report, changelog_export_status
+from aether.action.code_reviewer import create_code_review, get_code_review, list_code_reviews, code_review_status, summarize_code_review
 
 app = FastAPI(
     title="Aether API",
@@ -310,6 +311,8 @@ class SelfModificationActionRequest(BaseModel):
     session_id:str; metadata:dict={}
 class ChangelogExportRequest(BaseModel):
     output_path:str="docs/history/CHANGELOG.md"; milestone:str|None=None; limit:int=200; metadata:dict={}
+class CodeReviewCreateRequest(BaseModel):
+    scope:str; target_paths:list[str]|None=None; max_files:int=20; max_chars_per_file:int=12000; include_tests:bool=True; metadata:dict={}
 class MilestoneReportExportRequest(BaseModel):
     milestone:str; output_dir:str="docs/history/milestones"; metadata:dict={}
 
@@ -1464,3 +1467,13 @@ def export_milestone_changelog_action(request:MilestoneReportExportRequest):retu
 def export_private_changelog_action(request:ChangelogExportRequest):return export_private_changelog_report(request.milestone,request.limit,request.metadata)
 @app.get("/action/changelog/status")
 def get_changelog_status():return changelog_export_status()
+@app.post("/action/code-review/create")
+def create_code_review_action(request:CodeReviewCreateRequest):return {"name":"Aether","report":create_code_review(request.scope,request.target_paths,request.max_files,request.max_chars_per_file,request.include_tests,request.metadata)}
+@app.get("/action/code-review/status")
+def get_code_review_status_action():return {"name":"Aether","code_review":code_review_status()}
+@app.get("/action/code-review/list")
+def list_code_review_action(status:str|None=None,limit:int=50):return {"name":"Aether","reports":list_code_reviews(status,limit)}
+@app.get("/action/code-review/{report_id}/summary")
+def summarize_code_review_action(report_id:str):return {"name":"Aether","summary":summarize_code_review(report_id)}
+@app.get("/action/code-review/{report_id}")
+def get_code_review_action(report_id:str):return {"name":"Aether","report":get_code_review(report_id)}

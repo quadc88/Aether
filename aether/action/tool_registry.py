@@ -214,6 +214,9 @@ def tool_registry_status() -> dict:
 
 
 DEFAULT_TOOLS = [
+    ("project.code_review.create", "Create Restricted Code Review", "Review approved project files read-only.", "project", "medium", True, False, False),
+    ("project.code_review.summary", "Summarize Code Review", "Summarize a restricted code review.", "project", "low", False, False, True),
+    ("project.code_review.status", "Code Review Status", "Show restricted code review status.", "project", "low", False, False, True),
     ("project.changelog.export_public", "Export Public Changelog", "Export a sanitized public changelog.", "project", "medium", True, False, False),
     ("project.changelog.export_milestone", "Export Milestone Changelog", "Export a sanitized milestone report.", "project", "medium", True, False, False),
     ("project.changelog.export_private", "Export Private Changelog", "Export a private changelog report.", "project", "medium", True, False, False),

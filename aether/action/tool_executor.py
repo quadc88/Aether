@@ -19,6 +19,7 @@ from aether.action.patch_rollback import rollback_patch_apply, seed_patch_rollba
 from aether.action.mutation_log import record_mutation, summarize_mutations
 from aether.action.self_modification_cycle import create_self_modification_session, review_self_modification_session, dry_run_self_modification_session, apply_self_modification_session, rollback_self_modification_session, summarize_self_modification_session
 from aether.action.changelog_exporter import export_public_changelog, export_milestone_report, export_private_changelog_report, changelog_export_status
+from aether.action.code_reviewer import create_code_review, summarize_code_review, code_review_status
 from aether.time.clock import get_timezone, now_iso
 
 
@@ -40,6 +41,7 @@ SANDBOX_TOOL_IDS = {
     "project.mutation_log.record", "project.mutation_log.summary",
     "project.self_modification.create", "project.self_modification.review", "project.self_modification.dry_run", "project.self_modification.apply", "project.self_modification.rollback", "project.self_modification.summary",
     "project.changelog.export_public", "project.changelog.export_milestone", "project.changelog.export_private", "project.changelog.status",
+    "project.code_review.create", "project.code_review.summary", "project.code_review.status",
 }
 
 
@@ -193,6 +195,9 @@ def _safe_result(tool_id: str, payload: dict) -> dict:
     if tool_id == "project.changelog.export_milestone": return export_milestone_report(payload.get("milestone", ""),payload.get("output_dir", "docs/history/milestones"),payload.get("metadata"))
     if tool_id == "project.changelog.export_private": return export_private_changelog_report(payload.get("milestone"),payload.get("limit",500),payload.get("metadata"))
     if tool_id == "project.changelog.status": return changelog_export_status()
+    if tool_id == "project.code_review.create": return create_code_review(payload.get("scope", ""),payload.get("target_paths"),payload.get("max_files",20),payload.get("max_chars_per_file",12000),payload.get("include_tests",True),payload.get("metadata"))
+    if tool_id == "project.code_review.summary": return summarize_code_review(payload.get("report_id", ""))
+    if tool_id == "project.code_review.status": return code_review_status()
     raise ValueError("Unsupported sandbox tool.")
 
 
