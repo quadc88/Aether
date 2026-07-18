@@ -13,6 +13,9 @@ from aether.verification.risk import verification_plan
 
 
 INFERENCE_RULES = [
+    ("project.repair_plan.status", ["repair plan status", "修复计划状态"], "Request appears to inspect repair-plan status."),
+    ("project.repair_plan.summary", ["summarize repair plan", "repair plan summary", "总结修复计划"], "Request appears to summarize a repair plan."),
+    ("project.repair_plan.create", ["prioritize review findings", "repair plan", "create repair plan", "plan fixes from code review", "prioritize code review", "排序审查结果", "修复计划", "从代码审查制定修复计划", "优先处理 findings"], "Request appears to create a repair plan."),
     ("project.review_bridge.status", ["review bridge status", "审查桥接状态"], "Request appears to inspect bridge status."),
     ("project.review_bridge.summary", ["summarize review bridge", "review bridge summary", "总结审查桥接"], "Request appears to summarize a review bridge."),
     ("project.review_bridge.create", ["bridge code review finding", "create self modification from finding", "turn finding into proposal", "review bridge", "从代码审查生成修改", "从 finding 创建自我修改", "把审查结果转成修改建议"], "Request appears to bridge a review finding."),

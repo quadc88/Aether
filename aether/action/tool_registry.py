@@ -214,6 +214,9 @@ def tool_registry_status() -> dict:
 
 
 DEFAULT_TOOLS = [
+    ("project.repair_plan.create", "Create Repair Plan", "Prioritize review findings without acting on them.", "project", "medium", True, False, False),
+    ("project.repair_plan.summary", "Summarize Repair Plan", "Summarize a repair plan.", "project", "low", False, False, True),
+    ("project.repair_plan.status", "Repair Plan Status", "Show repair-plan status.", "project", "low", False, False, True),
     ("project.review_bridge.create", "Create Review Bridge", "Create a guarded session from a code-review finding.", "project", "medium", True, False, False),
     ("project.review_bridge.summary", "Summarize Review Bridge", "Summarize a review bridge.", "project", "low", False, False, True),
     ("project.review_bridge.status", "Review Bridge Status", "Show review bridge status.", "project", "low", False, False, True),

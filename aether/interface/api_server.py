@@ -89,6 +89,7 @@ from aether.action.self_modification_cycle import create_self_modification_sessi
 from aether.action.changelog_exporter import export_public_changelog, export_milestone_report, export_private_changelog_report, changelog_export_status
 from aether.action.code_reviewer import create_code_review, get_code_review, list_code_reviews, code_review_status, summarize_code_review
 from aether.action.review_bridge import create_bridge_from_finding, get_review_bridge_record, list_review_bridge_records, review_bridge_status, summarize_review_bridge_record
+from aether.action.repair_planner import create_repair_plan, get_repair_plan, list_repair_plans, repair_plan_status, summarize_repair_plan
 
 app = FastAPI(
     title="Aether API",
@@ -316,6 +317,8 @@ class CodeReviewCreateRequest(BaseModel):
     scope:str; target_paths:list[str]|None=None; max_files:int=20; max_chars_per_file:int=12000; include_tests:bool=True; metadata:dict={}
 class ReviewBridgeCreateRequest(BaseModel):
     report_id:str; finding_id:str; proposed_excerpt:str; original_excerpt:str|None=None; proposed_change_summary:str|None=None; reason:str|None=None; create_approval_if_required:bool=False; metadata:dict={}
+class RepairPlanCreateRequest(BaseModel):
+    review_report_id:str; scope:str|None=None; include_deferred:bool=True; max_findings:int=50; metadata:dict={}
 class MilestoneReportExportRequest(BaseModel):
     milestone:str; output_dir:str="docs/history/milestones"; metadata:dict={}
 
@@ -1490,3 +1493,13 @@ def list_review_bridge_action(status:str|None=None,review_report_id:str|None=Non
 def summarize_review_bridge_action(record_id:str):return {"name":"Aether","summary":summarize_review_bridge_record(record_id)}
 @app.get("/action/review-bridge/{record_id}")
 def get_review_bridge_action(record_id:str):return {"name":"Aether","record":get_review_bridge_record(record_id)}
+@app.post("/action/repair-plan/create")
+def create_repair_plan_action(request:RepairPlanCreateRequest):return {"name":"Aether","plan":create_repair_plan(request.review_report_id,request.scope,request.include_deferred,request.max_findings,request.metadata)}
+@app.get("/action/repair-plan/status")
+def get_repair_plan_status_action():return {"name":"Aether","repair_plan":repair_plan_status()}
+@app.get("/action/repair-plan/list")
+def list_repair_plan_action(status:str|None=None,review_report_id:str|None=None,limit:int=50):return {"name":"Aether","plans":list_repair_plans(status,review_report_id,limit)}
+@app.get("/action/repair-plan/{plan_id}/summary")
+def summarize_repair_plan_action(plan_id:str):return {"name":"Aether","summary":summarize_repair_plan(plan_id)}
+@app.get("/action/repair-plan/{plan_id}")
+def get_repair_plan_action(plan_id:str):return {"name":"Aether","plan":get_repair_plan(plan_id)}
