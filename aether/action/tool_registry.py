@@ -214,6 +214,10 @@ def tool_registry_status() -> dict:
 
 
 DEFAULT_TOOLS = [
+    ("project.post_apply_verification_gate.open", "Open Post-Apply Verification Gate", "Open human verification for a completed real patch apply.", "project", "medium", True, False, False),
+    ("project.post_apply_verification_gate.submit", "Submit Post-Apply Verification", "Record a human post-apply verification decision.", "project", "medium", True, False, False),
+    ("project.post_apply_verification_gate.summary", "Summarize Post-Apply Verification Gate", "Summarize post-apply verification safely.", "project", "low", False, False, True),
+    ("project.post_apply_verification_gate.status", "Post-Apply Verification Gate Status", "Show post-apply verification gate status.", "project", "low", False, False, True),
     ("project.final_real_apply_executor.open", "Open Final Real Apply Executor", "Validate final approval readiness for a real patch apply.", "project", "high", True, False, False),
     ("project.final_real_apply_executor.execute", "Execute Final Real Apply", "Perform one fully approved real patch apply through the restricted patch apply flow.", "project", "high", True, True, False),
     ("project.final_real_apply_executor.summary", "Summarize Final Real Apply Executor", "Summarize final real-apply executor status safely.", "project", "low", False, False, True),
