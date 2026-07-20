@@ -30,6 +30,7 @@ from aether.action.proposal_revision_console import open_proposal_revision_conso
 from aether.action.revised_proposal_review_loop import open_revised_proposal_review, submit_revised_proposal_review, summarize_revised_proposal_review_loop, revised_proposal_review_loop_status
 from aether.action.approved_dry_run_gate import open_approved_dry_run_gate,execute_approved_dry_run,summarize_approved_dry_run_gate,approved_dry_run_gate_status
 from aether.action.dry_run_review_gate import open_dry_run_review_gate,submit_dry_run_review,summarize_dry_run_review_gate,dry_run_review_gate_status
+from aether.action.real_apply_approval_gate import open_real_apply_approval_gate,submit_real_apply_final_decision,summarize_real_apply_approval_gate,real_apply_approval_gate_status
 from aether.time.clock import get_timezone, now_iso
 
 
@@ -62,6 +63,7 @@ SANDBOX_TOOL_IDS = {
     "project.revised_proposal_review.open", "project.revised_proposal_review.submit", "project.revised_proposal_review.summary", "project.revised_proposal_review.status",
     "project.approved_dry_run_gate.open", "project.approved_dry_run_gate.execute", "project.approved_dry_run_gate.summary", "project.approved_dry_run_gate.status",
     "project.dry_run_review_gate.open", "project.dry_run_review_gate.submit", "project.dry_run_review_gate.summary", "project.dry_run_review_gate.status",
+    "project.real_apply_approval_gate.open", "project.real_apply_approval_gate.submit", "project.real_apply_approval_gate.summary", "project.real_apply_approval_gate.status",
 }
 
 
@@ -254,6 +256,10 @@ def _safe_result(tool_id: str, payload: dict) -> dict:
     if tool_id == "project.dry_run_review_gate.submit": return submit_dry_run_review(payload.get("review_gate_record_id",""),payload.get("decision",""),payload.get("comment"),payload.get("reviewer","human"),payload.get("metadata"))
     if tool_id == "project.dry_run_review_gate.summary": return summarize_dry_run_review_gate(payload.get("record_id",""))
     if tool_id == "project.dry_run_review_gate.status": return dry_run_review_gate_status()
+    if tool_id == "project.real_apply_approval_gate.open": return open_real_apply_approval_gate(payload.get("source_type", ""), payload.get("source_id", ""), payload.get("create_approval_item", True), payload.get("metadata"))
+    if tool_id == "project.real_apply_approval_gate.submit": return submit_real_apply_final_decision(payload.get("gate_record_id", ""), payload.get("decision", ""), payload.get("comment"), payload.get("reviewer", "human"), payload.get("metadata"))
+    if tool_id == "project.real_apply_approval_gate.summary": return summarize_real_apply_approval_gate(payload.get("record_id", ""))
+    if tool_id == "project.real_apply_approval_gate.status": return real_apply_approval_gate_status()
     raise ValueError("Unsupported sandbox tool.")
 
 

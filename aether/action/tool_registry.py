@@ -214,6 +214,10 @@ def tool_registry_status() -> dict:
 
 
 DEFAULT_TOOLS = [
+    ("project.real_apply_approval_gate.open", "Open Real Apply Approval Gate", "Open a final approval-readiness gate after an accepted dry-run review.", "project", "high", True, False, False),
+    ("project.real_apply_approval_gate.submit", "Submit Real Apply Final Decision", "Record an explicit final readiness decision without applying changes.", "project", "high", True, False, False),
+    ("project.real_apply_approval_gate.summary", "Summarize Real Apply Approval Gate", "Summarize a real-apply approval gate safely.", "project", "low", False, False, True),
+    ("project.real_apply_approval_gate.status", "Real Apply Approval Gate Status", "Show real-apply approval gate status.", "project", "low", False, False, True),
     ("project.dry_run_review_gate.open", "Open Dry-Run Review Gate", "Open a human review gate for a completed dry-run.", "project", "low", False, False, True),
     ("project.dry_run_review_gate.submit", "Submit Dry-Run Review", "Record an explicit human decision for a dry-run result.", "project", "medium", True, False, False),
     ("project.dry_run_review_gate.summary", "Summarize Dry-Run Review Gate", "Summarize a dry-run review gate.", "project", "low", False, False, True),

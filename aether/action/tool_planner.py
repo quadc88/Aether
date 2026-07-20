@@ -13,6 +13,10 @@ from aether.verification.risk import verification_plan
 
 
 INFERENCE_RULES = [
+    ("project.real_apply_approval_gate.status", ["real apply approval gate status", "真实应用审批状态"], "Request appears to inspect real-apply approval status."),
+    ("project.real_apply_approval_gate.summary", ["summarize real apply approval gate", "real apply approval summary", "总结真实应用审批"], "Request appears to summarize a real-apply approval gate."),
+    ("project.real_apply_approval_gate.submit", ["submit real apply final decision", "approve real apply", "reject real apply", "need more review before real apply", "提交真实应用最终决定", "批准真实应用", "拒绝真实应用", "真实应用需要更多审核"], "Request appears to submit a final real-apply decision."),
+    ("project.real_apply_approval_gate.open", ["open real apply approval gate", "prepare real apply approval", "final approval for real apply", "打开真实应用审批", "准备真实应用审批", "最终应用审批"], "Request appears to open a real-apply approval gate."),
     ("project.dry_run_review_gate.status", ["dry run review gate status", "dry run 审核状态"], "Request appears to inspect dry-run review status."),
     ("project.dry_run_review_gate.summary", ["summarize dry run review gate", "dry run review summary", "总结 dry run 审核"], "Request appears to summarize dry-run review."),
     ("project.dry_run_review_gate.submit", ["submit dry run review", "accept dry run result", "reject dry run result", "request changes after dry run", "提交 dry run 审核", "接受 dry run 结果", "拒绝 dry run 结果"], "Request appears to submit a dry-run review."),
