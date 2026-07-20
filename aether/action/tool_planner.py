@@ -13,6 +13,10 @@ from aether.verification.risk import verification_plan
 
 
 INFERENCE_RULES = [
+    ("project.final_real_apply_executor.status", ["final real apply executor status", "最终真实应用状态"], "Request appears to inspect final real-apply executor status."),
+    ("project.final_real_apply_executor.summary", ["summarize final real apply executor", "final real apply summary", "总结最终真实应用"], "Request appears to summarize final real apply."),
+    ("project.final_real_apply_executor.execute", ["execute final real apply", "perform real apply", "apply final approved patch", "执行最终真实应用", "执行真实补丁", "应用最终批准补丁"], "Request appears to execute a final approved real apply."),
+    ("project.final_real_apply_executor.open", ["open final real apply executor", "prepare final real apply", "final real apply ready", "打开最终真实应用执行器", "准备最终真实应用", "最终应用准备"], "Request appears to open final real-apply executor."),
     ("project.real_apply_approval_gate.status", ["real apply approval gate status", "真实应用审批状态"], "Request appears to inspect real-apply approval status."),
     ("project.real_apply_approval_gate.summary", ["summarize real apply approval gate", "real apply approval summary", "总结真实应用审批"], "Request appears to summarize a real-apply approval gate."),
     ("project.real_apply_approval_gate.submit", ["submit real apply final decision", "approve real apply", "reject real apply", "need more review before real apply", "提交真实应用最终决定", "批准真实应用", "拒绝真实应用", "真实应用需要更多审核"], "Request appears to submit a final real-apply decision."),

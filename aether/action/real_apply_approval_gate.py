@@ -192,7 +192,7 @@ def submit_real_apply_final_decision(gate_record_id: str, decision: str, comment
         return {"id": gate_record_id, "status": "blocked", "warnings": ["Real-apply approval gate record was not found."]}
     force = bool((metadata or {}).get("force_decision"))
     if record.get("status") != "opened" and not force:
-        record["status"] = "blocked"; record["warnings"].append("Final decision can only be submitted to an open gate.")
+        return {"id": gate_record_id, "status": "blocked", "warnings": ["Final decision can only be submitted to an open gate."]}
     elif decision not in DECISIONS:
         record["status"] = "blocked"; record["warnings"].append("Invalid final real-apply decision.")
     else:

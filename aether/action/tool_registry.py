@@ -214,6 +214,10 @@ def tool_registry_status() -> dict:
 
 
 DEFAULT_TOOLS = [
+    ("project.final_real_apply_executor.open", "Open Final Real Apply Executor", "Validate final approval readiness for a real patch apply.", "project", "high", True, False, False),
+    ("project.final_real_apply_executor.execute", "Execute Final Real Apply", "Perform one fully approved real patch apply through the restricted patch apply flow.", "project", "high", True, True, False),
+    ("project.final_real_apply_executor.summary", "Summarize Final Real Apply Executor", "Summarize final real-apply executor status safely.", "project", "low", False, False, True),
+    ("project.final_real_apply_executor.status", "Final Real Apply Executor Status", "Show final real-apply executor status.", "project", "low", False, False, True),
     ("project.real_apply_approval_gate.open", "Open Real Apply Approval Gate", "Open a final approval-readiness gate after an accepted dry-run review.", "project", "high", True, False, False),
     ("project.real_apply_approval_gate.submit", "Submit Real Apply Final Decision", "Record an explicit final readiness decision without applying changes.", "project", "high", True, False, False),
     ("project.real_apply_approval_gate.summary", "Summarize Real Apply Approval Gate", "Summarize a real-apply approval gate safely.", "project", "low", False, False, True),

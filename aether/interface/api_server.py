@@ -99,6 +99,7 @@ from aether.action.revised_proposal_review_loop import open_revised_proposal_rev
 from aether.action.approved_dry_run_gate import open_approved_dry_run_gate,execute_approved_dry_run,get_approved_dry_run_gate_record,list_approved_dry_run_gate_records,approved_dry_run_gate_status,summarize_approved_dry_run_gate
 from aether.action.dry_run_review_gate import open_dry_run_review_gate,submit_dry_run_review,get_dry_run_review_gate_record,list_dry_run_review_gate_records,dry_run_review_gate_status,summarize_dry_run_review_gate
 from aether.action.real_apply_approval_gate import open_real_apply_approval_gate,submit_real_apply_final_decision,get_real_apply_approval_gate_record,list_real_apply_approval_gate_records,real_apply_approval_gate_status,summarize_real_apply_approval_gate
+from aether.action.final_real_apply_executor import open_final_real_apply_executor,execute_final_real_apply,get_final_real_apply_executor_record,list_final_real_apply_executor_records,final_real_apply_executor_status,summarize_final_real_apply_executor
 
 app = FastAPI(
     title="Aether API",
@@ -373,6 +374,12 @@ class RealApplyApprovalGateOpenRequest(BaseModel):
 class RealApplyFinalDecisionRequest(BaseModel):
     gate_record_id:str; decision:str; comment:str|None=None; reviewer:str|None="human"; metadata:dict={}
 class RealApplyApprovalGateListRequest(BaseModel):
+    status:str|None=None; proposal_id:str|None=None; limit:int=50
+class FinalRealApplyExecutorOpenRequest(BaseModel):
+    source_type:str; source_id:str; metadata:dict={}
+class FinalRealApplyExecuteRequest(BaseModel):
+    executor_record_id:str; metadata:dict={}
+class FinalRealApplyExecutorListRequest(BaseModel):
     status:str|None=None; proposal_id:str|None=None; limit:int=50
 class MilestoneReportExportRequest(BaseModel):
     milestone:str; output_dir:str="docs/history/milestones"; metadata:dict={}
@@ -1658,3 +1665,15 @@ def list_real_apply_approval_gate_action(status:str|None=None,proposal_id:str|No
 def summarize_real_apply_approval_gate_action(record_id:str):return {"name":"Aether","summary":summarize_real_apply_approval_gate(record_id)}
 @app.get("/action/real-apply-approval-gate/{record_id}")
 def get_real_apply_approval_gate_action(record_id:str):return {"name":"Aether","record":get_real_apply_approval_gate_record(record_id)}
+@app.post("/action/final-real-apply-executor/open")
+def open_final_real_apply_executor_action(request:FinalRealApplyExecutorOpenRequest):return {"name":"Aether","record":open_final_real_apply_executor(request.source_type,request.source_id,request.metadata)}
+@app.post("/action/final-real-apply-executor/execute")
+def execute_final_real_apply_action(request:FinalRealApplyExecuteRequest):return {"name":"Aether","record":execute_final_real_apply(request.executor_record_id,request.metadata)}
+@app.get("/action/final-real-apply-executor/status")
+def get_final_real_apply_executor_status_action():return {"name":"Aether","final_real_apply_executor":final_real_apply_executor_status()}
+@app.get("/action/final-real-apply-executor/list")
+def list_final_real_apply_executor_action(status:str|None=None,proposal_id:str|None=None,limit:int=50):return {"name":"Aether","records":list_final_real_apply_executor_records(status,proposal_id,limit)}
+@app.get("/action/final-real-apply-executor/{record_id}/summary")
+def summarize_final_real_apply_executor_action(record_id:str):return {"name":"Aether","summary":summarize_final_real_apply_executor(record_id)}
+@app.get("/action/final-real-apply-executor/{record_id}")
+def get_final_real_apply_executor_action(record_id:str):return {"name":"Aether","record":get_final_real_apply_executor_record(record_id)}
