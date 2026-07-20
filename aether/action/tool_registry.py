@@ -214,6 +214,12 @@ def tool_registry_status() -> dict:
 
 
 DEFAULT_TOOLS = [
+    ("project.repair_cycle_completion.create", "Create Repair Cycle Completion", "Create a sanitized full repair-cycle completion report.", "project", "medium", True, False, False),
+    ("project.repair_cycle_completion.export_report", "Export Repair Cycle Report", "Export a sanitized public repair-cycle report.", "project", "medium", True, False, False),
+    ("project.repair_cycle_completion.export_index", "Export Repair Cycle Index", "Export the sanitized repair-cycle dashboard.", "project", "medium", True, False, False),
+    ("project.repair_cycle_completion.export_private", "Export Private Repair Cycle Record", "Export a private sanitized completion record.", "project", "medium", True, False, False),
+    ("project.repair_cycle_completion.summary", "Summarize Repair Cycle Completion", "Summarize repair-cycle completion safely.", "project", "low", False, False, True),
+    ("project.repair_cycle_completion.status", "Repair Cycle Completion Status", "Show repair-cycle completion status.", "project", "low", False, False, True),
     ("project.post_apply_verification_gate.open", "Open Post-Apply Verification Gate", "Open human verification for a completed real patch apply.", "project", "medium", True, False, False),
     ("project.post_apply_verification_gate.submit", "Submit Post-Apply Verification", "Record a human post-apply verification decision.", "project", "medium", True, False, False),
     ("project.post_apply_verification_gate.summary", "Summarize Post-Apply Verification Gate", "Summarize post-apply verification safely.", "project", "low", False, False, True),

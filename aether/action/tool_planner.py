@@ -13,6 +13,12 @@ from aether.verification.risk import verification_plan
 
 
 INFERENCE_RULES = [
+    ("project.repair_cycle_completion.status", ["repair cycle completion status", "修复周期完成状态"], "Request appears to inspect repair-cycle completion status."),
+    ("project.repair_cycle_completion.summary", ["summarize repair cycle completion", "repair cycle completion summary", "总结修复周期完成"], "Request appears to summarize repair-cycle completion."),
+    ("project.repair_cycle_completion.export_private", ["private repair cycle export", "detailed repair cycle export", "私人修复周期报告", "详细修复周期导出"], "Request appears to export a private repair-cycle record."),
+    ("project.repair_cycle_completion.export_index", ["export repair cycle index", "generate repair cycle dashboard index", "导出修复周期索引", "生成修复周期仪表板"], "Request appears to export the repair-cycle index."),
+    ("project.repair_cycle_completion.export_report", ["export repair cycle report", "export repair cycle completion report", "导出修复周期报告"], "Request appears to export a repair-cycle report."),
+    ("project.repair_cycle_completion.create", ["create repair cycle completion report", "complete repair cycle report", "generate repair cycle completion", "repair cycle dashboard", "生成修复周期完成报告", "创建修复闭环报告", "修复周期仪表板"], "Request appears to create repair-cycle completion."),
     ("project.post_apply_verification_gate.status", ["post apply verification status", "应用后验证状态"], "Request appears to inspect post-apply verification status."),
     ("project.post_apply_verification_gate.summary", ["summarize post apply verification", "post apply verification summary", "总结应用后验证"], "Request appears to summarize post-apply verification."),
     ("project.post_apply_verification_gate.submit", ["submit post apply verification", "verify apply success", "mark apply failed", "recommend rollback", "提交应用后验证", "确认应用成功", "标记应用失败", "建议回滚"], "Request appears to submit post-apply verification."),

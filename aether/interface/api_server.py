@@ -101,6 +101,7 @@ from aether.action.dry_run_review_gate import open_dry_run_review_gate,submit_dr
 from aether.action.real_apply_approval_gate import open_real_apply_approval_gate,submit_real_apply_final_decision,get_real_apply_approval_gate_record,list_real_apply_approval_gate_records,real_apply_approval_gate_status,summarize_real_apply_approval_gate
 from aether.action.final_real_apply_executor import open_final_real_apply_executor,execute_final_real_apply,get_final_real_apply_executor_record,list_final_real_apply_executor_records,final_real_apply_executor_status,summarize_final_real_apply_executor
 from aether.action.post_apply_verification_gate import open_post_apply_verification_gate,submit_post_apply_verification,get_post_apply_verification_gate_record,list_post_apply_verification_gate_records,post_apply_verification_gate_status,summarize_post_apply_verification_gate
+from aether.action.repair_cycle_completion_report import create_repair_cycle_completion_report,export_repair_cycle_report,export_repair_cycle_index,export_private_repair_cycle_record,get_repair_cycle_completion_record,list_repair_cycle_completion_records,repair_cycle_completion_status,summarize_repair_cycle_completion
 
 app = FastAPI(
     title="Aether API",
@@ -388,6 +389,14 @@ class PostApplyVerificationSubmitRequest(BaseModel):
     verification_record_id:str; decision:str; comment:str|None=None; verifier:str|None="human"; metadata:dict={}
 class PostApplyVerificationGateListRequest(BaseModel):
     status:str|None=None; proposal_id:str|None=None; limit:int=50
+class RepairCycleCompletionCreateRequest(BaseModel):
+    source_type:str; source_id:str; export_public:bool=True; export_index:bool=True; export_private:bool=True; metadata:dict={}
+class RepairCycleReportExportRequest(BaseModel):
+    completion_record_id:str; output_dir:str="docs/history/repair_cycles"; metadata:dict={}
+class RepairCycleIndexExportRequest(BaseModel):
+    output_path:str="docs/history/repair_cycles/INDEX.md"; limit:int=100; metadata:dict={}
+class PrivateRepairCycleExportRequest(BaseModel):
+    completion_record_id:str; metadata:dict={}
 class MilestoneReportExportRequest(BaseModel):
     milestone:str; output_dir:str="docs/history/milestones"; metadata:dict={}
 
@@ -1696,3 +1705,19 @@ def list_post_apply_verification_gate_action(status:str|None=None,proposal_id:st
 def summarize_post_apply_verification_gate_action(record_id:str):return {"name":"Aether","summary":summarize_post_apply_verification_gate(record_id)}
 @app.get("/action/post-apply-verification-gate/{record_id}")
 def get_post_apply_verification_gate_action(record_id:str):return {"name":"Aether","record":get_post_apply_verification_gate_record(record_id)}
+@app.post("/action/repair-cycle-completion/create")
+def create_repair_cycle_completion_action(request:RepairCycleCompletionCreateRequest):return {"name":"Aether","record":create_repair_cycle_completion_report(request.source_type,request.source_id,request.export_public,request.export_index,request.export_private,request.metadata)}
+@app.post("/action/repair-cycle-completion/export-report")
+def export_repair_cycle_report_action(request:RepairCycleReportExportRequest):return export_repair_cycle_report(request.completion_record_id,request.output_dir,request.metadata)
+@app.post("/action/repair-cycle-completion/export-index")
+def export_repair_cycle_index_action(request:RepairCycleIndexExportRequest):return export_repair_cycle_index(request.output_path,request.limit,request.metadata)
+@app.post("/action/repair-cycle-completion/export-private")
+def export_private_repair_cycle_action(request:PrivateRepairCycleExportRequest):return export_private_repair_cycle_record(request.completion_record_id,request.metadata)
+@app.get("/action/repair-cycle-completion/status")
+def get_repair_cycle_completion_status_action():return {"name":"Aether","repair_cycle_completion":repair_cycle_completion_status()}
+@app.get("/action/repair-cycle-completion/list")
+def list_repair_cycle_completion_action(status:str|None=None,proposal_id:str|None=None,limit:int=50):return {"name":"Aether","records":list_repair_cycle_completion_records(status,proposal_id,limit)}
+@app.get("/action/repair-cycle-completion/{record_id}/summary")
+def summarize_repair_cycle_completion_action(record_id:str):return {"name":"Aether","summary":summarize_repair_cycle_completion(record_id)}
+@app.get("/action/repair-cycle-completion/{record_id}")
+def get_repair_cycle_completion_action(record_id:str):return {"name":"Aether","record":get_repair_cycle_completion_record(record_id)}

@@ -33,6 +33,7 @@ from aether.action.dry_run_review_gate import open_dry_run_review_gate,submit_dr
 from aether.action.real_apply_approval_gate import open_real_apply_approval_gate,submit_real_apply_final_decision,summarize_real_apply_approval_gate,real_apply_approval_gate_status
 from aether.action.final_real_apply_executor import open_final_real_apply_executor,execute_final_real_apply,summarize_final_real_apply_executor,final_real_apply_executor_status
 from aether.action.post_apply_verification_gate import open_post_apply_verification_gate,submit_post_apply_verification,summarize_post_apply_verification_gate,post_apply_verification_gate_status
+from aether.action.repair_cycle_completion_report import create_repair_cycle_completion_report,export_repair_cycle_report,export_repair_cycle_index,export_private_repair_cycle_record,summarize_repair_cycle_completion,repair_cycle_completion_status
 from aether.time.clock import get_timezone, now_iso
 
 
@@ -68,6 +69,7 @@ SANDBOX_TOOL_IDS = {
     "project.real_apply_approval_gate.open", "project.real_apply_approval_gate.submit", "project.real_apply_approval_gate.summary", "project.real_apply_approval_gate.status",
     "project.final_real_apply_executor.open", "project.final_real_apply_executor.execute", "project.final_real_apply_executor.summary", "project.final_real_apply_executor.status",
     "project.post_apply_verification_gate.open", "project.post_apply_verification_gate.submit", "project.post_apply_verification_gate.summary", "project.post_apply_verification_gate.status",
+    "project.repair_cycle_completion.create", "project.repair_cycle_completion.export_report", "project.repair_cycle_completion.export_index", "project.repair_cycle_completion.export_private", "project.repair_cycle_completion.summary", "project.repair_cycle_completion.status",
 }
 
 
@@ -272,6 +274,12 @@ def _safe_result(tool_id: str, payload: dict) -> dict:
     if tool_id == "project.post_apply_verification_gate.submit": return submit_post_apply_verification(payload.get("verification_record_id", ""),payload.get("decision", ""),payload.get("comment"),payload.get("verifier", "human"),payload.get("metadata"))
     if tool_id == "project.post_apply_verification_gate.summary": return summarize_post_apply_verification_gate(payload.get("record_id", ""))
     if tool_id == "project.post_apply_verification_gate.status": return post_apply_verification_gate_status()
+    if tool_id == "project.repair_cycle_completion.create": return create_repair_cycle_completion_report(payload.get("source_type",""),payload.get("source_id",""),payload.get("export_public",True),payload.get("export_index",True),payload.get("export_private",True),payload.get("metadata"))
+    if tool_id == "project.repair_cycle_completion.export_report": return export_repair_cycle_report(payload.get("completion_record_id",""),payload.get("output_dir","docs/history/repair_cycles"),payload.get("metadata"))
+    if tool_id == "project.repair_cycle_completion.export_index": return export_repair_cycle_index(payload.get("output_path","docs/history/repair_cycles/INDEX.md"),payload.get("limit",100),payload.get("metadata"))
+    if tool_id == "project.repair_cycle_completion.export_private": return export_private_repair_cycle_record(payload.get("completion_record_id",""),payload.get("metadata"))
+    if tool_id == "project.repair_cycle_completion.summary": return summarize_repair_cycle_completion(payload.get("record_id",""))
+    if tool_id == "project.repair_cycle_completion.status": return repair_cycle_completion_status()
     raise ValueError("Unsupported sandbox tool.")
 
 
