@@ -13,6 +13,10 @@ from aether.verification.risk import verification_plan
 
 
 INFERENCE_RULES = [
+    ("project.approved_dry_run_gate.status", ["approved dry run gate status", "批准 dry run 状态"], "Request appears to inspect approved dry-run gate status."),
+    ("project.approved_dry_run_gate.summary", ["summarize approved dry run gate", "approved dry run summary", "总结批准 dry run"], "Request appears to summarize an approved dry-run gate."),
+    ("project.approved_dry_run_gate.execute", ["execute approved dry run", "run approved proposal dry run", "执行批准提案测试", "运行批准提案 dry run"], "Request appears to execute an approved proposal dry-run."),
+    ("project.approved_dry_run_gate.open", ["open approved dry run gate", "dry run approved proposal", "prepare dry run for approved proposal", "打开批准提案 dry run", "执行批准提案 dry run", "准备批准提案测试"], "Request appears to open an approved dry-run gate."),
     ("project.revised_proposal_review.status", ["revised proposal review status", "修订提案审核状态"], "Request appears to inspect revised proposal review status."),
     ("project.revised_proposal_review.summary", ["summarize revised proposal review", "revised proposal review summary", "总结修订提案审核"], "Request appears to summarize revised proposal review."),
     ("project.revised_proposal_review.submit", ["submit revised proposal review", "approve revised proposal", "reject revised proposal", "request changes on revised proposal", "提交修订提案审核", "批准修订提案", "拒绝修订提案", "要求修改修订提案"], "Request appears to submit a revised proposal review."),
