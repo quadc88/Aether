@@ -214,6 +214,9 @@ def tool_registry_status() -> dict:
 
 
 DEFAULT_TOOLS = [
+    ("project.repair_workflow.trace", "Trace Repair Workflow", "Trace existing repair records without changing the workflow.", "project", "low", False, False, True),
+    ("project.repair_workflow.summary", "Summarize Repair Workflow", "Summarize a tracked repair workflow.", "project", "low", False, False, True),
+    ("project.repair_workflow.status", "Repair Workflow Tracker Status", "Show repair workflow tracker status.", "project", "low", False, False, True),
     ("project.repair_bridge_selection.create", "Create Repair Bridge Selection", "Create a guarded review bridge from an explicit repair-plan candidate.", "project", "medium", True, False, False),
     ("project.repair_bridge_selection.summary", "Summarize Repair Bridge Selection", "Summarize a repair bridge selection.", "project", "low", False, False, True),
     ("project.repair_bridge_selection.status", "Repair Bridge Selection Status", "Show repair bridge selection status.", "project", "low", False, False, True),

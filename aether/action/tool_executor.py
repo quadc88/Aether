@@ -23,6 +23,7 @@ from aether.action.code_reviewer import create_code_review, summarize_code_revie
 from aether.action.review_bridge import create_bridge_from_finding, summarize_review_bridge_record, review_bridge_status
 from aether.action.repair_planner import create_repair_plan, summarize_repair_plan, repair_plan_status
 from aether.action.repair_bridge_selector import create_bridge_from_repair_plan, summarize_repair_bridge_selection, repair_bridge_selection_status
+from aether.action.repair_workflow_tracker import trace_repair_workflow, summarize_repair_workflow, repair_workflow_status
 from aether.time.clock import get_timezone, now_iso
 
 
@@ -48,6 +49,7 @@ SANDBOX_TOOL_IDS = {
     "project.review_bridge.create", "project.review_bridge.summary", "project.review_bridge.status",
     "project.repair_plan.create", "project.repair_plan.summary", "project.repair_plan.status",
     "project.repair_bridge_selection.create", "project.repair_bridge_selection.summary", "project.repair_bridge_selection.status",
+    "project.repair_workflow.trace", "project.repair_workflow.summary", "project.repair_workflow.status",
 }
 
 
@@ -213,6 +215,9 @@ def _safe_result(tool_id: str, payload: dict) -> dict:
     if tool_id == "project.repair_bridge_selection.create": return create_bridge_from_repair_plan(payload.get("repair_plan_id", ""),payload.get("finding_id", ""),payload.get("proposed_excerpt", ""),payload.get("original_excerpt"),payload.get("proposed_change_summary"),payload.get("reason"),payload.get("create_approval_if_required",False),payload.get("metadata"))
     if tool_id == "project.repair_bridge_selection.summary": return summarize_repair_bridge_selection(payload.get("record_id", ""))
     if tool_id == "project.repair_bridge_selection.status": return repair_bridge_selection_status()
+    if tool_id == "project.repair_workflow.trace": return trace_repair_workflow(payload.get("root_type", ""), payload.get("root_id", ""), payload.get("metadata"))
+    if tool_id == "project.repair_workflow.summary": return summarize_repair_workflow(payload.get("report_id", ""))
+    if tool_id == "project.repair_workflow.status": return repair_workflow_status()
     raise ValueError("Unsupported sandbox tool.")
 
 

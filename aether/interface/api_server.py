@@ -91,6 +91,7 @@ from aether.action.code_reviewer import create_code_review, get_code_review, lis
 from aether.action.review_bridge import create_bridge_from_finding, get_review_bridge_record, list_review_bridge_records, review_bridge_status, summarize_review_bridge_record
 from aether.action.repair_planner import create_repair_plan, get_repair_plan, list_repair_plans, repair_plan_status, summarize_repair_plan
 from aether.action.repair_bridge_selector import create_bridge_from_repair_plan, get_repair_bridge_selection, list_repair_bridge_selections, repair_bridge_selection_status, summarize_repair_bridge_selection
+from aether.action.repair_workflow_tracker import trace_repair_workflow, get_repair_workflow_report, list_repair_workflow_reports, repair_workflow_status, summarize_repair_workflow
 
 app = FastAPI(
     title="Aether API",
@@ -324,6 +325,10 @@ class RepairBridgeSelectionCreateRequest(BaseModel):
     repair_plan_id:str; finding_id:str; proposed_excerpt:str; original_excerpt:str|None=None; proposed_change_summary:str|None=None; reason:str|None=None; create_approval_if_required:bool=False; metadata:dict={}
 class RepairBridgeSelectionListRequest(BaseModel):
     status:str|None=None; repair_plan_id:str|None=None; limit:int=50
+class RepairWorkflowTraceRequest(BaseModel):
+    root_type:str; root_id:str; metadata:dict={}
+class RepairWorkflowListRequest(BaseModel):
+    status:str|None=None; root_type:str|None=None; limit:int=50
 class MilestoneReportExportRequest(BaseModel):
     milestone:str; output_dir:str="docs/history/milestones"; metadata:dict={}
 
@@ -1518,3 +1523,13 @@ def list_repair_bridge_selection_action(status:str|None=None,repair_plan_id:str|
 def summarize_repair_bridge_selection_action(record_id:str):return {"name":"Aether","summary":summarize_repair_bridge_selection(record_id)}
 @app.get("/action/repair-bridge-selection/{record_id}")
 def get_repair_bridge_selection_action(record_id:str):return {"name":"Aether","record":get_repair_bridge_selection(record_id)}
+@app.post("/action/repair-workflow/trace")
+def trace_repair_workflow_action(request:RepairWorkflowTraceRequest):return {"name":"Aether","report":trace_repair_workflow(request.root_type,request.root_id,request.metadata)}
+@app.get("/action/repair-workflow/status")
+def get_repair_workflow_status_action():return {"name":"Aether","repair_workflow":repair_workflow_status()}
+@app.get("/action/repair-workflow/list")
+def list_repair_workflow_action(status:str|None=None,root_type:str|None=None,limit:int=50):return {"name":"Aether","reports":list_repair_workflow_reports(status,root_type,limit)}
+@app.get("/action/repair-workflow/{report_id}/summary")
+def summarize_repair_workflow_action(report_id:str):return {"name":"Aether","summary":summarize_repair_workflow(report_id)}
+@app.get("/action/repair-workflow/{report_id}")
+def get_repair_workflow_action(report_id:str):return {"name":"Aether","report":get_repair_workflow_report(report_id)}

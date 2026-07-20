@@ -13,6 +13,9 @@ from aether.verification.risk import verification_plan
 
 
 INFERENCE_RULES = [
+    ("project.repair_workflow.status", ["repair workflow tracker status", "workflow tracker status", "修复流程追踪状态"], "Request appears to inspect repair workflow tracker status."),
+    ("project.repair_workflow.summary", ["summarize repair workflow", "repair workflow summary", "总结修复流程"], "Request appears to summarize a repair workflow."),
+    ("project.repair_workflow.trace", ["trace repair workflow", "repair workflow status", "workflow tracker", "trace repair pipeline", "where is this repair now", "跟踪修复流程", "修复流程状态", "追踪修复管线", "这个修复到哪一步了"], "Request appears to trace an existing repair workflow."),
     ("project.repair_bridge_selection.status", ["repair bridge selection status", "修复桥接选择状态"], "Request appears to inspect repair bridge selection status."),
     ("project.repair_bridge_selection.summary", ["summarize repair bridge selection", "repair bridge selection summary", "总结修复桥接选择"], "Request appears to summarize a repair bridge selection."),
     ("project.repair_bridge_selection.create", ["select repair bridge candidate", "create bridge from repair plan", "bridge repair plan finding", "turn repair plan candidate into proposal", "从修复计划创建桥接", "从修复计划生成修改建议", "选择修复候选"], "Request appears to select a repair-plan candidate for a guarded review bridge."),
