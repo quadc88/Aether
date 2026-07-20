@@ -214,6 +214,9 @@ def tool_registry_status() -> dict:
 
 
 DEFAULT_TOOLS = [
+    ("project.repair_bridge_selection.create", "Create Repair Bridge Selection", "Create a guarded review bridge from an explicit repair-plan candidate.", "project", "medium", True, False, False),
+    ("project.repair_bridge_selection.summary", "Summarize Repair Bridge Selection", "Summarize a repair bridge selection.", "project", "low", False, False, True),
+    ("project.repair_bridge_selection.status", "Repair Bridge Selection Status", "Show repair bridge selection status.", "project", "low", False, False, True),
     ("project.repair_plan.create", "Create Repair Plan", "Prioritize review findings without acting on them.", "project", "medium", True, False, False),
     ("project.repair_plan.summary", "Summarize Repair Plan", "Summarize a repair plan.", "project", "low", False, False, True),
     ("project.repair_plan.status", "Repair Plan Status", "Show repair-plan status.", "project", "low", False, False, True),

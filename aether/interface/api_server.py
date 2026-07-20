@@ -90,6 +90,7 @@ from aether.action.changelog_exporter import export_public_changelog, export_mil
 from aether.action.code_reviewer import create_code_review, get_code_review, list_code_reviews, code_review_status, summarize_code_review
 from aether.action.review_bridge import create_bridge_from_finding, get_review_bridge_record, list_review_bridge_records, review_bridge_status, summarize_review_bridge_record
 from aether.action.repair_planner import create_repair_plan, get_repair_plan, list_repair_plans, repair_plan_status, summarize_repair_plan
+from aether.action.repair_bridge_selector import create_bridge_from_repair_plan, get_repair_bridge_selection, list_repair_bridge_selections, repair_bridge_selection_status, summarize_repair_bridge_selection
 
 app = FastAPI(
     title="Aether API",
@@ -319,6 +320,10 @@ class ReviewBridgeCreateRequest(BaseModel):
     report_id:str; finding_id:str; proposed_excerpt:str; original_excerpt:str|None=None; proposed_change_summary:str|None=None; reason:str|None=None; create_approval_if_required:bool=False; metadata:dict={}
 class RepairPlanCreateRequest(BaseModel):
     review_report_id:str; scope:str|None=None; include_deferred:bool=True; max_findings:int=50; metadata:dict={}
+class RepairBridgeSelectionCreateRequest(BaseModel):
+    repair_plan_id:str; finding_id:str; proposed_excerpt:str; original_excerpt:str|None=None; proposed_change_summary:str|None=None; reason:str|None=None; create_approval_if_required:bool=False; metadata:dict={}
+class RepairBridgeSelectionListRequest(BaseModel):
+    status:str|None=None; repair_plan_id:str|None=None; limit:int=50
 class MilestoneReportExportRequest(BaseModel):
     milestone:str; output_dir:str="docs/history/milestones"; metadata:dict={}
 
@@ -1503,3 +1508,13 @@ def list_repair_plan_action(status:str|None=None,review_report_id:str|None=None,
 def summarize_repair_plan_action(plan_id:str):return {"name":"Aether","summary":summarize_repair_plan(plan_id)}
 @app.get("/action/repair-plan/{plan_id}")
 def get_repair_plan_action(plan_id:str):return {"name":"Aether","plan":get_repair_plan(plan_id)}
+@app.post("/action/repair-bridge-selection/create")
+def create_repair_bridge_selection_action(request:RepairBridgeSelectionCreateRequest):return {"name":"Aether","record":create_bridge_from_repair_plan(request.repair_plan_id,request.finding_id,request.proposed_excerpt,request.original_excerpt,request.proposed_change_summary,request.reason,request.create_approval_if_required,request.metadata)}
+@app.get("/action/repair-bridge-selection/status")
+def get_repair_bridge_selection_status_action():return {"name":"Aether","repair_bridge_selection":repair_bridge_selection_status()}
+@app.get("/action/repair-bridge-selection/list")
+def list_repair_bridge_selection_action(status:str|None=None,repair_plan_id:str|None=None,limit:int=50):return {"name":"Aether","records":list_repair_bridge_selections(status,repair_plan_id,limit)}
+@app.get("/action/repair-bridge-selection/{record_id}/summary")
+def summarize_repair_bridge_selection_action(record_id:str):return {"name":"Aether","summary":summarize_repair_bridge_selection(record_id)}
+@app.get("/action/repair-bridge-selection/{record_id}")
+def get_repair_bridge_selection_action(record_id:str):return {"name":"Aether","record":get_repair_bridge_selection(record_id)}
