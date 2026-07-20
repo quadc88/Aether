@@ -25,6 +25,7 @@ from aether.action.repair_planner import create_repair_plan, summarize_repair_pl
 from aether.action.repair_bridge_selector import create_bridge_from_repair_plan, summarize_repair_bridge_selection, repair_bridge_selection_status
 from aether.action.repair_workflow_tracker import trace_repair_workflow, summarize_repair_workflow, repair_workflow_status
 from aether.action.repair_workflow_exporter import export_workflow_report, export_workflow_index, export_private_workflow_report, repair_workflow_export_status
+from aether.action.proposal_review_console import open_proposal_review_console, submit_proposal_review, summarize_proposal_review_console, proposal_review_console_status
 from aether.time.clock import get_timezone, now_iso
 
 
@@ -52,6 +53,7 @@ SANDBOX_TOOL_IDS = {
     "project.repair_bridge_selection.create", "project.repair_bridge_selection.summary", "project.repair_bridge_selection.status",
     "project.repair_workflow.trace", "project.repair_workflow.summary", "project.repair_workflow.status",
     "project.repair_workflow_export.export_report", "project.repair_workflow_export.export_index", "project.repair_workflow_export.export_private", "project.repair_workflow_export.status",
+    "project.proposal_review_console.open", "project.proposal_review_console.submit", "project.proposal_review_console.summary", "project.proposal_review_console.status",
 }
 
 
@@ -224,6 +226,10 @@ def _safe_result(tool_id: str, payload: dict) -> dict:
     if tool_id == "project.repair_workflow_export.export_index": return export_workflow_index(payload.get("output_path", "docs/history/repair_workflows/INDEX.md"), payload.get("limit", 100), payload.get("metadata"))
     if tool_id == "project.repair_workflow_export.export_private": return export_private_workflow_report(payload.get("report_id", ""), payload.get("metadata"))
     if tool_id == "project.repair_workflow_export.status": return repair_workflow_export_status()
+    if tool_id == "project.proposal_review_console.open": return open_proposal_review_console(payload.get("source_type", ""), payload.get("source_id", ""), payload.get("metadata"))
+    if tool_id == "project.proposal_review_console.submit": return submit_proposal_review(payload.get("console_record_id", ""), payload.get("decision", ""), payload.get("comment"), payload.get("reviewer", "human"), payload.get("create_approval_if_required", False), payload.get("metadata"))
+    if tool_id == "project.proposal_review_console.summary": return summarize_proposal_review_console(payload.get("record_id", ""))
+    if tool_id == "project.proposal_review_console.status": return proposal_review_console_status()
     raise ValueError("Unsupported sandbox tool.")
 
 

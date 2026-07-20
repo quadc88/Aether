@@ -13,6 +13,10 @@ from aether.verification.risk import verification_plan
 
 
 INFERENCE_RULES = [
+    ("project.proposal_review_console.status", ["proposal review console status", "提案审核状态"], "Request appears to inspect proposal review console status."),
+    ("project.proposal_review_console.summary", ["summarize proposal review console", "proposal review console summary", "总结提案审核"], "Request appears to summarize a proposal review console."),
+    ("project.proposal_review_console.submit", ["submit proposal review", "approve proposal review", "reject proposal review", "request changes on proposal", "提交提案审核", "批准提案", "拒绝提案", "要求修改提案"], "Request appears to submit an explicit proposal review decision."),
+    ("project.proposal_review_console.open", ["open proposal review console", "review this proposal", "open human proposal review", "open review console from workflow", "从修复流程打开提案审核", "打开提案审核", "人工审核提案"], "Request appears to open a safe proposal review console."),
     ("project.repair_workflow_export.status", ["repair workflow export status", "workflow export status", "修复流程导出状态"], "Request appears to inspect repair workflow export status."),
     ("project.repair_workflow_export.export_private", ["private repair workflow export", "detailed workflow export", "私人修复流程报告", "详细修复流程导出"], "Request appears to export a private workflow report."),
     ("project.repair_workflow_export.export_index", ["export repair workflow index", "generate repair workflow dashboard index", "workflow index", "导出修复流程索引", "生成修复流程索引"], "Request appears to export a workflow dashboard index."),

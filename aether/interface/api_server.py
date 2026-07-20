@@ -93,6 +93,7 @@ from aether.action.repair_planner import create_repair_plan, get_repair_plan, li
 from aether.action.repair_bridge_selector import create_bridge_from_repair_plan, get_repair_bridge_selection, list_repair_bridge_selections, repair_bridge_selection_status, summarize_repair_bridge_selection
 from aether.action.repair_workflow_tracker import trace_repair_workflow, get_repair_workflow_report, list_repair_workflow_reports, repair_workflow_status, summarize_repair_workflow
 from aether.action.repair_workflow_exporter import export_workflow_report, export_workflow_index, export_private_workflow_report, repair_workflow_export_status
+from aether.action.proposal_review_console import open_proposal_review_console, submit_proposal_review, get_proposal_review_console_record, list_proposal_review_console_records, proposal_review_console_status, summarize_proposal_review_console
 
 app = FastAPI(
     title="Aether API",
@@ -336,6 +337,12 @@ class RepairWorkflowIndexExportRequest(BaseModel):
     output_path:str="docs/history/repair_workflows/INDEX.md"; limit:int=100; metadata:dict={}
 class PrivateRepairWorkflowExportRequest(BaseModel):
     report_id:str; metadata:dict={}
+class ProposalReviewConsoleOpenRequest(BaseModel):
+    source_type:str; source_id:str; metadata:dict={}
+class ProposalReviewSubmitRequest(BaseModel):
+    console_record_id:str; decision:str; comment:str|None=None; reviewer:str|None="human"; create_approval_if_required:bool=False; metadata:dict={}
+class ProposalReviewConsoleListRequest(BaseModel):
+    status:str|None=None; proposal_id:str|None=None; limit:int=50
 class MilestoneReportExportRequest(BaseModel):
     milestone:str; output_dir:str="docs/history/milestones"; metadata:dict={}
 
@@ -1548,3 +1555,15 @@ def export_repair_workflow_index_action(request:RepairWorkflowIndexExportRequest
 def export_private_repair_workflow_report_action(request:PrivateRepairWorkflowExportRequest):return export_private_workflow_report(request.report_id,request.metadata)
 @app.get("/action/repair-workflow-export/status")
 def get_repair_workflow_export_status_action():return repair_workflow_export_status()
+@app.post("/action/proposal-review-console/open")
+def open_proposal_review_console_action(request:ProposalReviewConsoleOpenRequest):return {"name":"Aether","record":open_proposal_review_console(request.source_type,request.source_id,request.metadata)}
+@app.post("/action/proposal-review-console/submit")
+def submit_proposal_review_action(request:ProposalReviewSubmitRequest):return {"name":"Aether","record":submit_proposal_review(request.console_record_id,request.decision,request.comment,request.reviewer,request.create_approval_if_required,request.metadata)}
+@app.get("/action/proposal-review-console/status")
+def get_proposal_review_console_status_action():return {"name":"Aether","proposal_review_console":proposal_review_console_status()}
+@app.get("/action/proposal-review-console/list")
+def list_proposal_review_console_action(status:str|None=None,proposal_id:str|None=None,limit:int=50):return {"name":"Aether","records":list_proposal_review_console_records(status,proposal_id,limit)}
+@app.get("/action/proposal-review-console/{record_id}/summary")
+def summarize_proposal_review_console_action(record_id:str):return {"name":"Aether","summary":summarize_proposal_review_console(record_id)}
+@app.get("/action/proposal-review-console/{record_id}")
+def get_proposal_review_console_action(record_id:str):return {"name":"Aether","record":get_proposal_review_console_record(record_id)}

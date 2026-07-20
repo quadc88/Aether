@@ -214,6 +214,10 @@ def tool_registry_status() -> dict:
 
 
 DEFAULT_TOOLS = [
+    ("project.proposal_review_console.open", "Open Proposal Review Console", "Open a safe human review console for an existing proposal.", "project", "low", False, False, True),
+    ("project.proposal_review_console.submit", "Submit Proposal Review", "Submit an explicit human decision through the existing patch-review flow.", "project", "medium", True, False, False),
+    ("project.proposal_review_console.summary", "Summarize Proposal Review Console", "Summarize a proposal review console record.", "project", "low", False, False, True),
+    ("project.proposal_review_console.status", "Proposal Review Console Status", "Show proposal review console status.", "project", "low", False, False, True),
     ("project.repair_workflow_export.export_report", "Export Repair Workflow Report", "Export a sanitized workflow report.", "project", "medium", True, False, False),
     ("project.repair_workflow_export.export_index", "Export Repair Workflow Index", "Export a sanitized workflow dashboard index.", "project", "medium", True, False, False),
     ("project.repair_workflow_export.export_private", "Export Private Repair Workflow Report", "Export a safe private workflow report outside the repository.", "project", "medium", True, False, False),
