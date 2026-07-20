@@ -13,6 +13,10 @@ from aether.verification.risk import verification_plan
 
 
 INFERENCE_RULES = [
+    ("project.revised_proposal_review.status", ["revised proposal review status", "修订提案审核状态"], "Request appears to inspect revised proposal review status."),
+    ("project.revised_proposal_review.summary", ["summarize revised proposal review", "revised proposal review summary", "总结修订提案审核"], "Request appears to summarize revised proposal review."),
+    ("project.revised_proposal_review.submit", ["submit revised proposal review", "approve revised proposal", "reject revised proposal", "request changes on revised proposal", "提交修订提案审核", "批准修订提案", "拒绝修订提案", "要求修改修订提案"], "Request appears to submit a revised proposal review."),
+    ("project.revised_proposal_review.open", ["open revised proposal review", "review revised proposal", "open review for revised proposal", "打开修订提案审核", "审核修订提案", "人工审核修订提案"], "Request appears to open review for a revised proposal."),
     ("project.proposal_revision_console.status", ["proposal revision console status", "提案修订状态"], "Request appears to inspect proposal revision console status."),
     ("project.proposal_revision_console.summary", ["summarize proposal revision console", "proposal revision summary", "总结提案修订"], "Request appears to summarize a proposal revision console."),
     ("project.proposal_revision_console.create_revision", ["create proposal revision", "submit revised proposal", "create revised patch proposal", "提交修订提案", "创建修订补丁"], "Request appears to create a caller-authored proposal revision."),

@@ -214,6 +214,10 @@ def tool_registry_status() -> dict:
 
 
 DEFAULT_TOOLS = [
+    ("project.revised_proposal_review.open", "Open Revised Proposal Review", "Open a human review console for an existing revised proposal.", "project", "low", False, False, True),
+    ("project.revised_proposal_review.submit", "Submit Revised Proposal Review", "Submit an explicit human review for a revised proposal.", "project", "medium", True, False, False),
+    ("project.revised_proposal_review.summary", "Summarize Revised Proposal Review", "Summarize a revised proposal review loop.", "project", "low", False, False, True),
+    ("project.revised_proposal_review.status", "Revised Proposal Review Status", "Show revised proposal review loop status.", "project", "low", False, False, True),
     ("project.proposal_revision_console.open", "Open Proposal Revision Console", "Open a safe revision console for a proposal with requested changes.", "project", "low", False, False, True),
     ("project.proposal_revision_console.create_revision", "Create Proposal Revision", "Create a guarded revised proposal from caller-provided text.", "project", "medium", True, False, False),
     ("project.proposal_revision_console.summary", "Summarize Proposal Revision Console", "Summarize a proposal revision console record.", "project", "low", False, False, True),

@@ -95,6 +95,7 @@ from aether.action.repair_workflow_tracker import trace_repair_workflow, get_rep
 from aether.action.repair_workflow_exporter import export_workflow_report, export_workflow_index, export_private_workflow_report, repair_workflow_export_status
 from aether.action.proposal_review_console import open_proposal_review_console, submit_proposal_review, get_proposal_review_console_record, list_proposal_review_console_records, proposal_review_console_status, summarize_proposal_review_console
 from aether.action.proposal_revision_console import open_proposal_revision_console, create_proposal_revision, get_proposal_revision_console_record, list_proposal_revision_console_records, proposal_revision_console_status, summarize_proposal_revision_console
+from aether.action.revised_proposal_review_loop import open_revised_proposal_review, submit_revised_proposal_review, get_revised_proposal_review_loop_record, list_revised_proposal_review_loop_records, revised_proposal_review_loop_status, summarize_revised_proposal_review_loop
 
 app = FastAPI(
     title="Aether API",
@@ -350,6 +351,12 @@ class ProposalRevisionCreateRequest(BaseModel):
     revision_record_id:str; revised_proposed_excerpt:str; revised_change_summary:str|None=None; human_revision_note:str|None=None; create_approval_if_required:bool=False; metadata:dict={}
 class ProposalRevisionConsoleListRequest(BaseModel):
     status:str|None=None; original_proposal_id:str|None=None; limit:int=50
+class RevisedProposalReviewOpenRequest(BaseModel):
+    proposal_revision_console_id:str; metadata:dict={}
+class RevisedProposalReviewSubmitRequest(BaseModel):
+    review_loop_record_id:str; decision:str; comment:str|None=None; reviewer:str|None="human"; create_approval_if_required:bool=False; metadata:dict={}
+class RevisedProposalReviewLoopListRequest(BaseModel):
+    status:str|None=None; revised_proposal_id:str|None=None; limit:int=50
 class MilestoneReportExportRequest(BaseModel):
     milestone:str; output_dir:str="docs/history/milestones"; metadata:dict={}
 
@@ -1586,3 +1593,15 @@ def list_proposal_revision_console_action(status:str|None=None,original_proposal
 def summarize_proposal_revision_console_action(record_id:str):return {"name":"Aether","summary":summarize_proposal_revision_console(record_id)}
 @app.get("/action/proposal-revision-console/{record_id}")
 def get_proposal_revision_console_action(record_id:str):return {"name":"Aether","record":get_proposal_revision_console_record(record_id)}
+@app.post("/action/revised-proposal-review/open")
+def open_revised_proposal_review_action(request:RevisedProposalReviewOpenRequest):return {"name":"Aether","record":open_revised_proposal_review(request.proposal_revision_console_id,request.metadata)}
+@app.post("/action/revised-proposal-review/submit")
+def submit_revised_proposal_review_action(request:RevisedProposalReviewSubmitRequest):return {"name":"Aether","record":submit_revised_proposal_review(request.review_loop_record_id,request.decision,request.comment,request.reviewer,request.create_approval_if_required,request.metadata)}
+@app.get("/action/revised-proposal-review/status")
+def get_revised_proposal_review_status_action():return {"name":"Aether","revised_proposal_review":revised_proposal_review_loop_status()}
+@app.get("/action/revised-proposal-review/list")
+def list_revised_proposal_review_action(status:str|None=None,revised_proposal_id:str|None=None,limit:int=50):return {"name":"Aether","records":list_revised_proposal_review_loop_records(status,revised_proposal_id,limit)}
+@app.get("/action/revised-proposal-review/{record_id}/summary")
+def summarize_revised_proposal_review_action(record_id:str):return {"name":"Aether","summary":summarize_revised_proposal_review_loop(record_id)}
+@app.get("/action/revised-proposal-review/{record_id}")
+def get_revised_proposal_review_action(record_id:str):return {"name":"Aether","record":get_revised_proposal_review_loop_record(record_id)}
