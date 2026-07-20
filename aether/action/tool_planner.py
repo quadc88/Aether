@@ -13,6 +13,10 @@ from aether.verification.risk import verification_plan
 
 
 INFERENCE_RULES = [
+    ("project.repair_workflow_export.status", ["repair workflow export status", "workflow export status", "修复流程导出状态"], "Request appears to inspect repair workflow export status."),
+    ("project.repair_workflow_export.export_private", ["private repair workflow export", "detailed workflow export", "私人修复流程报告", "详细修复流程导出"], "Request appears to export a private workflow report."),
+    ("project.repair_workflow_export.export_index", ["export repair workflow index", "generate repair workflow dashboard index", "workflow index", "导出修复流程索引", "生成修复流程索引"], "Request appears to export a workflow dashboard index."),
+    ("project.repair_workflow_export.export_report", ["export repair workflow report", "generate repair workflow report", "repair workflow dashboard", "export workflow dashboard", "导出修复流程报告", "生成修复流程报告", "修复流程仪表板"], "Request appears to export a workflow report."),
     ("project.repair_workflow.status", ["repair workflow tracker status", "workflow tracker status", "修复流程追踪状态"], "Request appears to inspect repair workflow tracker status."),
     ("project.repair_workflow.summary", ["summarize repair workflow", "repair workflow summary", "总结修复流程"], "Request appears to summarize a repair workflow."),
     ("project.repair_workflow.trace", ["trace repair workflow", "repair workflow status", "workflow tracker", "trace repair pipeline", "where is this repair now", "跟踪修复流程", "修复流程状态", "追踪修复管线", "这个修复到哪一步了"], "Request appears to trace an existing repair workflow."),

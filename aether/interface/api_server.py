@@ -92,6 +92,7 @@ from aether.action.review_bridge import create_bridge_from_finding, get_review_b
 from aether.action.repair_planner import create_repair_plan, get_repair_plan, list_repair_plans, repair_plan_status, summarize_repair_plan
 from aether.action.repair_bridge_selector import create_bridge_from_repair_plan, get_repair_bridge_selection, list_repair_bridge_selections, repair_bridge_selection_status, summarize_repair_bridge_selection
 from aether.action.repair_workflow_tracker import trace_repair_workflow, get_repair_workflow_report, list_repair_workflow_reports, repair_workflow_status, summarize_repair_workflow
+from aether.action.repair_workflow_exporter import export_workflow_report, export_workflow_index, export_private_workflow_report, repair_workflow_export_status
 
 app = FastAPI(
     title="Aether API",
@@ -329,6 +330,12 @@ class RepairWorkflowTraceRequest(BaseModel):
     root_type:str; root_id:str; metadata:dict={}
 class RepairWorkflowListRequest(BaseModel):
     status:str|None=None; root_type:str|None=None; limit:int=50
+class RepairWorkflowExportRequest(BaseModel):
+    report_id:str; output_dir:str="docs/history/repair_workflows"; metadata:dict={}
+class RepairWorkflowIndexExportRequest(BaseModel):
+    output_path:str="docs/history/repair_workflows/INDEX.md"; limit:int=100; metadata:dict={}
+class PrivateRepairWorkflowExportRequest(BaseModel):
+    report_id:str; metadata:dict={}
 class MilestoneReportExportRequest(BaseModel):
     milestone:str; output_dir:str="docs/history/milestones"; metadata:dict={}
 
@@ -1533,3 +1540,11 @@ def list_repair_workflow_action(status:str|None=None,root_type:str|None=None,lim
 def summarize_repair_workflow_action(report_id:str):return {"name":"Aether","summary":summarize_repair_workflow(report_id)}
 @app.get("/action/repair-workflow/{report_id}")
 def get_repair_workflow_action(report_id:str):return {"name":"Aether","report":get_repair_workflow_report(report_id)}
+@app.post("/action/repair-workflow-export/export-report")
+def export_repair_workflow_report_action(request:RepairWorkflowExportRequest):return export_workflow_report(request.report_id,request.output_dir,request.metadata)
+@app.post("/action/repair-workflow-export/export-index")
+def export_repair_workflow_index_action(request:RepairWorkflowIndexExportRequest):return export_workflow_index(request.output_path,request.limit,request.metadata)
+@app.post("/action/repair-workflow-export/export-private")
+def export_private_repair_workflow_report_action(request:PrivateRepairWorkflowExportRequest):return export_private_workflow_report(request.report_id,request.metadata)
+@app.get("/action/repair-workflow-export/status")
+def get_repair_workflow_export_status_action():return repair_workflow_export_status()

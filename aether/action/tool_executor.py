@@ -24,6 +24,7 @@ from aether.action.review_bridge import create_bridge_from_finding, summarize_re
 from aether.action.repair_planner import create_repair_plan, summarize_repair_plan, repair_plan_status
 from aether.action.repair_bridge_selector import create_bridge_from_repair_plan, summarize_repair_bridge_selection, repair_bridge_selection_status
 from aether.action.repair_workflow_tracker import trace_repair_workflow, summarize_repair_workflow, repair_workflow_status
+from aether.action.repair_workflow_exporter import export_workflow_report, export_workflow_index, export_private_workflow_report, repair_workflow_export_status
 from aether.time.clock import get_timezone, now_iso
 
 
@@ -50,6 +51,7 @@ SANDBOX_TOOL_IDS = {
     "project.repair_plan.create", "project.repair_plan.summary", "project.repair_plan.status",
     "project.repair_bridge_selection.create", "project.repair_bridge_selection.summary", "project.repair_bridge_selection.status",
     "project.repair_workflow.trace", "project.repair_workflow.summary", "project.repair_workflow.status",
+    "project.repair_workflow_export.export_report", "project.repair_workflow_export.export_index", "project.repair_workflow_export.export_private", "project.repair_workflow_export.status",
 }
 
 
@@ -218,6 +220,10 @@ def _safe_result(tool_id: str, payload: dict) -> dict:
     if tool_id == "project.repair_workflow.trace": return trace_repair_workflow(payload.get("root_type", ""), payload.get("root_id", ""), payload.get("metadata"))
     if tool_id == "project.repair_workflow.summary": return summarize_repair_workflow(payload.get("report_id", ""))
     if tool_id == "project.repair_workflow.status": return repair_workflow_status()
+    if tool_id == "project.repair_workflow_export.export_report": return export_workflow_report(payload.get("report_id", ""), payload.get("output_dir", "docs/history/repair_workflows"), payload.get("metadata"))
+    if tool_id == "project.repair_workflow_export.export_index": return export_workflow_index(payload.get("output_path", "docs/history/repair_workflows/INDEX.md"), payload.get("limit", 100), payload.get("metadata"))
+    if tool_id == "project.repair_workflow_export.export_private": return export_private_workflow_report(payload.get("report_id", ""), payload.get("metadata"))
+    if tool_id == "project.repair_workflow_export.status": return repair_workflow_export_status()
     raise ValueError("Unsupported sandbox tool.")
 
 

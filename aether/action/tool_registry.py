@@ -214,6 +214,10 @@ def tool_registry_status() -> dict:
 
 
 DEFAULT_TOOLS = [
+    ("project.repair_workflow_export.export_report", "Export Repair Workflow Report", "Export a sanitized workflow report.", "project", "medium", True, False, False),
+    ("project.repair_workflow_export.export_index", "Export Repair Workflow Index", "Export a sanitized workflow dashboard index.", "project", "medium", True, False, False),
+    ("project.repair_workflow_export.export_private", "Export Private Repair Workflow Report", "Export a safe private workflow report outside the repository.", "project", "medium", True, False, False),
+    ("project.repair_workflow_export.status", "Repair Workflow Export Status", "Show repair workflow exporter status.", "project", "low", False, False, True),
     ("project.repair_workflow.trace", "Trace Repair Workflow", "Trace existing repair records without changing the workflow.", "project", "low", False, False, True),
     ("project.repair_workflow.summary", "Summarize Repair Workflow", "Summarize a tracked repair workflow.", "project", "low", False, False, True),
     ("project.repair_workflow.status", "Repair Workflow Tracker Status", "Show repair workflow tracker status.", "project", "low", False, False, True),
