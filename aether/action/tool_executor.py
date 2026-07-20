@@ -29,6 +29,7 @@ from aether.action.proposal_review_console import open_proposal_review_console, 
 from aether.action.proposal_revision_console import open_proposal_revision_console, create_proposal_revision, summarize_proposal_revision_console, proposal_revision_console_status
 from aether.action.revised_proposal_review_loop import open_revised_proposal_review, submit_revised_proposal_review, summarize_revised_proposal_review_loop, revised_proposal_review_loop_status
 from aether.action.approved_dry_run_gate import open_approved_dry_run_gate,execute_approved_dry_run,summarize_approved_dry_run_gate,approved_dry_run_gate_status
+from aether.action.dry_run_review_gate import open_dry_run_review_gate,submit_dry_run_review,summarize_dry_run_review_gate,dry_run_review_gate_status
 from aether.time.clock import get_timezone, now_iso
 
 
@@ -60,6 +61,7 @@ SANDBOX_TOOL_IDS = {
     "project.proposal_revision_console.open", "project.proposal_revision_console.create_revision", "project.proposal_revision_console.summary", "project.proposal_revision_console.status",
     "project.revised_proposal_review.open", "project.revised_proposal_review.submit", "project.revised_proposal_review.summary", "project.revised_proposal_review.status",
     "project.approved_dry_run_gate.open", "project.approved_dry_run_gate.execute", "project.approved_dry_run_gate.summary", "project.approved_dry_run_gate.status",
+    "project.dry_run_review_gate.open", "project.dry_run_review_gate.submit", "project.dry_run_review_gate.summary", "project.dry_run_review_gate.status",
 }
 
 
@@ -248,6 +250,10 @@ def _safe_result(tool_id: str, payload: dict) -> dict:
     if tool_id == "project.approved_dry_run_gate.execute": return execute_approved_dry_run(payload.get("gate_record_id",""),payload.get("create_approval_if_required",False),payload.get("metadata"))
     if tool_id == "project.approved_dry_run_gate.summary": return summarize_approved_dry_run_gate(payload.get("record_id",""))
     if tool_id == "project.approved_dry_run_gate.status": return approved_dry_run_gate_status()
+    if tool_id == "project.dry_run_review_gate.open": return open_dry_run_review_gate(payload.get("source_type",""),payload.get("source_id",""),payload.get("metadata"))
+    if tool_id == "project.dry_run_review_gate.submit": return submit_dry_run_review(payload.get("review_gate_record_id",""),payload.get("decision",""),payload.get("comment"),payload.get("reviewer","human"),payload.get("metadata"))
+    if tool_id == "project.dry_run_review_gate.summary": return summarize_dry_run_review_gate(payload.get("record_id",""))
+    if tool_id == "project.dry_run_review_gate.status": return dry_run_review_gate_status()
     raise ValueError("Unsupported sandbox tool.")
 
 

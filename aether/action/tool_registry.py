@@ -214,6 +214,10 @@ def tool_registry_status() -> dict:
 
 
 DEFAULT_TOOLS = [
+    ("project.dry_run_review_gate.open", "Open Dry-Run Review Gate", "Open a human review gate for a completed dry-run.", "project", "low", False, False, True),
+    ("project.dry_run_review_gate.submit", "Submit Dry-Run Review", "Record an explicit human decision for a dry-run result.", "project", "medium", True, False, False),
+    ("project.dry_run_review_gate.summary", "Summarize Dry-Run Review Gate", "Summarize a dry-run review gate.", "project", "low", False, False, True),
+    ("project.dry_run_review_gate.status", "Dry-Run Review Gate Status", "Show dry-run review gate status.", "project", "low", False, False, True),
     ("project.approved_dry_run_gate.open", "Open Approved Dry-Run Gate", "Open a safe dry-run gate for an approved proposal.", "project", "low", False, False, True),
     ("project.approved_dry_run_gate.execute", "Execute Approved Dry-Run", "Run the restricted patch apply flow in dry-run mode only.", "project", "medium", True, False, False),
     ("project.approved_dry_run_gate.summary", "Summarize Approved Dry-Run Gate", "Summarize an approved dry-run gate.", "project", "low", False, False, True),
