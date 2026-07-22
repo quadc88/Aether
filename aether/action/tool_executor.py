@@ -35,6 +35,7 @@ from aether.action.final_real_apply_executor import open_final_real_apply_execut
 from aether.action.post_apply_verification_gate import open_post_apply_verification_gate,submit_post_apply_verification,summarize_post_apply_verification_gate,post_apply_verification_gate_status
 from aether.action.repair_cycle_completion_report import create_repair_cycle_completion_report,export_repair_cycle_report,export_repair_cycle_index,export_private_repair_cycle_record,summarize_repair_cycle_completion,repair_cycle_completion_status
 from aether.action.repair_learning_index import create_repair_learning_record,export_repair_learning_report,export_repair_learning_index,export_private_repair_learning_record,summarize_repair_learning_record,repair_learning_index_status
+from aether.action.repair_guidance_engine import create_repair_guidance,export_repair_guidance_report,export_repair_guidance_index,export_private_repair_guidance_record,summarize_repair_guidance,repair_guidance_engine_status
 from aether.time.clock import get_timezone, now_iso
 
 
@@ -72,6 +73,7 @@ SANDBOX_TOOL_IDS = {
     "project.post_apply_verification_gate.open", "project.post_apply_verification_gate.submit", "project.post_apply_verification_gate.summary", "project.post_apply_verification_gate.status",
     "project.repair_cycle_completion.create", "project.repair_cycle_completion.export_report", "project.repair_cycle_completion.export_index", "project.repair_cycle_completion.export_private", "project.repair_cycle_completion.summary", "project.repair_cycle_completion.status",
     "project.repair_learning.create", "project.repair_learning.export_report", "project.repair_learning.export_index", "project.repair_learning.export_private", "project.repair_learning.summary", "project.repair_learning.status",
+    "project.repair_guidance.create", "project.repair_guidance.export_report", "project.repair_guidance.export_index", "project.repair_guidance.export_private", "project.repair_guidance.summary", "project.repair_guidance.status",
 }
 
 
@@ -288,6 +290,12 @@ def _safe_result(tool_id: str, payload: dict) -> dict:
     if tool_id == "project.repair_learning.export_private": return export_private_repair_learning_record(payload.get("learning_record_id",""),payload.get("metadata"))
     if tool_id == "project.repair_learning.summary": return summarize_repair_learning_record(payload.get("record_id",""))
     if tool_id == "project.repair_learning.status": return repair_learning_index_status()
+    if tool_id == "project.repair_guidance.create": return create_repair_guidance(payload.get("request_type",""),payload.get("requested_scope",""),payload.get("target_path"),payload.get("source_type"),payload.get("source_id"),payload.get("export_public",True),payload.get("export_index",True),payload.get("export_private",True),payload.get("metadata"))
+    if tool_id == "project.repair_guidance.export_report": return export_repair_guidance_report(payload.get("guidance_record_id",""),payload.get("output_dir","docs/history/repair_guidance"),payload.get("metadata"))
+    if tool_id == "project.repair_guidance.export_index": return export_repair_guidance_index(payload.get("output_path","docs/history/repair_guidance/INDEX.md"),payload.get("limit",100),payload.get("metadata"))
+    if tool_id == "project.repair_guidance.export_private": return export_private_repair_guidance_record(payload.get("guidance_record_id",""),payload.get("metadata"))
+    if tool_id == "project.repair_guidance.summary": return summarize_repair_guidance(payload.get("record_id",""))
+    if tool_id == "project.repair_guidance.status": return repair_guidance_engine_status()
     raise ValueError("Unsupported sandbox tool.")
 
 

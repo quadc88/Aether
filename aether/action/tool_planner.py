@@ -13,6 +13,10 @@ from aether.verification.risk import verification_plan
 
 
 INFERENCE_RULES = [
+    ("project.repair_guidance.status", ["repair guidance status", "修复指导状态"], "Request appears to inspect repair guidance status."),
+    ("project.repair_guidance.summary", ["summarize repair guidance", "repair guidance summary", "总结修复指导"], "Request appears to summarize repair guidance."),
+    ("project.repair_guidance.export_report", ["export repair guidance report", "导出修复指导报告"], "Request appears to export repair guidance."),
+    ("project.repair_guidance.create", ["create repair guidance", "generate repair guidance", "use repair learning", "guide future repair", "self repair guidance", "从修复学习生成指导", "生成修复指导", "修复指导"], "Request appears to create repair guidance."),
     ("project.repair_learning.status", ["repair learning status", "修复学习状态"], "Request appears to inspect repair learning status."),
     ("project.repair_learning.summary", ["summarize repair learning", "repair learning summary", "总结修复学习"], "Request appears to summarize repair learning."),
     ("project.repair_learning.export_private", ["private repair learning export", "detailed repair learning export", "私人修复学习报告", "详细修复学习导出"], "Request appears to export private repair learning."),

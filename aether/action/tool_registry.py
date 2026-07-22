@@ -214,6 +214,12 @@ def tool_registry_status() -> dict:
 
 
 DEFAULT_TOOLS = [
+    ("project.repair_guidance.create", "Create Repair Guidance", "Create deterministic safe repair guidance.", "project", "medium", True, False, False),
+    ("project.repair_guidance.export_report", "Export Repair Guidance Report", "Export a sanitized public guidance report.", "project", "medium", True, False, False),
+    ("project.repair_guidance.export_index", "Export Repair Guidance Index", "Export a sanitized guidance dashboard.", "project", "medium", True, False, False),
+    ("project.repair_guidance.export_private", "Export Private Repair Guidance", "Export a private sanitized guidance record.", "project", "medium", True, False, False),
+    ("project.repair_guidance.summary", "Summarize Repair Guidance", "Summarize repair guidance safely.", "project", "low", False, False, True),
+    ("project.repair_guidance.status", "Repair Guidance Status", "Show repair guidance status.", "project", "low", False, False, True),
     ("project.repair_learning.create", "Create Repair Learning", "Create a sanitized learning record from a repair cycle.", "project", "medium", True, False, False),
     ("project.repair_learning.export_report", "Export Repair Learning Report", "Export a sanitized public repair learning report.", "project", "medium", True, False, False),
     ("project.repair_learning.export_index", "Export Repair Learning Index", "Export a sanitized repair learning index.", "project", "medium", True, False, False),

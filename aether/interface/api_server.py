@@ -103,6 +103,7 @@ from aether.action.final_real_apply_executor import open_final_real_apply_execut
 from aether.action.post_apply_verification_gate import open_post_apply_verification_gate,submit_post_apply_verification,get_post_apply_verification_gate_record,list_post_apply_verification_gate_records,post_apply_verification_gate_status,summarize_post_apply_verification_gate
 from aether.action.repair_cycle_completion_report import create_repair_cycle_completion_report,export_repair_cycle_report,export_repair_cycle_index,export_private_repair_cycle_record,get_repair_cycle_completion_record,list_repair_cycle_completion_records,repair_cycle_completion_status,summarize_repair_cycle_completion
 from aether.action.repair_learning_index import create_repair_learning_record,export_repair_learning_report,export_repair_learning_index,export_private_repair_learning_record,get_repair_learning_record,list_repair_learning_records,repair_learning_index_status,summarize_repair_learning_record
+from aether.action.repair_guidance_engine import create_repair_guidance,export_repair_guidance_report,export_repair_guidance_index,export_private_repair_guidance_record,get_repair_guidance_record,list_repair_guidance_records,repair_guidance_engine_status,summarize_repair_guidance
 
 app = FastAPI(
     title="Aether API",
@@ -408,6 +409,14 @@ class PrivateRepairLearningExportRequest(BaseModel):
     learning_record_id:str; metadata:dict={}
 class RepairLearningListRequest(BaseModel):
     status:str|None=None; learning_category:str|None=None; target_path:str|None=None; limit:int=50
+class RepairGuidanceCreateRequest(BaseModel):
+    request_type:str; requested_scope:str; target_path:str|None=None; source_type:str|None=None; source_id:str|None=None; export_public:bool=True; export_index:bool=True; export_private:bool=True; metadata:dict={}
+class RepairGuidanceReportExportRequest(BaseModel):
+    guidance_record_id:str; output_dir:str="docs/history/repair_guidance"; metadata:dict={}
+class RepairGuidanceIndexExportRequest(BaseModel):
+    output_path:str="docs/history/repair_guidance/INDEX.md"; limit:int=100; metadata:dict={}
+class PrivateRepairGuidanceExportRequest(BaseModel):
+    guidance_record_id:str; metadata:dict={}
 class MilestoneReportExportRequest(BaseModel):
     milestone:str; output_dir:str="docs/history/milestones"; metadata:dict={}
 
@@ -1748,3 +1757,19 @@ def list_repair_learning_action(status:str|None=None,learning_category:str|None=
 def summarize_repair_learning_action(record_id:str):return {"name":"Aether","summary":summarize_repair_learning_record(record_id)}
 @app.get("/action/repair-learning/{record_id}")
 def get_repair_learning_action(record_id:str):return {"name":"Aether","record":get_repair_learning_record(record_id)}
+@app.post("/action/repair-guidance/create")
+def create_repair_guidance_action(request:RepairGuidanceCreateRequest):return {"name":"Aether","record":create_repair_guidance(request.request_type,request.requested_scope,request.target_path,request.source_type,request.source_id,request.export_public,request.export_index,request.export_private,request.metadata)}
+@app.post("/action/repair-guidance/export-report")
+def export_repair_guidance_report_action(request:RepairGuidanceReportExportRequest):return export_repair_guidance_report(request.guidance_record_id,request.output_dir,request.metadata)
+@app.post("/action/repair-guidance/export-index")
+def export_repair_guidance_index_action(request:RepairGuidanceIndexExportRequest):return export_repair_guidance_index(request.output_path,request.limit,request.metadata)
+@app.post("/action/repair-guidance/export-private")
+def export_private_repair_guidance_action(request:PrivateRepairGuidanceExportRequest):return export_private_repair_guidance_record(request.guidance_record_id,request.metadata)
+@app.get("/action/repair-guidance/status")
+def get_repair_guidance_status_action():return {"name":"Aether","repair_guidance":repair_guidance_engine_status()}
+@app.get("/action/repair-guidance/list")
+def list_repair_guidance_action(status:str|None=None,guidance_decision:str|None=None,target_path:str|None=None,limit:int=50):return {"name":"Aether","records":list_repair_guidance_records(status,guidance_decision,target_path,limit)}
+@app.get("/action/repair-guidance/{record_id}/summary")
+def summarize_repair_guidance_action(record_id:str):return {"name":"Aether","summary":summarize_repair_guidance(record_id)}
+@app.get("/action/repair-guidance/{record_id}")
+def get_repair_guidance_action(record_id:str):return {"name":"Aether","record":get_repair_guidance_record(record_id)}
