@@ -214,6 +214,9 @@ def tool_registry_status() -> dict:
 
 
 DEFAULT_TOOLS = [
+    ("project.guided_bridge_selection_launcher.launch", "Launch Guided Bridge Selection", "Select an explicit repair-plan candidate through the guarded bridge selector.", "project", "high", True, False, False),
+    ("project.guided_bridge_selection_launcher.summary", "Summarize Guided Bridge Selection Launcher", "Summarize a guided bridge-selection launch safely.", "project", "low", False, False, True),
+    ("project.guided_bridge_selection_launcher.status", "Guided Bridge Selection Launcher Status", "Show guided bridge selection launcher status.", "project", "low", False, False, True),
     ("project.guided_repair_plan_launcher.launch", "Launch Guided Repair Plan", "Launch repair planning from an approved guided intake and existing code review.", "project", "medium", True, False, False),
     ("project.guided_repair_plan_launcher.summary", "Summarize Guided Repair Plan Launcher", "Summarize a guided repair planning launch safely.", "project", "low", False, False, True),
     ("project.guided_repair_plan_launcher.status", "Guided Repair Plan Launcher Status", "Show guided repair plan launcher status.", "project", "low", False, False, True),

@@ -13,6 +13,9 @@ from aether.verification.risk import verification_plan
 
 
 INFERENCE_RULES = [
+    ("project.guided_bridge_selection_launcher.status", ["guided bridge selection launcher status", "\u6865\u63a5\u9009\u62e9\u542f\u52a8\u5668\u72b6\u6001"], "Request appears to inspect guided bridge selection launcher status."),
+    ("project.guided_bridge_selection_launcher.summary", ["summarize guided bridge selection launcher", "guided bridge selection launcher summary", "\u603b\u7ed3\u6865\u63a5\u9009\u62e9\u542f\u52a8\u5668"], "Request appears to summarize a guided bridge selection launch."),
+    ("project.guided_bridge_selection_launcher.launch", ["launch guided bridge selection", "start bridge selection from guided repair plan", "create bridge selection from guided plan", "select repair finding for bridge", "\u4ece\u5f15\u5bfc\u4fee\u590d\u8ba1\u5212\u542f\u52a8\u6865\u63a5\u9009\u62e9", "\u4ece\u4fee\u590d\u8ba1\u5212\u521b\u5efa\u6865\u63a5\u9009\u62e9", "\u9009\u62e9\u4fee\u590d finding", "\u542f\u52a8\u6865\u63a5\u9009\u62e9"], "Request appears to launch guided bridge selection."),
     ("project.guided_repair_plan_launcher.status", ["\u4fee\u590d\u8ba1\u5212\u542f\u52a8\u5668\u72b6\u6001"], "Request appears to inspect guided repair plan launcher status."),
     ("project.guided_repair_plan_launcher.launch", ["\u4ece\u4fee\u590d\u5165\u53e3\u542f\u52a8\u89c4\u5212", "\u4ece\u5165\u53e3\u521b\u5efa\u4fee\u590d\u8ba1\u5212", "\u542f\u52a8\u5f15\u5bfc\u4fee\u590d\u8ba1\u5212"], "Request appears to launch repair planning from guided intake."),
     ("project.guided_repair_plan_launcher.status", ["guided repair plan launcher status", "修复计划启动器状态"], "Request appears to inspect guided repair plan launcher status."),
