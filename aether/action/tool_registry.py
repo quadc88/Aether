@@ -214,6 +214,9 @@ def tool_registry_status() -> dict:
 
 
 DEFAULT_TOOLS = [
+    ("project.guided_proposal_review_launcher.open", "Open Guided Proposal Review", "Open a human proposal review console from a guided bridge selection.", "project", "medium", True, False, False),
+    ("project.guided_proposal_review_launcher.summary", "Summarize Guided Proposal Review Launcher", "Summarize a guided proposal review launch safely.", "project", "low", False, False, True),
+    ("project.guided_proposal_review_launcher.status", "Guided Proposal Review Launcher Status", "Show guided proposal review launcher status.", "project", "low", False, False, True),
     ("project.guided_bridge_selection_launcher.launch", "Launch Guided Bridge Selection", "Select an explicit repair-plan candidate through the guarded bridge selector.", "project", "high", True, False, False),
     ("project.guided_bridge_selection_launcher.summary", "Summarize Guided Bridge Selection Launcher", "Summarize a guided bridge-selection launch safely.", "project", "low", False, False, True),
     ("project.guided_bridge_selection_launcher.status", "Guided Bridge Selection Launcher Status", "Show guided bridge selection launcher status.", "project", "low", False, False, True),
