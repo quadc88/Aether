@@ -13,6 +13,12 @@ from aether.verification.risk import verification_plan
 
 
 INFERENCE_RULES = [
+    ("project.repair_learning.status", ["repair learning status", "修复学习状态"], "Request appears to inspect repair learning status."),
+    ("project.repair_learning.summary", ["summarize repair learning", "repair learning summary", "总结修复学习"], "Request appears to summarize repair learning."),
+    ("project.repair_learning.export_private", ["private repair learning export", "detailed repair learning export", "私人修复学习报告", "详细修复学习导出"], "Request appears to export private repair learning."),
+    ("project.repair_learning.export_index", ["export repair learning index", "generate repair learning dashboard", "导出修复学习索引", "生成修复学习仪表板"], "Request appears to export repair learning index."),
+    ("project.repair_learning.export_report", ["export repair learning report", "导出修复学习报告"], "Request appears to export repair learning report."),
+    ("project.repair_learning.create", ["create repair learning record", "learn from repair cycle", "generate repair learning", "repair learning index", "self repair learning", "从修复周期学习", "生成修复学习记录", "修复学习索引"], "Request appears to create repair learning."),
     ("project.repair_cycle_completion.status", ["repair cycle completion status", "修复周期完成状态"], "Request appears to inspect repair-cycle completion status."),
     ("project.repair_cycle_completion.summary", ["summarize repair cycle completion", "repair cycle completion summary", "总结修复周期完成"], "Request appears to summarize repair-cycle completion."),
     ("project.repair_cycle_completion.export_private", ["private repair cycle export", "detailed repair cycle export", "私人修复周期报告", "详细修复周期导出"], "Request appears to export a private repair-cycle record."),
