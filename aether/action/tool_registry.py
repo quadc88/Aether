@@ -214,6 +214,9 @@ def tool_registry_status() -> dict:
 
 
 DEFAULT_TOOLS = [
+    ("project.guided_repair_plan_launcher.launch", "Launch Guided Repair Plan", "Launch repair planning from an approved guided intake and existing code review.", "project", "medium", True, False, False),
+    ("project.guided_repair_plan_launcher.summary", "Summarize Guided Repair Plan Launcher", "Summarize a guided repair planning launch safely.", "project", "low", False, False, True),
+    ("project.guided_repair_plan_launcher.status", "Guided Repair Plan Launcher Status", "Show guided repair plan launcher status.", "project", "low", False, False, True),
     ("project.guided_repair_intake.export_report", "Export Guided Repair Intake Report", "Export a sanitized public intake report.", "project", "medium", True, False, False),
     ("project.guided_repair_intake.export_index", "Export Guided Repair Intake Index", "Export a sanitized intake dashboard.", "project", "medium", True, False, False),
     ("project.guided_repair_intake.export_private", "Export Private Guided Repair Intake", "Export a private sanitized intake record.", "project", "medium", True, False, False),

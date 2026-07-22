@@ -13,6 +13,11 @@ from aether.verification.risk import verification_plan
 
 
 INFERENCE_RULES = [
+    ("project.guided_repair_plan_launcher.status", ["\u4fee\u590d\u8ba1\u5212\u542f\u52a8\u5668\u72b6\u6001"], "Request appears to inspect guided repair plan launcher status."),
+    ("project.guided_repair_plan_launcher.launch", ["\u4ece\u4fee\u590d\u5165\u53e3\u542f\u52a8\u89c4\u5212", "\u4ece\u5165\u53e3\u521b\u5efa\u4fee\u590d\u8ba1\u5212", "\u542f\u52a8\u5f15\u5bfc\u4fee\u590d\u8ba1\u5212"], "Request appears to launch repair planning from guided intake."),
+    ("project.guided_repair_plan_launcher.status", ["guided repair plan launcher status", "修复计划启动器状态"], "Request appears to inspect guided repair plan launcher status."),
+    ("project.guided_repair_plan_launcher.summary", ["summarize guided repair plan launcher", "guided repair plan launcher summary", "总结修复计划启动器"], "Request appears to summarize a guided repair plan launch."),
+    ("project.guided_repair_plan_launcher.launch", ["launch guided repair plan", "start guided repair planning", "create repair plan from intake", "launch repair planning from intake", "从修复入口启动规划", "从入口创建修复计划", "启动引导修复计划"], "Request appears to launch repair planning from guided intake."),
     ("project.guided_repair_intake.export_private", ["private guided repair intake export", "detailed guided repair intake export", "私人修复入口报告", "详细修复入口导出"], "Request appears to export private guided intake."),
     ("project.guided_repair_intake.export_index", ["export guided repair intake index", "generate guided repair intake dashboard", "导出修复入口索引", "生成修复入口仪表板"], "Request appears to export guided intake index."),
     ("project.guided_repair_intake.export_report", ["export guided repair intake report", "导出修复入口报告"], "Request appears to export guided intake report."),

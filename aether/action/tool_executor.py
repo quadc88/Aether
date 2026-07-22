@@ -37,6 +37,7 @@ from aether.action.repair_cycle_completion_report import create_repair_cycle_com
 from aether.action.repair_learning_index import create_repair_learning_record,export_repair_learning_report,export_repair_learning_index,export_private_repair_learning_record,summarize_repair_learning_record,repair_learning_index_status
 from aether.action.repair_guidance_engine import create_repair_guidance,export_repair_guidance_report,export_repair_guidance_index,export_private_repair_guidance_record,summarize_repair_guidance,repair_guidance_engine_status
 from aether.action.guided_repair_intake import open_guided_repair_intake,submit_guided_repair_intake_decision,export_guided_repair_intake_report,export_guided_repair_intake_index,export_private_guided_repair_intake_record,summarize_guided_repair_intake,guided_repair_intake_status
+from aether.action.guided_repair_plan_launcher import launch_guided_repair_plan,summarize_guided_repair_plan_launcher,guided_repair_plan_launcher_status
 from aether.time.clock import get_timezone, now_iso
 
 
@@ -77,6 +78,7 @@ SANDBOX_TOOL_IDS = {
     "project.repair_guidance.create", "project.repair_guidance.export_report", "project.repair_guidance.export_index", "project.repair_guidance.export_private", "project.repair_guidance.summary", "project.repair_guidance.status",
     "project.guided_repair_intake.open", "project.guided_repair_intake.submit_decision", "project.guided_repair_intake.summary", "project.guided_repair_intake.status",
     "project.guided_repair_intake.export_report", "project.guided_repair_intake.export_index", "project.guided_repair_intake.export_private",
+    "project.guided_repair_plan_launcher.launch", "project.guided_repair_plan_launcher.summary", "project.guided_repair_plan_launcher.status",
 }
 
 
@@ -306,6 +308,9 @@ def _safe_result(tool_id: str, payload: dict) -> dict:
     if tool_id == "project.guided_repair_intake.export_report": return export_guided_repair_intake_report(payload.get("intake_record_id",""),payload.get("output_dir","docs/history/repair_intake"),payload.get("metadata"))
     if tool_id == "project.guided_repair_intake.export_index": return export_guided_repair_intake_index(payload.get("output_path","docs/history/repair_intake/INDEX.md"),payload.get("limit",100),payload.get("metadata"))
     if tool_id == "project.guided_repair_intake.export_private": return export_private_guided_repair_intake_record(payload.get("intake_record_id",""),payload.get("metadata"))
+    if tool_id == "project.guided_repair_plan_launcher.launch": return launch_guided_repair_plan(payload.get("intake_record_id",""),payload.get("review_report_id"),payload.get("create_repair_plan",True),payload.get("metadata"))
+    if tool_id == "project.guided_repair_plan_launcher.summary": return summarize_guided_repair_plan_launcher(payload.get("record_id",""))
+    if tool_id == "project.guided_repair_plan_launcher.status": return guided_repair_plan_launcher_status()
     raise ValueError("Unsupported sandbox tool.")
 
 
