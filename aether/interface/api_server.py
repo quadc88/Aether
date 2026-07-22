@@ -104,6 +104,7 @@ from aether.action.post_apply_verification_gate import open_post_apply_verificat
 from aether.action.repair_cycle_completion_report import create_repair_cycle_completion_report,export_repair_cycle_report,export_repair_cycle_index,export_private_repair_cycle_record,get_repair_cycle_completion_record,list_repair_cycle_completion_records,repair_cycle_completion_status,summarize_repair_cycle_completion
 from aether.action.repair_learning_index import create_repair_learning_record,export_repair_learning_report,export_repair_learning_index,export_private_repair_learning_record,get_repair_learning_record,list_repair_learning_records,repair_learning_index_status,summarize_repair_learning_record
 from aether.action.repair_guidance_engine import create_repair_guidance,export_repair_guidance_report,export_repair_guidance_index,export_private_repair_guidance_record,get_repair_guidance_record,list_repair_guidance_records,repair_guidance_engine_status,summarize_repair_guidance
+from aether.action.guided_repair_intake import open_guided_repair_intake,submit_guided_repair_intake_decision,export_guided_repair_intake_report,export_guided_repair_intake_index,export_private_guided_repair_intake_record,get_guided_repair_intake_record,list_guided_repair_intake_records,guided_repair_intake_status,summarize_guided_repair_intake
 
 app = FastAPI(
     title="Aether API",
@@ -411,6 +412,18 @@ class RepairLearningListRequest(BaseModel):
     status:str|None=None; learning_category:str|None=None; target_path:str|None=None; limit:int=50
 class RepairGuidanceCreateRequest(BaseModel):
     request_type:str; requested_scope:str; target_path:str|None=None; source_type:str|None=None; source_id:str|None=None; export_public:bool=True; export_index:bool=True; export_private:bool=True; metadata:dict={}
+class GuidedRepairIntakeOpenRequest(BaseModel):
+    request_type:str; requested_scope:str; target_path:str|None=None; requester:str|None="human"; guidance_record_id:str|None=None; create_guidance_if_missing:bool=True; export_public:bool=True; export_index:bool=True; export_private:bool=True; metadata:dict={}
+class GuidedRepairIntakeDecisionRequest(BaseModel):
+    intake_record_id:str; decision:str; comment:str|None=None; reviewer:str|None="human"; metadata:dict={}
+class GuidedRepairIntakeReportExportRequest(BaseModel):
+    intake_record_id:str; output_dir:str="docs/history/repair_intake"; metadata:dict={}
+class GuidedRepairIntakeIndexExportRequest(BaseModel):
+    output_path:str="docs/history/repair_intake/INDEX.md"; limit:int=100; metadata:dict={}
+class PrivateGuidedRepairIntakeExportRequest(BaseModel):
+    intake_record_id:str; metadata:dict={}
+class GuidedRepairIntakeListRequest(BaseModel):
+    status:str|None=None; planning_allowed:bool|None=None; target_path:str|None=None; limit:int=50
 class RepairGuidanceReportExportRequest(BaseModel):
     guidance_record_id:str; output_dir:str="docs/history/repair_guidance"; metadata:dict={}
 class RepairGuidanceIndexExportRequest(BaseModel):
@@ -1773,3 +1786,21 @@ def list_repair_guidance_action(status:str|None=None,guidance_decision:str|None=
 def summarize_repair_guidance_action(record_id:str):return {"name":"Aether","summary":summarize_repair_guidance(record_id)}
 @app.get("/action/repair-guidance/{record_id}")
 def get_repair_guidance_action(record_id:str):return {"name":"Aether","record":get_repair_guidance_record(record_id)}
+@app.post("/action/guided-repair-intake/open")
+def open_guided_repair_intake_action(request:GuidedRepairIntakeOpenRequest):return {"name":"Aether","record":open_guided_repair_intake(request.request_type,request.requested_scope,request.target_path,request.requester,request.guidance_record_id,request.create_guidance_if_missing,request.export_public,request.export_index,request.export_private,request.metadata)}
+@app.post("/action/guided-repair-intake/submit-decision")
+def submit_guided_repair_intake_action(request:GuidedRepairIntakeDecisionRequest):return {"name":"Aether","record":submit_guided_repair_intake_decision(request.intake_record_id,request.decision,request.comment,request.reviewer,request.metadata)}
+@app.post("/action/guided-repair-intake/export-report")
+def export_guided_repair_intake_report_action(request:GuidedRepairIntakeReportExportRequest):return export_guided_repair_intake_report(request.intake_record_id,request.output_dir,request.metadata)
+@app.post("/action/guided-repair-intake/export-index")
+def export_guided_repair_intake_index_action(request:GuidedRepairIntakeIndexExportRequest):return export_guided_repair_intake_index(request.output_path,request.limit,request.metadata)
+@app.post("/action/guided-repair-intake/export-private")
+def export_private_guided_repair_intake_action(request:PrivateGuidedRepairIntakeExportRequest):return export_private_guided_repair_intake_record(request.intake_record_id,request.metadata)
+@app.get("/action/guided-repair-intake/status")
+def guided_repair_intake_status_action():return {"name":"Aether","guided_repair_intake":guided_repair_intake_status()}
+@app.get("/action/guided-repair-intake/list")
+def list_guided_repair_intake_action(status:str|None=None,planning_allowed:bool|None=None,target_path:str|None=None,limit:int=50):return {"name":"Aether","records":list_guided_repair_intake_records(status,planning_allowed,target_path,limit)}
+@app.get("/action/guided-repair-intake/{record_id}/summary")
+def summarize_guided_repair_intake_action(record_id:str):return {"name":"Aether","summary":summarize_guided_repair_intake(record_id)}
+@app.get("/action/guided-repair-intake/{record_id}")
+def get_guided_repair_intake_action(record_id:str):return {"name":"Aether","record":get_guided_repair_intake_record(record_id)}

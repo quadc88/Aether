@@ -13,6 +13,13 @@ from aether.verification.risk import verification_plan
 
 
 INFERENCE_RULES = [
+    ("project.guided_repair_intake.export_private", ["private guided repair intake export", "detailed guided repair intake export", "私人修复入口报告", "详细修复入口导出"], "Request appears to export private guided intake."),
+    ("project.guided_repair_intake.export_index", ["export guided repair intake index", "generate guided repair intake dashboard", "导出修复入口索引", "生成修复入口仪表板"], "Request appears to export guided intake index."),
+    ("project.guided_repair_intake.export_report", ["export guided repair intake report", "导出修复入口报告"], "Request appears to export guided intake report."),
+    ("project.guided_repair_intake.status", ["guided repair intake status", "修复入口状态"], "Request appears to inspect guided repair intake status."),
+    ("project.guided_repair_intake.summary", ["summarize guided repair intake", "guided repair intake summary", "总结修复入口"], "Request appears to summarize guided repair intake."),
+    ("project.guided_repair_intake.submit_decision", ["submit guided repair intake decision", "allow repair planning", "pause repair planning", "reject repair request", "require human investigation"], "Request appears to submit guided intake decision."),
+    ("project.guided_repair_intake.open", ["open guided repair intake", "start guided repair intake", "prepare guided repair request", "intake repair request", "guided repair planning intake"], "Request appears to open guided repair intake."),
     ("project.repair_guidance.status", ["repair guidance status", "修复指导状态"], "Request appears to inspect repair guidance status."),
     ("project.repair_guidance.summary", ["summarize repair guidance", "repair guidance summary", "总结修复指导"], "Request appears to summarize repair guidance."),
     ("project.repair_guidance.export_report", ["export repair guidance report", "导出修复指导报告"], "Request appears to export repair guidance."),

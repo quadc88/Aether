@@ -214,6 +214,13 @@ def tool_registry_status() -> dict:
 
 
 DEFAULT_TOOLS = [
+    ("project.guided_repair_intake.export_report", "Export Guided Repair Intake Report", "Export a sanitized public intake report.", "project", "medium", True, False, False),
+    ("project.guided_repair_intake.export_index", "Export Guided Repair Intake Index", "Export a sanitized intake dashboard.", "project", "medium", True, False, False),
+    ("project.guided_repair_intake.export_private", "Export Private Guided Repair Intake", "Export a private sanitized intake record.", "project", "medium", True, False, False),
+    ("project.guided_repair_intake.open", "Open Guided Repair Intake", "Open a planning-only guided repair intake.", "project", "medium", True, False, False),
+    ("project.guided_repair_intake.submit_decision", "Submit Guided Repair Intake Decision", "Record a human intake decision without creating a plan.", "project", "medium", True, False, False),
+    ("project.guided_repair_intake.summary", "Summarize Guided Repair Intake", "Summarize guided repair intake safely.", "project", "low", False, False, True),
+    ("project.guided_repair_intake.status", "Guided Repair Intake Status", "Show guided repair intake status.", "project", "low", False, False, True),
     ("project.repair_guidance.create", "Create Repair Guidance", "Create deterministic safe repair guidance.", "project", "medium", True, False, False),
     ("project.repair_guidance.export_report", "Export Repair Guidance Report", "Export a sanitized public guidance report.", "project", "medium", True, False, False),
     ("project.repair_guidance.export_index", "Export Repair Guidance Index", "Export a sanitized guidance dashboard.", "project", "medium", True, False, False),
