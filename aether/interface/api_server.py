@@ -2,6 +2,11 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 
 from aether.identity.loader import load_identity_seed, identity_preview
+from aether.identity.guard import (
+    initialize_identity_guard,
+    verify_identity_integrity,
+    identity_guard_status,
+)
 from aether.time.clock import time_state
 from aether.memory.timeline.recorder import (
     record_event,
@@ -452,6 +457,66 @@ class PrivateRepairGuidanceExportRequest(BaseModel):
     guidance_record_id:str; metadata:dict={}
 class MilestoneReportExportRequest(BaseModel):
     milestone:str; output_dir:str="docs/history/milestones"; metadata:dict={}
+
+
+# ---- Identity Integrity Endpoints (Milestone 48A) ----
+
+class InitializeIdentityGuardResponse(BaseModel):
+    status: str
+    current_sha256: str
+    known_sha256: str
+    changed: bool
+    updated: str | None
+    warnings: list[str]
+
+
+class VerifyIdentityIntegrityResponse(BaseModel):
+    status: str
+    current_sha256: str
+    known_sha256: str
+    changed: bool
+    updated: str | None
+    warnings: list[str]
+
+
+class IdentityIntegrityStatusResponse(BaseModel):
+    status: str
+    current_sha256: str
+    known_sha256: str
+    changed: bool
+    updated: str | None
+    warnings: list[str]
+
+
+@app.get("/identity/integrity/status", response_model=IdentityIntegrityStatusResponse)
+def get_identity_integrity_status():
+    return identity_guard_status()
+
+
+@app.post(
+    "/identity/integrity/initialize",
+    response_model=InitializeIdentityGuardResponse,
+)
+def post_initialize_identity_guard():
+    state = initialize_identity_guard()
+    return {
+        "status": state.get("status", "unknown"),
+        "current_sha256": (state.get("current_sha256") or "")[:12],
+        "known_sha256": (state.get("known_sha256") or "")[:12],
+        "changed": False,
+        "updated": state.get("updated"),
+        "warnings": [],
+    }
+
+
+@app.post(
+    "/identity/integrity/verify",
+    response_model=VerifyIdentityIntegrityResponse,
+)
+def post_verify_identity_integrity():
+    result = verify_identity_integrity()
+    return result
+
 
 @app.get("/")
 def root():
