@@ -4,19 +4,17 @@ project:
   status: "first_awakening"
 
 paths:
-  data_root: "C:/AetherData"
-
+  data_root: "/home/aether/data"
   identity_seed: "identity/identity_seed.md"
   constitution: "docs/CONSTITUTION.md"
   architecture: "docs/ARCHITECTURE.md"
-
-  vault_dir: "C:/AetherData/vault"
-  timeline_dir: "C:/AetherData/timeline"
-  vector_db_dir: "C:/AetherData/vector_db"
-  graph_db_dir: "C:/AetherData/graph_db"
-  logs_dir: "C:/AetherData/logs"
-  private_dir: "C:/AetherData/private"
-  backups_dir: "C:/AetherData/backups"
+  vault_dir: "/home/aether/data/vault"
+  timeline_dir: "/home/aether/data/timeline"
+  vector_db_dir: "/home/aether/data/vector_db"
+  graph_db_dir: "/home/aether/data/graph_db"
+  logs_dir: "/home/aether/data/logs"
+  private_dir: "/home/aether/data/private"
+  backups_dir: "/home/aether/data/backups"
 
 api:
   host: "127.0.0.1"
