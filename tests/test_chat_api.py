@@ -70,6 +70,8 @@ class TestChatEndpoint:
             "timeline_recorded",
             "warnings",
             "working_memory_event_count",
+            "thinking_policy",
+            "decision_type",
         ]
         missing = [f for f in required if f not in data]
         assert not missing, f"Missing core-loop fields: {missing}"
@@ -115,3 +117,20 @@ class TestChatEndpoint:
         data = resp.json()
         assert data.get("risk") is not None
         assert "risk_level" in data["risk"]
+
+    def test_thinking_policy_in_response(self):
+        """Response must include thinking_policy and decision_type."""
+        resp = self.client.post("/chat", json={"text": "hello"})
+        data = resp.json()
+        assert "thinking_policy" in data
+        assert "decision_type" in data
+        tp = data["thinking_policy"]
+        assert tp["tool_execution_allowed"] is False
+
+    def test_legacy_message_works_with_thinking_policy(self):
+        """Legacy message field should still produce a full response."""
+        resp = self.client.post("/chat", json={"message": "legacy msg"})
+        data = resp.json()
+        assert data["status"] == "completed"
+        assert "thinking_policy" in data
+        assert data["thinking_policy"]["tool_execution_allowed"] is False

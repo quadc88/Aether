@@ -90,6 +90,17 @@ def run_core_chat_loop(
     # --- Step 7: Suggest tool (read-only suggestion, no execution) ---
     suggested_tool = _suggest_tool(text, risk)
 
+    # --- Step 7b: Thinking policy decision ---
+    from aether.thinking.policy import decide_chat_policy
+
+    thinking_policy = decide_chat_policy(
+        perception=perception,
+        risk=risk,
+        suggested_tool=suggested_tool,
+        identity_integrity_status=identity_status,
+        metadata=metadata,
+    )
+
     # --- Step 8: Tool execution is NEVER performed in this milestone ---
     tool_executed = False
     tool_execution_allowed = False
@@ -109,7 +120,7 @@ def run_core_chat_loop(
         warnings.append(f"Timeline recording failed: {exc}")
 
     # --- Step 10: Build response ---
-    response_text = _build_response(text, risk, perception, suggested_tool)
+    response_text = _build_response(text, risk, perception, suggested_tool, thinking_policy)
 
     return {
         "status": "completed",
@@ -134,6 +145,12 @@ def run_core_chat_loop(
         "memory_recorded": memory_recorded,
         "timeline_recorded": timeline_recorded,
         "warnings": warnings,
+        # --- Thinking Policy Layer ---
+        "thinking_policy": thinking_policy,
+        "decision_type": thinking_policy.get("decision_type"),
+        "required_user_confirmation": thinking_policy.get("required_user_confirmation", False),
+        "clarification_question": thinking_policy.get("clarification_question"),
+        "blocked_reason": thinking_policy.get("blocked_reason"),
     }
 
 
@@ -153,19 +170,43 @@ def _error_response(error_msg: str, warnings: list[str]) -> dict:
         "memory_recorded": False,
         "timeline_recorded": False,
         "warnings": [*warnings, error_msg],
+        "thinking_policy": {
+            "decision_type": "ask_clarification",
+            "confidence": "high",
+            "reasons": [error_msg],
+            "required_user_confirmation": False,
+            "tool_suggestion_allowed": False,
+            "tool_execution_allowed": False,
+            "blocked_reason": None,
+            "clarification_question": None,
+            "next_step": "Await valid input.",
+            "warnings": [],
+        },
+        "decision_type": "ask_clarification",
+        "required_user_confirmation": False,
+        "clarification_question": None,
+        "blocked_reason": None,
     }
 
 
 def _suggest_tool(text: str, risk: dict) -> dict | None:
     """Return a suggested tool from tool_planner via infer_candidate_tool.
 
-    Never executes any tool. Returns None if no tool matches.
+    Never executes any tool. Supports both top-level and nested candidate_tool
+    shapes returned by different planner implementations. Returns None if no
+    tool matches.
     """
     from aether.action.tool_planner import infer_candidate_tool
 
     try:
         suggestion = infer_candidate_tool(text)
-        candidate = suggestion.get("candidate_tool", {})
+        # Shape A: top-level tool_id (e.g. infer_candidate_tool direct output)
+        candidate = suggestion.get("candidate_tool") or {}
+        if not candidate or not candidate.get("tool_id"):
+            # Shape B: tool_id at top level of suggestion
+            if suggestion.get("tool_id"):
+                candidate = {k: v for k, v in suggestion.items()
+                             if k in ("tool_id", "name", "match_confidence", "reason")}
         if candidate and candidate.get("tool_id"):
             return candidate
         return None
@@ -178,9 +219,11 @@ def _build_response(
     risk: dict,
     perception: dict,
     suggested_tool: dict | None,
+    thinking_policy: dict | None = None,
 ) -> str:
     lang = perception["language_hint"]
     language_str = lang if lang != "unknown" else "mixed or unknown"
+    decision_type = (thinking_policy or {}).get("decision_type", "respond_only")
 
     lines = [
         f"Aether received your input ({len(text)} characters).",
@@ -189,21 +232,43 @@ def _build_response(
         "",
     ]
 
-    if risk["risk_level"] == "high":
+    if decision_type == "block":
+        blocked = thinking_policy.get("blocked_reason", "") if thinking_policy else ""
+        lines.append(f"[BLOCKED] {blocked}")
         lines.append(
-            "This request is classified as high-risk. "
-            "Tool execution is disabled in this milestone. "
-            "User confirmation would be required before any action."
+            "Aether cannot proceed until a human reviews the identity integrity status."
         )
-    elif risk["risk_level"] == "medium":
+    elif decision_type == "require_approval":
         lines.append(
-            "This request is medium-risk. "
-            "Verification is recommended before proceeding."
+            "This request requires user confirmation. Tool execution is disabled in this milestone."
         )
+    elif decision_type == "suggest_tool":
+        if suggested_tool:
+            tool_id = suggested_tool.get("tool_id", "unknown")
+            lines.append(f"Suggested tool (not executed): {tool_id}")
+        lines.append(
+            "Tool execution is disabled in this milestone. This message is informational only."
+        )
+    elif decision_type == "ask_clarification":
+        cq = thinking_policy.get("clarification_question", "") if thinking_policy else ""
+        if cq:
+            lines.append(cq)
+    else:
+        if risk["risk_level"] == "high":
+            lines.append(
+                "This request is classified as high-risk. "
+                "Tool execution is disabled in this milestone. "
+                "User confirmation would be required before any action."
+            )
+        elif risk["risk_level"] == "medium":
+            lines.append(
+                "This request is medium-risk. "
+                "Verification is recommended before proceeding."
+            )
 
-    if suggested_tool:
-        tool_id = suggested_tool.get("tool_id", "unknown")
-        lines.append(f"Suggested tool (not executed): {tool_id}")
+        if suggested_tool:
+            tool_id = suggested_tool.get("tool_id", "unknown")
+            lines.append(f"Suggested tool (not executed): {tool_id}")
 
     lines.append("")
     lines.append(

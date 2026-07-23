@@ -59,6 +59,9 @@ class TestCoreLoopStructure:
             "suggested_tool", "tool_execution_allowed",
             "tool_executed", "response_text",
             "memory_recorded", "timeline_recorded", "warnings",
+            "thinking_policy", "decision_type",
+            "required_user_confirmation", "clarification_question",
+            "blocked_reason",
         }
         assert set(result.keys()) >= required_keys
 
@@ -102,6 +105,57 @@ class TestCoreLoopStructure:
     def test_identity_integrity_included(self, patched_core_loop):
         result = patched_core_loop.run_core_chat_loop(text="verify my identity")
         assert "identity_integrity_status" in result
+
+
+class TestSuggestToolShapeCompatibility:
+    """_suggest_tool must handle both top-level and nested tool_id shapes."""
+
+    def test_handles_top_level_tool_id(self, monkeypatch):
+        import aether.core.loop as core_loop
+        from aether.memory.working.store import WorkingMemory
+
+        fake_suggestion = {
+            "tool_id": "test.tool",
+            "name": "Test Tool",
+            "match_confidence": "likely",
+        }
+        import aether.action.tool_planner as tpl
+        monkeypatch.setattr(tpl, "infer_candidate_tool", lambda *a, **k: fake_suggestion)
+
+        result = core_loop.run_core_chat_loop(
+            text="do the thing", working_memory=WorkingMemory(),
+        )
+        assert result["suggested_tool"] is not None
+        assert result["suggested_tool"]["tool_id"] == "test.tool"
+
+    def test_handles_nested_candidate_tool(self, monkeypatch):
+        import aether.core.loop as core_loop
+        from aether.memory.working.store import WorkingMemory
+
+        fake_suggestion = {
+            "candidate_tool": {
+                "tool_id": "nested.tool",
+                "name": "Nested Tool",
+            }
+        }
+        import aether.action.tool_planner as tpl
+        monkeypatch.setattr(tpl, "infer_candidate_tool", lambda *a, **k: fake_suggestion)
+
+        result = core_loop.run_core_chat_loop(
+            text="do something", working_memory=WorkingMemory(),
+        )
+        assert result["suggested_tool"] is not None
+        assert result["suggested_tool"]["tool_id"] == "nested.tool"
+
+    def test_returns_none_when_no_tool_id(self, monkeypatch):
+        import aether.core.loop as core_loop
+
+        fake_suggestion = {"unknown_key": "value"}
+        import aether.action.tool_planner as tpl
+        monkeypatch.setattr(tpl, "infer_candidate_tool", lambda *a, **k: fake_suggestion)
+
+        result = core_loop.run_core_chat_loop(text="test")
+        assert result["suggested_tool"] is None
 
 
 class TestNoToolExecutionEvenWhenAllowed:

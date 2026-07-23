@@ -148,6 +148,11 @@ class ChatResponse(BaseModel):
     memory_recorded: bool = False
     timeline_recorded: bool = False
     warnings: list[str] = []
+    thinking_policy: dict | None = None
+    decision_type: str | None = None
+    required_user_confirmation: bool = False
+    clarification_question: str | None = None
+    blocked_reason: str | None = None
 
 
 class GoalRequest(BaseModel):
@@ -653,6 +658,11 @@ def chat(request: ChatRequest):
         memory_recorded=result.get("memory_recorded", False),
         timeline_recorded=result.get("timeline_recorded", False),
         warnings=result.get("warnings", []),
+        thinking_policy=result.get("thinking_policy"),
+        decision_type=result.get("decision_type"),
+        required_user_confirmation=result.get("required_user_confirmation", False),
+        clarification_question=result.get("clarification_question"),
+        blocked_reason=result.get("blocked_reason"),
     )
 
 
