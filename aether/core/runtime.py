@@ -96,5 +96,21 @@ class AetherRuntime:
     def status(self) -> str:
         return "awake" if self.awake else "ready"
 
+    def process_chat(
+        self,
+        text: str,
+        session_id: str | None = None,
+        metadata: dict | None = None,
+        allow_tool_execution: bool = False,
+    ) -> dict:
+        from aether.core.loop import run_core_chat_loop
+        return run_core_chat_loop(
+            text=text,
+            working_memory=self.working_memory,
+            session_id=session_id,
+            metadata=metadata,
+            allow_tool_execution=allow_tool_execution,
+        )
+
 
 runtime = AetherRuntime()

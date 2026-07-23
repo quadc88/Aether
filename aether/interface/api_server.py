@@ -123,15 +123,31 @@ app = FastAPI(
 
 
 class ChatRequest(BaseModel):
-    message: str
+    text: str | None = None
+    message: str | None = None
+    session_id: str | None = None
+    metadata: dict = {}
+    allow_tool_execution: bool = False
 
 
 class ChatResponse(BaseModel):
-    name: str
+    name: str | None = "Aether"
     status: str
-    response: str
-    time: dict
-    working_memory_event_count: int
+    response: str | None = None
+    response_text: str | None = None
+    time: dict | None = None
+    working_memory_event_count: int = 0
+    session_id: str | None = None
+    loop_version: str | None = None
+    identity_integrity_status: dict | None = None
+    perception: dict | None = None
+    risk: dict | None = None
+    suggested_tool: dict | None = None
+    tool_execution_allowed: bool = False
+    tool_executed: bool = False
+    memory_recorded: bool = False
+    timeline_recorded: bool = False
+    warnings: list[str] = []
 
 
 class GoalRequest(BaseModel):
@@ -595,38 +611,48 @@ def awaken():
         "event": event,
         "working_memory": runtime.working_memory.summary(),
         "message": "I am Aether. My Identity Seed is loaded. My local time is loaded. I am awake.",
+        "identity_integrity_status": runtime.identity_integrity_status,
     }
 
 @app.post("/chat", response_model=ChatResponse)
 def chat(request: ChatRequest):
-    current_time = time_state()
+    # Resolve input: prefer 'text', fall back to legacy 'message'
+    input_text = (request.text or "").strip() or (request.message or "").strip()
+    if not input_text:
+        return ChatResponse(
+            status="error",
+            response="Input text is empty. Provide 'text' or legacy 'message'.",
+            warnings=["No input text provided."],
+        )
 
-    runtime.working_memory.add_event(
-        role="user",
-        content=request.message,
-        event_type="message",
-    )
-
-    response_text = (
-        "I am Aether. "
-        "I can now keep short-term Working Memory during this runtime. "
-        f"You said: {request.message}"
-    )
-
-    runtime.working_memory.add_event(
-        role="aether",
-        content=response_text,
-        event_type="message",
+    # Force tool execution to false for this milestone
+    result = runtime.process_chat(
+        text=input_text,
+        session_id=request.session_id,
+        metadata=request.metadata,
+        allow_tool_execution=False,
     )
 
     summary = runtime.working_memory.summary()
 
     return ChatResponse(
         name="Aether",
-        status=runtime.status(),
-        time=current_time,
-        response=response_text,
+        status=result.get("status", "completed"),
+        response=result.get("response_text", ""),
+        response_text=result.get("response_text", ""),
+        time=result.get("time"),
         working_memory_event_count=summary["event_count"],
+        session_id=result.get("session_id"),
+        loop_version=result.get("loop_version"),
+        identity_integrity_status=result.get("identity_integrity_status"),
+        perception=result.get("perception"),
+        risk=result.get("risk"),
+        suggested_tool=result.get("suggested_tool"),
+        tool_execution_allowed=False,
+        tool_executed=result.get("tool_executed", False),
+        memory_recorded=result.get("memory_recorded", False),
+        timeline_recorded=result.get("timeline_recorded", False),
+        warnings=result.get("warnings", []),
     )
 
 
