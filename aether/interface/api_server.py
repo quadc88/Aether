@@ -108,6 +108,7 @@ from aether.action.guided_repair_intake import open_guided_repair_intake,submit_
 from aether.action.guided_repair_plan_launcher import launch_guided_repair_plan,get_guided_repair_plan_launcher_record,list_guided_repair_plan_launcher_records,guided_repair_plan_launcher_status,summarize_guided_repair_plan_launcher
 from aether.action.guided_bridge_selection_launcher import launch_guided_bridge_selection,get_guided_bridge_selection_launcher_record,list_guided_bridge_selection_launcher_records,guided_bridge_selection_launcher_status,summarize_guided_bridge_selection_launcher
 from aether.action.guided_proposal_review_launcher import open_guided_proposal_review,get_guided_proposal_review_launcher_record,list_guided_proposal_review_launcher_records,guided_proposal_review_launcher_status,summarize_guided_proposal_review_launcher
+from aether.action.guided_proposal_decision_launcher import submit_guided_proposal_decision,get_guided_proposal_decision_launcher_record,list_guided_proposal_decision_launcher_records,guided_proposal_decision_launcher_status,summarize_guided_proposal_decision_launcher
 
 app = FastAPI(
     title="Aether API",
@@ -439,6 +440,10 @@ class GuidedProposalReviewOpenRequest(BaseModel):
     bridge_launcher_record_id:str; metadata:dict={}
 class GuidedProposalReviewLauncherListRequest(BaseModel):
     status:str|None=None; bridge_launcher_record_id:str|None=None; proposal_id:str|None=None; target_path:str|None=None; limit:int=50
+class GuidedProposalDecisionSubmitRequest(BaseModel):
+    proposal_review_launcher_record_id:str; decision:str; reviewer:str="human"; comment:str|None=None; metadata:dict={}
+class GuidedProposalDecisionLauncherListRequest(BaseModel):
+    status:str|None=None; proposal_review_launcher_record_id:str|None=None; proposal_id:str|None=None; decision:str|None=None; target_path:str|None=None; limit:int=50
 class RepairGuidanceReportExportRequest(BaseModel):
     guidance_record_id:str; output_dir:str="docs/history/repair_guidance"; metadata:dict={}
 class RepairGuidanceIndexExportRequest(BaseModel):
@@ -1849,3 +1854,13 @@ def list_guided_proposal_review_launcher_action(status:str|None=None,bridge_laun
 def summarize_guided_proposal_review_launcher_action(record_id:str):return {"name":"Aether","summary":summarize_guided_proposal_review_launcher(record_id)}
 @app.get("/action/guided-proposal-review-launcher/{record_id}")
 def get_guided_proposal_review_launcher_action(record_id:str):return {"name":"Aether","record":get_guided_proposal_review_launcher_record(record_id)}
+@app.post("/action/guided-proposal-decision-launcher/submit")
+def submit_guided_proposal_decision_action(request:GuidedProposalDecisionSubmitRequest):return {"name":"Aether","record":submit_guided_proposal_decision(request.proposal_review_launcher_record_id,request.decision,request.reviewer,request.comment,request.metadata)}
+@app.get("/action/guided-proposal-decision-launcher/status")
+def guided_proposal_decision_launcher_status_action():return {"name":"Aether","guided_proposal_decision_launcher":guided_proposal_decision_launcher_status()}
+@app.get("/action/guided-proposal-decision-launcher/list")
+def list_guided_proposal_decision_launcher_action(status:str|None=None,proposal_review_launcher_record_id:str|None=None,proposal_id:str|None=None,decision:str|None=None,target_path:str|None=None,limit:int=50):return {"name":"Aether","records":list_guided_proposal_decision_launcher_records(status,proposal_review_launcher_record_id,proposal_id,decision,target_path,limit)}
+@app.get("/action/guided-proposal-decision-launcher/{record_id}/summary")
+def summarize_guided_proposal_decision_launcher_action(record_id:str):return {"name":"Aether","summary":summarize_guided_proposal_decision_launcher(record_id)}
+@app.get("/action/guided-proposal-decision-launcher/{record_id}")
+def get_guided_proposal_decision_launcher_action(record_id:str):return {"name":"Aether","record":get_guided_proposal_decision_launcher_record(record_id)}

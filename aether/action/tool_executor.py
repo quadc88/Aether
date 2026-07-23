@@ -40,6 +40,7 @@ from aether.action.guided_repair_intake import open_guided_repair_intake,submit_
 from aether.action.guided_repair_plan_launcher import launch_guided_repair_plan,summarize_guided_repair_plan_launcher,guided_repair_plan_launcher_status
 from aether.action.guided_bridge_selection_launcher import launch_guided_bridge_selection,summarize_guided_bridge_selection_launcher,guided_bridge_selection_launcher_status
 from aether.action.guided_proposal_review_launcher import open_guided_proposal_review,summarize_guided_proposal_review_launcher,guided_proposal_review_launcher_status
+from aether.action.guided_proposal_decision_launcher import submit_guided_proposal_decision,summarize_guided_proposal_decision_launcher,guided_proposal_decision_launcher_status
 from aether.time.clock import get_timezone, now_iso
 
 
@@ -83,6 +84,7 @@ SANDBOX_TOOL_IDS = {
     "project.guided_repair_plan_launcher.launch", "project.guided_repair_plan_launcher.summary", "project.guided_repair_plan_launcher.status",
     "project.guided_bridge_selection_launcher.launch", "project.guided_bridge_selection_launcher.summary", "project.guided_bridge_selection_launcher.status",
     "project.guided_proposal_review_launcher.open", "project.guided_proposal_review_launcher.summary", "project.guided_proposal_review_launcher.status",
+    "project.guided_proposal_decision_launcher.submit", "project.guided_proposal_decision_launcher.summary", "project.guided_proposal_decision_launcher.status",
 }
 
 
@@ -321,6 +323,9 @@ def _safe_result(tool_id: str, payload: dict) -> dict:
     if tool_id == "project.guided_proposal_review_launcher.open": return open_guided_proposal_review(payload.get("bridge_launcher_record_id",""),payload.get("metadata"))
     if tool_id == "project.guided_proposal_review_launcher.summary": return summarize_guided_proposal_review_launcher(payload.get("record_id",""))
     if tool_id == "project.guided_proposal_review_launcher.status": return guided_proposal_review_launcher_status()
+    if tool_id == "project.guided_proposal_decision_launcher.submit": return submit_guided_proposal_decision(payload.get("proposal_review_launcher_record_id",""),payload.get("decision",""),payload.get("reviewer","human"),payload.get("comment"),payload.get("metadata"))
+    if tool_id == "project.guided_proposal_decision_launcher.summary": return summarize_guided_proposal_decision_launcher(payload.get("record_id",""))
+    if tool_id == "project.guided_proposal_decision_launcher.status": return guided_proposal_decision_launcher_status()
     raise ValueError("Unsupported sandbox tool.")
 
 

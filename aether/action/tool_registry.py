@@ -214,6 +214,9 @@ def tool_registry_status() -> dict:
 
 
 DEFAULT_TOOLS = [
+    ("project.guided_proposal_decision_launcher.submit", "Submit Guided Proposal Decision", "Submit an explicit human proposal decision through the review console.", "project", "high", True, False, False),
+    ("project.guided_proposal_decision_launcher.summary", "Summarize Guided Proposal Decision Launcher", "Summarize a guided proposal decision safely.", "project", "low", False, False, True),
+    ("project.guided_proposal_decision_launcher.status", "Guided Proposal Decision Launcher Status", "Show guided proposal decision launcher status.", "project", "low", False, False, True),
     ("project.guided_proposal_review_launcher.open", "Open Guided Proposal Review", "Open a human proposal review console from a guided bridge selection.", "project", "medium", True, False, False),
     ("project.guided_proposal_review_launcher.summary", "Summarize Guided Proposal Review Launcher", "Summarize a guided proposal review launch safely.", "project", "low", False, False, True),
     ("project.guided_proposal_review_launcher.status", "Guided Proposal Review Launcher Status", "Show guided proposal review launcher status.", "project", "low", False, False, True),
