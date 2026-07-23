@@ -153,6 +153,11 @@ class ChatResponse(BaseModel):
     required_user_confirmation: bool = False
     clarification_question: str | None = None
     blocked_reason: str | None = None
+    # --- Policy Enforcement Gate (Milestone 51A) ---
+    policy_gate: dict | None = None
+    execution_allowed: bool = False
+    execution_decision: str | None = None
+    execution_reason: str | None = None
 
 
 class GoalRequest(BaseModel):
@@ -663,6 +668,11 @@ def chat(request: ChatRequest):
         required_user_confirmation=result.get("required_user_confirmation", False),
         clarification_question=result.get("clarification_question"),
         blocked_reason=result.get("blocked_reason"),
+        # --- Policy Enforcement Gate (Milestone 51A) ---
+        policy_gate=result.get("policy_gate"),
+        execution_allowed=result.get("execution_allowed", False),
+        execution_decision=result.get("execution_decision"),
+        execution_reason=result.get("execution_reason"),
     )
 
 

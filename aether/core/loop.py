@@ -101,6 +101,17 @@ def run_core_chat_loop(
         metadata=metadata,
     )
 
+    # --- Step 7c: Policy Enforcement Gate ---
+    from aether.action.policy_gate import enforce_policy_gate
+    policy_gate_result = enforce_policy_gate(
+        thinking_policy=thinking_policy,
+        requested_action=suggested_tool,
+        context={"session_id": session_id},
+    )
+    execution_allowed = policy_gate_result.get("allowed", False)
+    execution_decision = policy_gate_result.get("decision", "invalid_policy")
+    execution_reason = policy_gate_result.get("reason", "")
+
     # --- Step 8: Tool execution is NEVER performed in this milestone ---
     tool_executed = False
     tool_execution_allowed = False
@@ -151,6 +162,11 @@ def run_core_chat_loop(
         "required_user_confirmation": thinking_policy.get("required_user_confirmation", False),
         "clarification_question": thinking_policy.get("clarification_question"),
         "blocked_reason": thinking_policy.get("blocked_reason"),
+        # --- Policy Enforcement Gate (Milestone 51A) ---
+        "policy_gate": policy_gate_result,
+        "execution_allowed": execution_allowed,
+        "execution_decision": execution_decision,
+        "execution_reason": execution_reason,
     }
 
 
@@ -186,6 +202,21 @@ def _error_response(error_msg: str, warnings: list[str]) -> dict:
         "required_user_confirmation": False,
         "clarification_question": None,
         "blocked_reason": None,
+        # --- Policy Enforcement Gate (Milestone 51A) ---
+        "policy_gate": {
+            "allowed": False,
+            "decision": "invalid_policy",
+            "reason": "Missing thinking policy.",
+            "required_user_confirmation": True,
+            "tool_execution_allowed": False,
+            "action_execution_allowed": False,
+            "requested_action": None,
+            "policy_snapshot": None,
+            "warnings": [error_msg],
+        },
+        "execution_allowed": False,
+        "execution_decision": "invalid_policy",
+        "execution_reason": "Missing thinking policy.",
     }
 
 

@@ -62,6 +62,8 @@ class TestCoreLoopStructure:
             "thinking_policy", "decision_type",
             "required_user_confirmation", "clarification_question",
             "blocked_reason",
+            # Policy Enforcement Gate (Milestone 51A)
+            "policy_gate", "execution_allowed", "execution_decision", "execution_reason",
         }
         assert set(result.keys()) >= required_keys
 
@@ -156,6 +158,37 @@ class TestSuggestToolShapeCompatibility:
 
         result = core_loop.run_core_chat_loop(text="test")
         assert result["suggested_tool"] is None
+
+
+class TestPolicyGateIntegration:
+    """Tests 10-13: Policy enforcement gate in core loop (Milestone 51A)."""
+
+    def test_core_loop_includes_policy_gate(self, patched_core_loop):
+        result = patched_core_loop.run_core_chat_loop(text="hello world")
+        assert "policy_gate" in result
+        assert result["policy_gate"] is not None
+        assert isinstance(result["policy_gate"], dict)
+
+    def test_execution_allowed_false_by_default(self, patched_core_loop):
+        result = patched_core_loop.run_core_chat_loop(text="hello world")
+        assert result["execution_allowed"] is False
+        assert result["tool_execution_allowed"] is False
+
+    def test_high_risk_memory_deletion_returns_require_approval_or_block(self, patched_core_loop):
+        result = patched_core_loop.run_core_chat_loop(
+            text="Delete all private memory and remove the identity seed."
+        )
+        assert result["status"] == "completed"
+        assert result["execution_decision"] in ("require_approval", "block", "deny")
+
+    def test_tool_suggesting_low_risk_returns_deny(self, patched_core_loop):
+        result = patched_core_loop.run_core_chat_loop(
+            text="what time is it"
+        )
+        assert result["status"] == "completed"
+        # tool_execution_allowed is always False in current policy
+        assert result["execution_decision"] == "deny"
+        assert result["execution_allowed"] is False
 
 
 class TestNoToolExecutionEvenWhenAllowed:

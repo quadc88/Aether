@@ -134,3 +134,48 @@ class TestChatEndpoint:
         assert data["status"] == "completed"
         assert "thinking_policy" in data
         assert data["thinking_policy"]["tool_execution_allowed"] is False
+
+
+class TestPolicyGateInApiResponse:
+    """Tests 14-17: Policy gate fields in /chat API response (Milestone 51A)."""
+
+    @classmethod
+    def setup_class(cls):
+        cls.client = _get_test_client()
+
+    def test_chat_response_includes_policy_gate(self):
+        """Test 14: /chat response includes policy_gate."""
+        resp = self.client.post("/chat", json={"text": "hello from api"})
+        data = resp.json()
+        assert "policy_gate" in data
+        assert data["policy_gate"] is not None
+        assert isinstance(data["policy_gate"], dict)
+
+    def test_chat_response_includes_execution_allowed(self):
+        """Test 15: /chat response includes execution_allowed."""
+        resp = self.client.post("/chat", json={"text": "check execution flag"})
+        data = resp.json()
+        assert "execution_allowed" in data
+        assert data["execution_allowed"] is False
+
+    def test_legacy_message_still_works_with_gate(self):
+        """Test 16: legacy message still works with policy gate fields."""
+        resp = self.client.post("/chat", json={"message": "legacy policy check"})
+        data = resp.json()
+        assert data["status"] == "completed"
+        assert "policy_gate" in data
+        assert data["execution_allowed"] is False
+
+    def test_allow_tool_execution_true_does_not_bypass_gate(self):
+        """Test 17: allow_tool_execution true in request does NOT bypass policy gate."""
+        resp = self.client.post(
+            "/chat",
+            json={
+                "text": "this should still be blocked",
+                "allow_tool_execution": True,
+            },
+        )
+        data = resp.json()
+        assert data["execution_allowed"] is False
+        assert data["tool_execution_allowed"] is False
+        assert data["policy_gate"]["allowed"] is False
