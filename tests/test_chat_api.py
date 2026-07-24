@@ -732,3 +732,131 @@ class TestDryRunRecordAPI:
         data = resp.json()
         assert data["found"] is False
         assert data["dry_run"] is None
+
+
+class TestDryRunSandboxContractAPI:
+    """Tests 43-49: Sandbox contract endpoint (Milestone 58A)."""
+
+    @classmethod
+    def setup_class(cls):
+        cls.client = _get_test_client()
+
+    def _create_approved_dr_record(self, action):
+        from aether.action.approval_queue import create_approval_record as _car
+        rec = _car({
+            "approval_required": True, "risk_level": "medium",
+            "requested_action": action,
+        }, context={"source": "test"})
+        aid = rec["approval_id"]
+        cls._car = _car
+        cls.client.post(f"/approvals/{aid}/approve", json={
+            "reviewer": "sandbox_test", "reason": "for sandbox"
+        })
+        dr_resp = cls.client.post(
+            f"/approvals/{aid}/dry-run-request",
+            json={"requested_action": action},
+        )
+        return dr_resp.json()["dry_run_id"]
+
+    def test_sandbox_contract_valid_for_pending_allowed_action(self):
+        """Test 43: POST sandbox-contract returns valid for pending allowed action."""
+        aid = self._make_rec({
+            "action_type": "status_check", "tool_id": "project.sandbox.test1"
+        })
+        resp = self.client.post(f"/dry-runs/{aid}/sandbox-contract")
+        data = resp.json()
+        assert data["contract_valid"] is True
+        assert data["decision"] == "allow_simulation_planning"
+        assert data["allowed_simulation_mode"] == "contract_only"
+        assert data["dry_run_execution_allowed"] is False
+        assert data["execution_allowed"] is False
+        assert data["apply_allowed"] is False
+        assert data["rollback_allowed"] is False
+
+    def test_sandbox_contract_not_pending_when_cancelled(self):
+        """Test 44: cancelled dry-run returns not_pending."""
+        aid = self._make_rec({"action_type": "status_check", "tool_id": "project.cancel.sbox"})
+        self.client.post(f"/dry-runs/{aid}/cancel", json={"reviewer": "test"})
+        resp = self.client.post(f"/dry-runs/{aid}/sandbox-contract")
+        data = resp.json()
+        assert data["contract_valid"] is False
+        assert data["decision"] == "not_pending"
+
+    def test_sandbox_contract_not_found_missing_id(self):
+        """Test 45: missing dry_run_id returns not_found."""
+        resp = self.client.post("/dry-runs/not_an_id/sandbox-contract")
+        data = resp.json()
+        assert data["contract_valid"] is False
+        assert data["decision"] == "not_found"
+
+    def test_sandbox_contract_unsafe_action_type(self):
+        """Test 46: unsafe action type returns unsafe_action_type."""
+        aid = self._make_rec({"action_type": "file_delete", "tool_id": "project.unsafe.sbox"})
+        resp = self.client.post(f"/dry-runs/{aid}/sandbox-contract")
+        data = resp.json()
+        assert data["contract_valid"] is False
+        assert data["decision"] == "unsafe_action_type"
+
+    def test_sandbox_contract_no_execution(self):
+        """Test 47: sandbox-contract does not execute anything."""
+        aid = self._make_rec({"action_type": "status_check", "tool_id": "project.noexec.sbox"})
+        resp = self.client.post(f"/dry-runs/{aid}/sandbox-contract")
+        data = resp.json()
+        assert data["dry_run_execution_allowed"] is False
+        assert data["execution_allowed"] is False
+        assert data["tool_execution_allowed"] is False
+        assert data["apply_allowed"] is False
+        assert data["rollback_allowed"] is False
+
+    def test_sandbox_contract_no_mutation(self):
+        """Test 48: sandbox-contract does not mutate dry-run record status."""
+        aid = self._make_rec({"action_type": "status_check", "tool_id": "project.nomut.sbox"})
+        before = self.client.get(f"/dry-runs/{aid}").json()
+        assert before["dry_run"]["status"] == "pending"
+        self.client.post(f"/dry-runs/{aid}/sandbox-contract")
+        after = self.client.get(f"/dry-runs/{aid}").json()
+        assert after["dry_run"]["status"] == "pending"
+
+    def test_sandbox_contract_allowed_types(self):
+        """Test 49: multiple allowed action types produce valid contracts."""
+        for atype in ("read_only_check", "inspection", "validation", "report_generation", "plan_review"):
+            aid = self._make_rec({"action_type": atype, "tool_id": f"project.{atype}"})
+            resp = self.client.post(f"/dry-runs/{aid}/sandbox-contract")
+            data = resp.json()
+            assert data["contract_valid"] is True, f"Failed for action_type={atype}"
+
+
+def _mk_dr(action):
+    """Module-level helper to create an approved dry-run record for API tests."""
+    from aether.action.approval_queue import create_approval_record
+    rec = create_approval_record({
+        "approval_required": True, "risk_level": "medium",
+        "requested_action": action,
+    }, context={"source": "test"})
+    aid = rec["approval_id"]
+    client = _get_test_client()
+    client.post(f"/approvals/{aid}/approve", json={"reviewer": "sandbox_test"})
+    dr = client.post(
+        f"/approvals/{aid}/dry-run-request",
+        json={"requested_action": action},
+    ).json()
+    return dr["dry_run_id"]
+
+
+def _make_rec_helper(cls_self, action):
+    """Helper that creates a dry-run record via the API chain."""
+    from aether.action.approval_queue import create_approval_record
+    rec = create_approval_record({
+        "approval_required": True, "risk_level": "medium",
+        "requested_action": action,
+    }, context={"source": "test"})
+    aid = rec["approval_id"]
+    cls_self.client.post(f"/approvals/{aid}/approve", json={"reviewer": "sandbox_test"})
+    dr = cls_self.client.post(
+        f"/approvals/{aid}/dry-run-request",
+        json={"requested_action": action},
+    ).json()
+    return dr["dry_run_id"]
+
+# Patch into the class so the helper can be used
+TestDryRunSandboxContractAPI._make_rec = _make_rec_helper

@@ -1411,6 +1411,34 @@ def cancel_dry_run(dry_run_id: str, request: DryRunDecisionBody | None = None):
     }
 
 
+# ===================================================================== #
+# Dry-Run Sandbox Contract Endpoint (Milestone 58A)
+# ===================================================================== #
+
+from aether.action.dry_run_sandbox_contract import (
+    build_dry_run_sandbox_contract as _build_contract,
+)
+
+
+class SandboxContextBody(BaseModel):
+    context: dict | None = None
+
+
+@app.post("/dry-runs/{dry_run_id}/sandbox-contract")
+def sandbox_contract_endpoint(dry_run_id: str, request: SandboxContextBody | None = None):
+    from aether.action.dry_run_queue import get_dry_run_record as _get_dr
+    dr_record = _get_dr(dry_run_id) if dry_run_id else None
+    context = None
+    if request:
+        context = request.context
+    contract = _build_contract(dr_record, context)
+    return {
+        "name": "Aether",
+        "status": runtime.status(),
+        **contract,
+    }
+
+
 def _add_tool_working_memory_event(tool: dict, event_type: str) -> None:
     runtime.working_memory.add_event(
         role="aether",
