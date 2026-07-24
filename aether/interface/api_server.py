@@ -1302,6 +1302,9 @@ def validate_action_endpoint(approval_id: str, request: ActionValidationBody | N
 from aether.action.dry_run_request import (
     build_dry_run_request as _build_dry_run,
 )
+from aether.action.dry_run_queue import (
+    create_dry_run_record as _create_dr_record,
+)
 
 
 @app.post("/approvals/{approval_id}/dry-run-request")
@@ -1319,11 +1322,21 @@ def dry_run_request_endpoint(approval_id: str, request: ActionValidationBody | N
     )
     # Then build the dry-run request object from the validation result
     dry_run_req = _build_dry_run(validation_result, requested_action, context)
+
+    # Persist dry-run record when a valid dry_run_request exists
+    dry_run_rec = None
+    dry_run_id = None
+    if dry_run_req is not None:
+        dry_run_rec = _create_dr_record(dry_run_request=dry_run_req, context=context)
+        dry_run_id = dry_run_rec["dry_run_id"]
+
     return {
         "name": "Aether",
         "status": runtime.status(),
         "approval_validation": validation_result,
         "dry_run_request": dry_run_req,
+        "dry_run_record": dry_run_rec,
+        "dry_run_id": dry_run_id,
         "dry_run_required": dry_run_req is not None,
         "dry_run_status": dry_run_req.get("dry_run_status") if dry_run_req else None,
         "dry_run_allowed": validation_result.get("dry_run_allowed", False),
@@ -1331,6 +1344,70 @@ def dry_run_request_endpoint(approval_id: str, request: ActionValidationBody | N
         "tool_execution_allowed": False,
         "apply_allowed": False,
         "rollback_allowed": False,
+    }
+
+
+# ===================================================================== #
+# Dry-Run Record Endpoints (Milestone 57A)
+# ===================================================================== #
+
+from aether.action.dry_run_queue import (
+    get_dry_run_record as _get_dr,
+    list_dry_run_records as _list_dr,
+    update_dry_run_record_status as _update_dr,
+)
+
+
+class DryRunDecisionBody(BaseModel):
+    reviewer: str | None = None
+    reason: str | None = None
+
+
+@app.get("/dry-runs")
+def list_dry_runs(status: str | None = None, limit: int = 50):
+    records = _list_dr(status=status, limit=limit)
+    return {
+        "name": "Aether",
+        "status": runtime.status(),
+        "dry_runs": records,
+        "count": len(records),
+    }
+
+
+@app.get("/dry-runs/{dry_run_id}")
+def get_dry_run(dry_run_id: str):
+    record = _get_dr(dry_run_id)
+    return {
+        "name": "Aether",
+        "status": runtime.status(),
+        "dry_run": record,
+        "found": record is not None,
+    }
+
+
+@app.post("/dry-runs/{dry_run_id}/cancel")
+def cancel_dry_run(dry_run_id: str, request: DryRunDecisionBody | None = None):
+    reviewer = None
+    reason = None
+    if request:
+        reviewer = request.reviewer
+        reason = request.reason
+    record = _update_dr(
+        dry_run_id, decision="cancelled", reviewer=reviewer, reason=reason
+    )
+    if record is None:
+        return {
+            "name": "Aether",
+            "status": runtime.status(),
+            "dry_run": None,
+            "found": False,
+            "warnings": ["Dry-run record not found."],
+        }
+    return {
+        "name": "Aether",
+        "status": runtime.status(),
+        "dry_run": record,
+        "found": True,
     }
 
 
