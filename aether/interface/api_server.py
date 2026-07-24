@@ -1439,6 +1439,39 @@ def sandbox_contract_endpoint(dry_run_id: str, request: SandboxContextBody | Non
     }
 
 
+# ===================================================================== #
+# Simulation Plan Endpoint (Milestone 59A)
+# ===================================================================== #
+
+from aether.action.simulation_plan import build_simulation_plan as _build_plan
+
+
+@app.post("/dry-runs/{dry_run_id}/simulation-plan")
+def simulation_plan_endpoint(dry_run_id: str, request: SandboxContextBody | None = None):
+    from aether.action.dry_run_queue import get_dry_run_record as _get_dr
+    dr_record = _get_dr(dry_run_id) if dry_run_id else None
+    context = None
+    if request:
+        context = request.context
+    # First build the sandbox contract
+    contract = _build_contract(dr_record, context)
+    # Then build the simulation plan from the contract
+    sim_plan = _build_plan(contract, context)
+    return {
+        "name": "Aether",
+        "status": runtime.status(),
+        "sandbox_contract": contract,
+        "simulation_plan": sim_plan,
+        "simulation_plan_required": sim_plan is not None,
+        "simulation_plan_status": sim_plan.get("simulation_plan_status") if sim_plan else None,
+        "execution_allowed": False,
+        "tool_execution_allowed": False,
+        "dry_run_execution_allowed": False,
+        "apply_allowed": False,
+        "rollback_allowed": False,
+    }
+
+
 def _add_tool_working_memory_event(tool: dict, event_type: str) -> None:
     runtime.working_memory.add_event(
         role="aether",

@@ -860,3 +860,92 @@ def _make_rec_helper(cls_self, action):
 
 # Patch into the class so the helper can be used
 TestDryRunSandboxContractAPI._make_rec = _make_rec_helper
+
+
+def _mk_dr(action):
+    """Module-level helper to create an approved dry-run record for API tests."""
+    from aether.action.approval_queue import create_approval_record
+    rec = create_approval_record({
+        "approval_required": True, "risk_level": "medium",
+        "requested_action": action,
+    }, context={"source": "test"})
+    aid = rec["approval_id"]
+    client = _get_test_client()
+    client.post(f"/approvals/{aid}/approve", json={"reviewer": "plan_test"})
+    dr = client.post(
+        f"/approvals/{aid}/dry-run-request",
+        json={"requested_action": action},
+    ).json()
+    return dr["dry_run_id"]
+
+
+class TestSimulationPlanAPI:
+    """Tests 35-41: Simulation plan endpoint (Milestone 59A)."""
+
+    @classmethod
+    def setup_class(cls):
+        cls.client = _get_test_client()
+
+    def test_plan_returns_for_pending_allowed_action(self):
+        """Test 35: POST /dry-runs/{id}/simulation-plan returns plan for pending allowed action."""
+        aid = _mk_dr({"action_type": "status_check", "tool_id": "project.plan.test"})
+        resp = self.client.post(f"/dry-runs/{aid}/simulation-plan")
+        data = resp.json()
+        assert data["sandbox_contract"]["contract_valid"] is True
+        assert data["simulation_plan"] is not None
+        assert data["simulation_plan_status"] == "pending"
+        assert data["execution_allowed"] is False
+        assert data["apply_allowed"] is False
+        assert data["rollback_allowed"] is False
+
+    def test_plan_null_for_cancelled(self):
+        """Test 36: cancelled dry-run returns simulation_plan null."""
+        aid = _mk_dr({"action_type": "status_check", "tool_id": "project.cancel.plan"})
+        self.client.post(f"/dry-runs/{aid}/cancel", json={"reviewer": "test"})
+        resp = self.client.post(f"/dry-runs/{aid}/simulation-plan")
+        data = resp.json()
+        assert data["simulation_plan"] is None
+        assert data["sandbox_contract"]["decision"] == "not_pending"
+
+    def test_plan_null_for_missing_dry_run_id(self):
+        """Test 37: missing dry_run_id returns simulation_plan null."""
+        resp = self.client.post("/dry-runs/not_an_id/simulation-plan")
+        data = resp.json()
+        assert data["simulation_plan"] is None
+        assert data["sandbox_contract"]["decision"] == "not_found"
+
+    def test_plan_null_for_unsafe_action(self):
+        """Test 38: unsafe action type returns simulation_plan null."""
+        aid = _mk_dr({"action_type": "file_delete", "tool_id": "project.unsafe.plan"})
+        resp = self.client.post(f"/dry-runs/{aid}/simulation-plan")
+        data = resp.json()
+        assert data["simulation_plan"] is None
+        assert data["sandbox_contract"]["decision"] == "unsafe_action_type"
+
+    def test_plan_no_mutation_of_dry_run_record(self):
+        """Test 39: simulation-plan does not mutate dry-run record status."""
+        aid = _mk_dr({"action_type": "status_check", "tool_id": "project.nomut.plan"})
+        before = self.client.get(f"/dry-runs/{aid}").json()
+        assert before["dry_run"]["status"] == "pending"
+        self.client.post(f"/dry-runs/{aid}/simulation-plan")
+        after = self.client.get(f"/dry-runs/{aid}").json()
+        assert after["dry_run"]["status"] == "pending"
+
+    def test_plan_no_tool_execution(self):
+        """Test 40: simulation-plan does not execute tools."""
+        aid = _mk_dr({"action_type": "status_check", "tool_id": "project.noe.plan"})
+        resp = self.client.post(f"/dry-runs/{aid}/simulation-plan")
+        data = resp.json()
+        assert data["tool_execution_allowed"] is False
+        assert data["dry_run_execution_allowed"] is False
+
+    def test_plan_all_flags_false(self):
+        """Test 41: simulation-plan returns all execution/apply/rollback flags false."""
+        aid = _mk_dr({"action_type": "inspection", "tool_id": "project.flags.plan"})
+        resp = self.client.post(f"/dry-runs/{aid}/simulation-plan")
+        data = resp.json()
+        assert data["execution_allowed"] is False
+        assert data["tool_execution_allowed"] is False
+        assert data["dry_run_execution_allowed"] is False
+        assert data["apply_allowed"] is False
+        assert data["rollback_allowed"] is False
