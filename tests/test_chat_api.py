@@ -179,3 +179,43 @@ class TestPolicyGateInApiResponse:
         assert data["execution_allowed"] is False
         assert data["tool_execution_allowed"] is False
         assert data["policy_gate"]["allowed"] is False
+
+
+class TestApprovalRequestInApiResponse:
+    """Tests 19-22: Approval request fields in /chat API response (Milestone 52A)."""
+
+    @classmethod
+    def setup_class(cls):
+        cls.client = _get_test_client()
+
+    def test_chat_response_includes_approval_request_fields(self):
+        """Test 19: /chat response includes approval_request fields."""
+        resp = self.client.post("/chat", json={"text": "hello from api"})
+        data = resp.json()
+        assert "approval_request" in data
+        assert "approval_required" in data
+        assert "approval_status" in data
+        assert "approval_type" in data
+
+    def test_chat_high_risk_memory_deletion_returns_approval_required_true(self):
+        """Test 20: /chat high-risk memory deletion returns approval_required true."""
+        resp = self.client.post("/chat", json={
+            "text": "Delete all private memory and remove the identity seed.",
+        })
+        data = resp.json()
+        assert data["approval_required"] is True
+        assert data["approval_status"] == "pending"
+        assert data["approval_request"] is not None
+
+    def test_chat_normal_safe_input_returns_approval_required_false(self):
+        """Test 21: /chat normal safe input returns approval_required false."""
+        resp = self.client.post("/chat", json={"text": "hello world normal input"})
+        data = resp.json()
+        assert data["approval_required"] is False
+
+    def test_chat_legacy_message_still_works(self):
+        """Test 22: /chat legacy message still works."""
+        resp = self.client.post("/chat", json={"message": "legacy msg milestone 52a"})
+        data = resp.json()
+        assert data["status"] == "completed"
+        assert "approval_request" in data

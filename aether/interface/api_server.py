@@ -158,6 +158,11 @@ class ChatResponse(BaseModel):
     execution_allowed: bool = False
     execution_decision: str | None = None
     execution_reason: str | None = None
+    # --- Approval Request (Milestone 52A) ---
+    approval_request: dict | None = None
+    approval_required: bool = False
+    approval_status: str | None = None
+    approval_type: str | None = None
 
 
 class GoalRequest(BaseModel):
@@ -673,6 +678,11 @@ def chat(request: ChatRequest):
         execution_allowed=result.get("execution_allowed", False),
         execution_decision=result.get("execution_decision"),
         execution_reason=result.get("execution_reason"),
+        # --- Approval Request (Milestone 52A) ---
+        approval_request=result.get("approval_request"),
+        approval_required=result.get("approval_required", False),
+        approval_status=result.get("approval_status"),
+        approval_type=result.get("approval_type"),
     )
 
 

@@ -112,6 +112,17 @@ def run_core_chat_loop(
     execution_decision = policy_gate_result.get("decision", "invalid_policy")
     execution_reason = policy_gate_result.get("reason", "")
 
+    # --- Step 7d: Approval Request Builder (Milestone 52A) ---
+    from aether.action.approval_request import build_approval_request
+    approval_request = build_approval_request(
+        policy_gate=policy_gate_result,
+        thinking_policy=thinking_policy,
+        risk=risk,
+        requested_action=suggested_tool,
+        perception=perception,
+        context={"session_id": session_id},
+    )
+
     # --- Step 8: Tool execution is NEVER performed in this milestone ---
     tool_executed = False
     tool_execution_allowed = False
@@ -167,6 +178,11 @@ def run_core_chat_loop(
         "execution_allowed": execution_allowed,
         "execution_decision": execution_decision,
         "execution_reason": execution_reason,
+        # --- Approval Request Builder (Milestone 52A) ---
+        "approval_request": approval_request,
+        "approval_required": approval_request.get("approval_required", False) if approval_request else False,
+        "approval_status": approval_request.get("approval_status") if approval_request else None,
+        "approval_type": approval_request.get("approval_type") if approval_request else None,
     }
 
 
@@ -217,6 +233,11 @@ def _error_response(error_msg: str, warnings: list[str]) -> dict:
         "execution_allowed": False,
         "execution_decision": "invalid_policy",
         "execution_reason": "Missing thinking policy.",
+        # --- Approval Request Builder (Milestone 52A) ---
+        "approval_request": None,
+        "approval_required": False,
+        "approval_status": None,
+        "approval_type": None,
     }
 
 

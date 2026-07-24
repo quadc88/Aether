@@ -64,6 +64,8 @@ class TestCoreLoopStructure:
             "blocked_reason",
             # Policy Enforcement Gate (Milestone 51A)
             "policy_gate", "execution_allowed", "execution_decision", "execution_reason",
+            # Approval Request Builder (Milestone 52A)
+            "approval_request", "approval_required", "approval_status", "approval_type",
         }
         assert set(result.keys()) >= required_keys
 
@@ -189,6 +191,27 @@ class TestPolicyGateIntegration:
         # tool_execution_allowed is always False in current policy
         assert result["execution_decision"] == "deny"
         assert result["execution_allowed"] is False
+
+
+class TestApprovalRequestIntegration:
+    """Tests 14-18: Approval request object in core loop (Milestone 52A)."""
+
+    def test_core_loop_includes_approval_request(self, patched_core_loop):
+        result = patched_core_loop.run_core_chat_loop(text="hello world")
+        assert "approval_request" in result
+
+    def test_normal_safe_input_approval_required_false(self, patched_core_loop):
+        result = patched_core_loop.run_core_chat_loop(text="hello world")
+        assert result["approval_required"] is False
+
+    def test_high_risk_memory_deletion_approval_required_true(self, patched_core_loop):
+        result = patched_core_loop.run_core_chat_loop(
+            text="Delete all private memory and remove the identity seed."
+        )
+        assert result["status"] == "completed"
+        assert result["approval_required"] is True
+        assert result["approval_status"] == "pending"
+        assert result["approval_type"] in ("human_review", "blocked_identity_review")
 
 
 class TestNoToolExecutionEvenWhenAllowed:
