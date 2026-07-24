@@ -1201,32 +1201,120 @@ interface/
 
 \---
 
-## 12\. Aether Core Loop
+## 12\. Core Execution Loop
 
-Aether's basic operating loop is:
+### 12.1 Target Philosophical Loop
+
+The full, target execution loop that defines Aether's architecture is:
 
 ```text
-1. Receive input
-2. Load identity
-3. Load current time and timezone
-4. Load relevant working context
-5. Search memory if needed
-6. Perceive external context if needed
-7. Run workflow / policy decision
-8. Think and plan
-9. Estimate risk
-10. Verify when needed
-11. Request approval when needed
-12. Act if required
-13. Produce response
-14. Reflect if meaningful
-15. Update memory if appropriate
-16. Record timeline event when appropriate
+Receive Goal → Understand → Think → Plan → Act → Observe → Verify → Critic → Repair → Learn → Report
 ```
 
-This loop may be simple for easy tasks and deeper for complex tasks.
+Every task must define verifiable completion conditions. Aether must not end tasks only because an LLM or tool claims completion. After Act, Aether must Observe real system or world state. Verify checks observable evidence. If verification fails, Critic analyzes failure and Repair updates the plan before looping again. Learn records useful experience. Report explains outcome and evidence.
 
-Aether must not blindly execute every step when unnecessary.
+### 12.2 Current Implemented Chat Loop
+
+The currently implemented `/chat` endpoint provides a safe, deterministic skeleton of this loop:
+
+```text
+Input → Perception → Identity Guard → Time → Working Memory → Risk Verification → Tool Suggestion → Thinking Policy → Policy Gate → Approval Request → Timeline → Response
+```
+
+Implemented via `aether/core/loop.py::run_core_chat_loop`:
+
+1. **Input** — validated (non-empty).
+2. **Perception** — text parsed via `aether/perception/text.py` (language detection, risk terms).
+3. **Identity Integrity Guard** — checksum verification via `aether/identity/guard.py`.
+4. **Time** — local timestamp from `aether/time/clock.py`.
+5. **Working Memory** — input recorded to session context.
+6. **Risk Verification** — classified as low/medium/high by `aether/verification/risk.py`.
+7. **Tool Suggestion** — read-only suggestion via `aether/action/tool_planner.py`.
+8. **Thinking Policy** — decision_type assigned by `aether/thinking/policy.py` (respond_only, ask_clarification, suggest_tool, require_approval, block).
+9. **Policy Enforcement Gate** — central gate in `aether/action/policy_gate.py` blocks execution unless explicitly allowed.
+10. **Approval Request** — structured pending request object built by `aether/action/approval_request.py` when require_approval or block occurs.
+11. **Timeline** — event recorded in `aether/memory/timeline/recorder.py`.
+12. **Response** — structured JSON response returned via API.
+
+#### Current Safety Constraints
+
+- `tool_execution_allowed` is always `false`.
+- `tool_executed` is always `false`.
+- The policy gate denies execution by default.
+- The approval request object is a pending review struct only — it does not approve anything or execute anything.
+- No real approval workflow is active yet.
+- No persistent approval queue exists yet.
+- No automatic tool execution occurs through `/chat`.
+
+### 12.3 True Repeated Internal Loop
+
+When Aether supports full autonomous loops, the internal repeated cycle will be:
+
+```text
+Think → Plan → Act → Observe → Verify → Critic → Repair → (back to Think)
+```
+
+This is the loop that will eventually connect to actual executor, observation, verification, critic, repair, learning, and reporting stages.
+
+---
+
+## Verification and Safety Stack
+
+Aether's safety is enforced at multiple layers within the `/chat` pipeline.
+
+### Risk Verification
+
+Implemented in `aether/verification/risk.py`. Classifies each input into one of three risk levels:
+
+- **Low risk** — casual conversation, summarization, brainstorming, harmless conceptual questions. Harmless identity/memory explanation remains low risk.
+- **Medium risk** — code generation, file editing, configuration changes, debugging, business planning.
+- **High risk** — destructive memory operations, private data deletion, identity seed modification, secret/password handling, financial actions, medical/legal advice. Destructive verbs ("delete", "remove", "clear") combined with protected objects ("identity seed", "private memory", "private data") are elevated to high risk automatically. Chinese-language destructive phrases receive equivalent classification.
+
+### Thinking Policy
+
+Implemented in `aether/thinking/policy.py`. Converts perception + risk level + tool suggestion + identity integrity status into a `decision_type`:
+
+- `respond_only` — safe textual response.
+- `ask_clarification` — insufficient detail or very short input.
+- `suggest_tool` — low-risk input matches a known tool but execution remains disabled.
+- `require_approval` — high-risk input, secrets, medium-risk with tool, or identity integrity issues.
+- `block` — identity integrity checksum changed; no further processing proceeds.
+
+In the current milestone state, `tool_execution_allowed` remains `false` across all decision types.
+
+### Policy Enforcement Gate
+
+Implemented in `aether/action/policy_gate.py`. Central gate before any future tool or action execution. Returns:
+
+- `execution_allowed` — boolean flag. Always `false` in current implementation.
+- `execution_decision` — `deny`, `require_approval`, `block`, or `allow`.
+- `execution_reason` — human-readable justification for the decision.
+
+The gate enforces: `deny` / `require_approval` / `block` cannot execute. Only `allow` permits execution, which requires `thinking_policy.tool_execution_allowed == true`.
+
+### Approval Request Object
+
+Implemented in `aether/action/approval_request.py`. Created when the policy gate returns `require_approval` or `block`, or when thinking policy requires confirmation. The object contains:
+
+- `approval_required` — always `true` when present.
+- `approval_status` — `"pending"`. This is not an approval.
+- `approval_type` — `"human_review"`, `"blocked_identity_review"`, or `"invalid_policy_review"`.
+- `risk_level` / `risk_action_type` — inherited from risk classification.
+- `required_confirmations` — list of confirmation items (varies with risk).
+- `safety_checks` — list of safety validations that must pass.
+- `metadata` — source (`"approval_request_builder"`), schema version (`"1.0"`), session_id, language_hint.
+
+Important: the approval request is only a structured pending request. It does not approve, execute, or persist approval records.
+
+---
+
+## Current Limitations
+
+- No real tool execution through `/chat` yet.
+- No persistent approval queue — approval requests are transient objects only.
+- No Observe/Verify/Critic/Repair full runtime loop for arbitrary external actions yet.
+- The current loop is deterministic and rule-based.
+- Future milestones must connect approved actions to an actual executor, observation mechanism, verification stage, critic analysis, repair planning, learning recording, and reporting.
 
 \---
 
