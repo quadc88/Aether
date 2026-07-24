@@ -66,6 +66,8 @@ class TestCoreLoopStructure:
             "policy_gate", "execution_allowed", "execution_decision", "execution_reason",
             # Approval Request Builder (Milestone 52A)
             "approval_request", "approval_required", "approval_status", "approval_type",
+            # Approval Queue (Milestone 54A)
+            "approval_record", "approval_id",
         }
         assert set(result.keys()) >= required_keys
 
@@ -223,3 +225,46 @@ class TestNoToolExecutionEvenWhenAllowed:
         )
         assert result["tool_executed"] is False
         assert result["tool_execution_allowed"] is False
+
+
+class TestApprovalQueueIntegration:
+    """Tests 16-20: Approval queue records in core loop (Milestone 54A)."""
+
+    def test_high_risk_chat_creates_approval_record_and_id(self, patched_core_loop):
+        result = patched_core_loop.run_core_chat_loop(
+            text="Delete all private memory and remove the identity seed."
+        )
+        assert result["status"] == "completed"
+        assert result["approval_required"] is True
+        assert result["approval_record"] is not None
+        assert result["approval_id"] is not None
+        assert result["approval_record"]["status"] == "pending"
+
+    def test_normal_safe_chat_no_approval_record(self, patched_core_loop):
+        result = patched_core_loop.run_core_chat_loop(text="hello world")
+        assert result["approval_required"] is False
+        assert result["approval_record"] is None
+        assert result["approval_id"] is None
+
+    def test_tool_suggesting_low_risk_no_approval_record(self, patched_core_loop):
+        result = patched_core_loop.run_core_chat_loop(text="what time is it")
+        assert result["approval_required"] is False
+        assert result["approval_record"] is None
+        assert result["approval_id"] is None
+
+    def test_approval_record_status_is_pending(self, patched_core_loop):
+        result = patched_core_loop.run_core_chat_loop(
+            text="Delete all private memory and remove the identity seed."
+        )
+        rec = result["approval_record"]
+        assert rec is not None
+        assert rec["status"] == "pending"
+
+    def test_approval_record_does_not_allow_execution(self, patched_core_loop):
+        result = patched_core_loop.run_core_chat_loop(
+            text="Delete all private memory and remove the identity seed."
+        )
+        rec = result["approval_record"]
+        assert rec is not None
+        assert rec["execution_allowed_after_decision"] is False
+        assert rec["tool_executed"] is False

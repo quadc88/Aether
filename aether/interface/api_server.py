@@ -163,6 +163,9 @@ class ChatResponse(BaseModel):
     approval_required: bool = False
     approval_status: str | None = None
     approval_type: str | None = None
+    # --- Approval Queue (Milestone 54A) ---
+    approval_record: dict | None = None
+    approval_id: str | None = None
 
 
 class GoalRequest(BaseModel):
@@ -683,6 +686,9 @@ def chat(request: ChatRequest):
         approval_required=result.get("approval_required", False),
         approval_status=result.get("approval_status"),
         approval_type=result.get("approval_type"),
+        # --- Approval Queue (Milestone 54A) ---
+        approval_record=result.get("approval_record"),
+        approval_id=result.get("approval_id"),
     )
 
 
@@ -1138,6 +1144,122 @@ def reject_action_approval(request: ApprovalDecisionRequest):
 @app.post("/action/approval/cancel")
 def cancel_action_approval(request: ApprovalDecisionRequest):
     return _record_approval_decision(request.approval_id, request.decision_reason, "cancelled")
+
+
+# ===================================================================== #
+# Approval Queue Endpoints (Milestone 54A)
+# ===================================================================== #
+
+from aether.action.approval_queue import (
+    get_approval_record as _get_approval_record,
+    list_approval_records as _list_approval_records,
+    update_approval_record_status as _update_approval_record_status,
+)
+
+
+class ApprovalDecisionBody(BaseModel):
+    reviewer: str | None = None
+    reason: str | None = None
+
+
+@app.get("/approvals")
+def get_approvals(status: str | None = None, limit: int = 50):
+    records = _list_approval_records(status=status, limit=limit)
+    return {
+        "name": "Aether",
+        "status": runtime.status(),
+        "approvals": records,
+        "count": len(records),
+    }
+
+
+@app.get("/approvals/{approval_id}")
+def get_approval(approval_id: str):
+    record = _get_approval_record(approval_id)
+    return {
+        "name": "Aether",
+        "status": runtime.status(),
+        "approval": record,
+        "found": record is not None,
+    }
+
+
+@app.post("/approvals/{approval_id}/approve")
+def approve_approval_record(approval_id: str, request: ApprovalDecisionBody | None = None):
+    reviewer = None
+    reason = None
+    if request:
+        reviewer = request.reviewer
+        reason = request.reason
+    record = _update_approval_record_status(
+        approval_id, decision="approved", reviewer=reviewer, reason=reason
+    )
+    if record is None:
+        return {
+            "name": "Aether",
+            "status": runtime.status(),
+            "approval": None,
+            "found": False,
+            "warnings": ["Approval record not found."],
+        }
+    return {
+        "name": "Aether",
+        "status": runtime.status(),
+        "approval": record,
+        "found": True,
+    }
+
+
+@app.post("/approvals/{approval_id}/reject")
+def reject_approval_record(approval_id: str, request: ApprovalDecisionBody | None = None):
+    reviewer = None
+    reason = None
+    if request:
+        reviewer = request.reviewer
+        reason = request.reason
+    record = _update_approval_record_status(
+        approval_id, decision="rejected", reviewer=reviewer, reason=reason
+    )
+    if record is None:
+        return {
+            "name": "Aether",
+            "status": runtime.status(),
+            "approval": None,
+            "found": False,
+            "warnings": ["Approval record not found."],
+        }
+    return {
+        "name": "Aether",
+        "status": runtime.status(),
+        "approval": record,
+        "found": True,
+    }
+
+
+@app.post("/approvals/{approval_id}/cancel")
+def cancel_approval_record(approval_id: str, request: ApprovalDecisionBody | None = None):
+    reviewer = None
+    reason = None
+    if request:
+        reviewer = request.reviewer
+        reason = request.reason
+    record = _update_approval_record_status(
+        approval_id, decision="cancelled", reviewer=reviewer, reason=reason
+    )
+    if record is None:
+        return {
+            "name": "Aether",
+            "status": runtime.status(),
+            "approval": None,
+            "found": False,
+            "warnings": ["Approval record not found."],
+        }
+    return {
+        "name": "Aether",
+        "status": runtime.status(),
+        "approval": record,
+        "found": True,
+    }
 
 
 def _add_tool_working_memory_event(tool: dict, event_type: str) -> None:

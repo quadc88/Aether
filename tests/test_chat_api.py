@@ -219,3 +219,120 @@ class TestApprovalRequestInApiResponse:
         data = resp.json()
         assert data["status"] == "completed"
         assert "approval_request" in data
+
+
+class TestApprovalQueueAPI:
+    """Tests 24-30: Approval queue endpoints (Milestone 54A)."""
+
+    @classmethod
+    def setup_class(cls):
+        cls.client = _get_test_client()
+
+    def test_high_risk_chat_response_includes_approval_id(self):
+        """Test 21: /chat high-risk response includes approval_id."""
+        resp = self.client.post("/chat", json={
+            "text": "Delete all private memory and remove the identity seed.",
+        })
+        data = resp.json()
+        assert data["status"] == "completed"
+        assert data["approval_required"] is True
+        assert data["approval_id"] is not None
+
+    def test_high_risk_chat_response_includes_approval_record(self):
+        """Test 22: /chat high-risk response includes approval_record."""
+        resp = self.client.post("/chat", json={
+            "text": "Delete all private memory and remove the identity seed.",
+        })
+        data = resp.json()
+        assert data["approval_record"] is not None
+        assert data["approval_record"]["status"] == "pending"
+
+    def test_normal_chat_approval_id_is_none(self):
+        """Test 23: /chat normal request has approval_id None."""
+        resp = self.client.post("/chat", json={"text": "hello world"})
+        data = resp.json()
+        assert data["approval_id"] is None
+        assert data["approval_record"] is None
+
+    def test_get_approvals_lists_records(self):
+        """Test 24: GET /approvals returns records list."""
+        # First create a record via /chat
+        self.client.post("/chat", json={
+            "text": "Delete all private memory and remove the identity seed.",
+        })
+        resp = self.client.get("/approvals")
+        data = resp.json()
+        assert "approvals" in data
+        assert "count" in data
+        assert data["count"] >= 1
+
+    def test_get_approval_by_id(self):
+        """Test 25: GET /approvals/{id} reads record."""
+        resp = self.client.post("/chat", json={
+            "text": "Delete all private memory and remove the identity seed.",
+        })
+        data = resp.json()
+        aid = data["approval_id"]
+        resp2 = self.client.get(f"/approvals/{aid}")
+        d2 = resp2.json()
+        assert d2["found"] is True
+        assert d2["approval"]["approval_id"] == aid
+
+    def test_approve_changes_status_only(self):
+        """Test 26: POST /approvals/{id}/approve changes status only."""
+        # Create via /chat
+        resp = self.client.post("/chat", json={
+            "text": "Delete all private memory and remove the identity seed.",
+        })
+        aid = resp.json()["approval_id"]
+        resp2 = self.client.post(
+            f"/approvals/{aid}/approve",
+            json={"reviewer": "alice", "reason": "reviewed"},
+        )
+        d2 = resp2.json()
+        assert d2["approval"]["status"] == "approved"
+        assert d2["approval"]["decision"] == "approved"
+
+    def test_reject_changes_status_only(self):
+        """Test 27: POST /approvals/{id}/reject changes status only."""
+        resp = self.client.post("/chat", json={
+            "text": "Delete all private memory and remove the identity seed.",
+        })
+        aid = resp.json()["approval_id"]
+        resp2 = self.client.post(
+            f"/approvals/{aid}/reject",
+            json={"reviewer": "bob", "reason": "too risky"},
+        )
+        d2 = resp2.json()
+        assert d2["approval"]["status"] == "rejected"
+
+    def test_cancel_changes_status_only(self):
+        """Test 28: POST /approvals/{id}/cancel changes status only."""
+        resp = self.client.post("/chat", json={
+            "text": "Delete all private memory and remove the identity seed.",
+        })
+        aid = resp.json()["approval_id"]
+        resp2 = self.client.post(
+            f"/approvals/{aid}/cancel",
+            json={"reviewer": "carol"},
+        )
+        d2 = resp2.json()
+        assert d2["approval"]["status"] == "cancelled"
+
+    def test_approve_endpoint_does_not_execute_tools(self):
+        """Test 29: approve does not set execution_allowed or tool_executed."""
+        resp = self.client.post("/chat", json={
+            "text": "Delete all private memory and remove the identity seed.",
+        })
+        aid = resp.json()["approval_id"]
+        resp2 = self.client.post(f"/approvals/{aid}/approve")
+        d2 = resp2.json()["approval"]
+        assert d2["execution_allowed_after_decision"] is False
+        assert d2["tool_executed"] is False
+
+    def test_legacy_message_still_works(self):
+        """Test 30: Legacy message still works with approval fields."""
+        resp = self.client.post("/chat", json={"message": "legacy msg milestone 54a"})
+        data = resp.json()
+        assert data["status"] == "completed"
+        assert "approval_id" in data

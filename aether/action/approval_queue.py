@@ -166,3 +166,150 @@ def approval_queue_status() -> dict:
         "updated": queue.get("updated"),
         "timezone": queue.get("timezone"),
     }
+
+
+# ===================================================================== #
+# Approval Record Store (Milestone 54A)
+# ===================================================================== #
+# Individual JSON files under private_dir/approvals/
+# Distinct from the legacy approval_queue.json single-file store above.
+# ===================================================================== #
+
+from datetime import datetime, timezone as _tz
+
+
+def _approval_record_dir() -> Path:
+    """Return the approvals/ directory under the configured private data dir."""
+    config = load_aether_config()
+    paths = config.get("paths", {})
+    private_val = paths.get("private_dir", "")
+    if not private_val:
+        base = get_approval_dir().parent
+    else:
+        base = Path(private_val)
+    rec_dir = base / "approvals"
+    rec_dir.mkdir(parents=True, exist_ok=True)
+    return rec_dir
+
+
+def create_approval_record(
+    approval_request: dict,
+    context: dict | None = None,
+) -> dict:
+    """Create and persist a new pending approval record as an individual JSON file.
+
+    Args:
+        approval_request: The structured request dict from the approval builder.
+        context: Optional metadata context (e.g. session_id).
+
+    Returns:
+        The saved approval record dict.
+    """
+    approval_id = uuid.uuid4().hex
+    now_iso_str = datetime.now(_tz.utc).isoformat()
+
+    record: dict = {
+        "approval_id": approval_id,
+        "status": "pending",
+        "approval_request": dict(approval_request),
+        "created_at": now_iso_str,
+        "updated_at": now_iso_str,
+        "decision": None,
+        "decided_at": None,
+        "reviewer": None,
+        "decision_reason": None,
+        "execution_allowed_after_decision": False,
+        "tool_executed": False,
+        "metadata": dict(context) if context else {},
+        "warnings": [],
+    }
+
+    path = _approval_record_dir() / f"approval_{approval_id}.json"
+    path.write_text(json.dumps(record, indent=2, default=str), encoding="utf-8")
+    return record
+
+
+def get_approval_record(approval_id: str) -> dict | None:
+    """Read one approval record by id. Returns None if not found."""
+    path = _approval_record_dir() / f"approval_{approval_id}.json"
+    if not path.exists():
+        return None
+    with path.open("r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+def list_approval_records(
+    status: str | None = None,
+    limit: int = 50,
+) -> list[dict]:
+    """List approval records, newest first.
+
+    Args:
+        status: Optional filter by status.
+        limit: Maximum number of records to return.
+    """
+    rec_dir = _approval_record_dir()
+    records: list[dict] = []
+    for p in rec_dir.glob("approval_*.json"):
+        with p.open("r", encoding="utf-8") as f:
+            rec = json.load(f)
+        if status is not None and rec.get("status") != status:
+            continue
+        records.append(rec)
+    records.sort(key=lambda r: r.get("created_at", ""), reverse=True)
+    return records[:limit]
+
+
+def update_approval_record_status(
+    approval_id: str,
+    decision: str,
+    reviewer: str | None = None,
+    reason: str | None = None,
+) -> dict | None:
+    """Update an approval record's status.
+
+    Allowed decisions: ``"approved"``, ``"rejected"``, ``"cancelled"``.
+
+    Only records with status ``"pending"`` may be transitioned.
+    If already decided, the original record is returned unchanged with a warning.
+
+    Args:
+        approval_id: Id of the record to update.
+        decision: One of approved / rejected / cancelled.
+        reviewer: Name/identifier of the reviewer.
+        reason: Decision reason string.
+
+    Returns:
+        The updated record dict, or None if not found.
+    """
+    valid_decisions = {"approved", "rejected", "cancelled"}
+    if decision not in valid_decisions:
+        raise ValueError(f"Invalid decision: {decision}. Must be one of {valid_decisions}.")
+
+    record = get_approval_record(approval_id)
+    if record is None:
+        return None
+
+    warnings = list(record.get("warnings", []))
+
+    if record["status"] != "pending":
+        warnings.append(
+            f"Record is already '{record['status']}'. No state change applied."
+        )
+        record["warnings"] = warnings
+        return record
+
+    now_iso_str = datetime.now(_tz.utc).isoformat()
+    record["status"] = decision
+    record["decision"] = decision
+    record["decided_at"] = now_iso_str
+    record["reviewer"] = reviewer
+    record["decision_reason"] = reason
+    record["updated_at"] = now_iso_str
+    record["execution_allowed_after_decision"] = False
+    record["tool_executed"] = False
+    record["warnings"] = warnings
+
+    path = _approval_record_dir() / f"approval_{approval_id}.json"
+    path.write_text(json.dumps(record, indent=2, default=str), encoding="utf-8")
+    return record

@@ -123,6 +123,17 @@ def run_core_chat_loop(
         context={"session_id": session_id},
     )
 
+    # --- Step 7e: Persist to approval queue (Milestone 54A) ---
+    approval_record = None
+    approval_id = None
+    if approval_request is not None and approval_request.get("approval_required", False):
+        from aether.action.approval_queue import create_approval_record
+        approval_record = create_approval_record(
+            approval_request=approval_request,
+            context={"session_id": session_id},
+        )
+        approval_id = approval_record["approval_id"]
+
     # --- Step 8: Tool execution is NEVER performed in this milestone ---
     tool_executed = False
     tool_execution_allowed = False
@@ -183,6 +194,9 @@ def run_core_chat_loop(
         "approval_required": approval_request.get("approval_required", False) if approval_request else False,
         "approval_status": approval_request.get("approval_status") if approval_request else None,
         "approval_type": approval_request.get("approval_type") if approval_request else None,
+        # --- Approval Queue (Milestone 54A) ---
+        "approval_record": approval_record,
+        "approval_id": approval_id,
     }
 
 
@@ -238,6 +252,9 @@ def _error_response(error_msg: str, warnings: list[str]) -> dict:
         "approval_required": False,
         "approval_status": None,
         "approval_type": None,
+        # --- Approval Queue (Milestone 54A) ---
+        "approval_record": None,
+        "approval_id": None,
     }
 
 
