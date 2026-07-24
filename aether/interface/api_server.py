@@ -1295,6 +1295,45 @@ def validate_action_endpoint(approval_id: str, request: ActionValidationBody | N
     }
 
 
+# ===================================================================== #
+# Dry-Run Request Endpoint (Milestone 56A)
+# ===================================================================== #
+
+from aether.action.dry_run_request import (
+    build_dry_run_request as _build_dry_run,
+)
+
+
+@app.post("/approvals/{approval_id}/dry-run-request")
+def dry_run_request_endpoint(approval_id: str, request: ActionValidationBody | None = None):
+    requested_action = None
+    context = None
+    if request:
+        requested_action = request.requested_action
+        context = request.context
+    # First validate the approval for the requested action
+    validation_result = _validate_action(
+        approval_id=approval_id,
+        requested_action=requested_action,
+        context=context,
+    )
+    # Then build the dry-run request object from the validation result
+    dry_run_req = _build_dry_run(validation_result, requested_action, context)
+    return {
+        "name": "Aether",
+        "status": runtime.status(),
+        "approval_validation": validation_result,
+        "dry_run_request": dry_run_req,
+        "dry_run_required": dry_run_req is not None,
+        "dry_run_status": dry_run_req.get("dry_run_status") if dry_run_req else None,
+        "dry_run_allowed": validation_result.get("dry_run_allowed", False),
+        "execution_allowed": False,
+        "tool_execution_allowed": False,
+        "apply_allowed": False,
+        "rollback_allowed": False,
+    }
+
+
 def _add_tool_working_memory_event(tool: dict, event_type: str) -> None:
     runtime.working_memory.add_event(
         role="aether",

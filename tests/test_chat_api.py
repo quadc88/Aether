@@ -438,3 +438,139 @@ class TestApprovalDecisionGateAPI:
         data = resp.json()
         assert data["approval_valid"] is False
         assert data["decision"] == "not_found"
+
+
+class TestDryRunRequestAPI:
+    """Tests 27-34: Dry-run request endpoint (Milestone 56A)."""
+
+    @classmethod
+    def setup_class(cls):
+        cls.client = _get_test_client()
+
+    def _create_and_approve(self, action):
+        """Create an approval record with concrete requested_action, then approve via API."""
+        from aether.action.approval_queue import create_approval_record
+        rec = create_approval_record({
+            "approval_required": True,
+            "risk_level": "medium",
+            "requested_action": action,
+        }, context={"source": "test"})
+        aid = rec["approval_id"]
+        self.client.post(f"/approvals/{aid}/approve", json={
+            "reviewer": "dry_run_test", "reason": "testing dry-run"
+        })
+        return aid
+
+    def test_dry_run_request_returns_pending_for_approved_matching_action(self):
+        """Test 27: POST /approvals/{id}/dry-run-request returns pending dry_run_request."""
+        aid = self._create_and_approve({
+            "tool_id": "project.dryrun.test",
+            "action_type": "status_check",
+            "name": "Dry Run Test Tool",
+        })
+        resp = self.client.post(
+            f"/approvals/{aid}/dry-run-request",
+            json={"requested_action": {
+                "tool_id": "project.dryrun.test",
+                "action_type": "status_check",
+                "name": "Dry Run Test Tool",
+            }},
+        )
+        data = resp.json()
+        assert data["dry_run_request"] is not None
+        assert data["dry_run_status"] == "pending"
+        assert data["dry_run_required"] is True
+        assert data["execution_allowed"] is False
+        assert data["tool_execution_allowed"] is False
+
+    def test_dry_run_request_null_for_pending_approval(self):
+        """Test 28: pending approval returns dry_run_request null."""
+        from aether.action.approval_queue import create_approval_record
+        rec = create_approval_record({
+            "approval_required": True,
+            "requested_action": {"tool_id": "project.pending.test"},
+        }, context={"source": "test"})
+        resp = self.client.post(
+            f"/approvals/{rec['approval_id']}/dry-run-request",
+            json={"requested_action": {"tool_id": "project.pending.test"}},
+        )
+        data = resp.json()
+        assert data["dry_run_request"] is None
+        assert data["dry_run_required"] is False
+
+    def test_dry_run_request_null_for_rejected_approval(self):
+        """Test 29: rejected approval returns dry_run_request null."""
+        aid = self._create_and_approve({
+            "tool_id": "project.rej.test", "action_type": "read"
+        })
+        self.client.post(f"/approvals/{aid}/reject", json={
+            "reviewer": "dry_run_test", "reason": "rejected"
+        })
+        resp = self.client.post(
+            f"/approvals/{aid}/dry-run-request",
+            json={"requested_action": {"tool_id": "project.rej.test"}},
+        )
+        data = resp.json()
+        assert data["dry_run_request"] is None
+
+    def test_dry_run_request_null_on_mismatch(self):
+        """Test 30: action mismatch returns dry_run_request null."""
+        aid = self._create_and_approve({
+            "tool_id": "project.match.test", "action_type": "status"
+        })
+        resp = self.client.post(
+            f"/approvals/{aid}/dry-run-request",
+            json={"requested_action": {"tool_id": "totally_different"}},
+        )
+        data = resp.json()
+        assert data["dry_run_request"] is None
+
+    def test_dry_run_request_does_not_mutate_record(self):
+        """Test 31: dry-run-request does not change approval status."""
+        aid = self._create_and_approve({
+            "tool_id": "project.mut.test", "action_type": "read"
+        })
+        before = self.client.get(f"/approvals/{aid}").json()
+        assert before["approval"]["status"] == "approved"
+        self.client.post(
+            f"/approvals/{aid}/dry-run-request",
+            json={"requested_action": {"tool_id": "project.mut.test"}},
+        )
+        after = self.client.get(f"/approvals/{aid}").json()
+        assert after["approval"]["status"] == "approved"
+
+    def test_dry_run_request_no_tool_execution(self):
+        """Test 32: dry-run-request does not execute tools."""
+        aid = self._create_and_approve({
+            "tool_id": "project.noe.test", "action_type": "read"
+        })
+        resp = self.client.post(
+            f"/approvals/{aid}/dry-run-request",
+            json={"requested_action": {"tool_id": "project.noe.test"}},
+        )
+        data = resp.json()
+        assert data["tool_execution_allowed"] is False
+        assert data["execution_allowed"] is False
+
+    def test_dry_run_request_apply_rollback_false(self):
+        """Test 33: dry-run-request returns apply/rollback false."""
+        aid = self._create_and_approve({
+            "tool_id": "project.ar.test", "action_type": "read"
+        })
+        resp = self.client.post(
+            f"/approvals/{aid}/dry-run-request",
+            json={"requested_action": {"tool_id": "project.ar.test"}},
+        )
+        data = resp.json()
+        assert data["apply_allowed"] is False
+        assert data["rollback_allowed"] is False
+
+    def test_dry_run_request_missing_approval_id(self):
+        """Test 34: missing approval id returns dry_run_request null safely."""
+        resp = self.client.post(
+            "/approvals/not_an_id/dry-run-request",
+            json={"requested_action": {"tool_id": "x"}},
+        )
+        data = resp.json()
+        assert "dry_run_request" in data
+        assert data["dry_run_request"] is None
