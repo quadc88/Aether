@@ -1063,3 +1063,87 @@ class TestSimulationPlanRecordAPI:
         self.client.post(f"/dry-runs/{aid}/simulation-plan")
         after = self.client.get(f"/dry-runs/{aid}").json()
         assert after["dry_run"]["status"] == "pending"
+
+
+class TestSimulationResultAPI:
+    """Tests 52-58: Simulation result endpoint (Milestone 61A)."""
+
+    @classmethod
+    def setup_class(cls):
+        cls.client = _get_test_client()
+
+    def test_result_created_for_pending_simulation_plan(self):
+        """Test 52: POST simulation-result returns result for pending simulation_plan_record."""
+        sim_id = _mk_sp_chain({"action_type": "status_check", "tool_id": "project.result.test1"})
+        resp = self.client.post(f"/simulation-plans/{sim_id}/simulation-result")
+        data = resp.json()
+        assert data["simulation_result"] is not None
+        assert data["simulation_result"]["simulation_result_status"] == "prepared"
+        assert data["simulation_result"]["simulation_result_type"] == "synthetic_contract_only_result"
+        assert data["execution_allowed"] is False
+        assert data["tool_execution_allowed"] is False
+        assert data["simulation_execution_allowed"] is False
+
+    def test_result_null_for_cancelled_plan(self):
+        """Test 53: cancelled simulation_plan_record returns simulation_result null."""
+        sim_id = _mk_sp_chain({"action_type": "status_check", "tool_id": "project.cancel.res"})
+        self.client.post(f"/simulation-plans/{sim_id}/cancel", json={"reviewer": "test"})
+        resp = self.client.post(f"/simulation-plans/{sim_id}/simulation-result")
+        data = resp.json()
+        assert data["simulation_result"] is None
+        assert data["simulation_result_required"] is False
+
+    def test_result_null_for_missing_plan_id(self):
+        """Test 54: missing simulation_plan_id returns simulation_result null."""
+        resp = self.client.post("/simulation-plans/not_an_id/simulation-result")
+        data = resp.json()
+        assert data["simulation_result"] is None
+        assert data["simulation_plan_record"] is None
+
+    def test_result_no_mutation_of_plan_record(self):
+        """Test 55: simulation-result does not mutate simulation_plan_record status."""
+        sim_id = _mk_sp_chain({"action_type": "status_check", "tool_id": "project.nomut.res"})
+        before = self.client.get(f"/simulation-plans/{sim_id}").json()
+        assert before["simulation_plan"]["status"] == "pending"
+        self.client.post(f"/simulation-plans/{sim_id}/simulation-result")
+        after = self.client.get(f"/simulation-plans/{sim_id}").json()
+        assert after["simulation_plan"]["status"] == "pending"
+
+    def test_result_no_tool_execution(self):
+        """Test 56: simulation-result does not execute tools."""
+        sim_id = _mk_sp_chain({"action_type": "status_check", "tool_id": "project.noe.res"})
+        resp = self.client.post(f"/simulation-plans/{sim_id}/simulation-result")
+        data = resp.json()
+        assert data["tool_execution_allowed"] is False
+        assert data["simulation_execution_allowed"] is False
+
+    def test_result_all_flags_false(self):
+        """Test 57: simulation-result returns all execution/apply/rollback flags false."""
+        sim_id = _mk_sp_chain({"action_type": "inspection", "tool_id": "project.flags.res"})
+        resp = self.client.post(f"/simulation-plans/{sim_id}/simulation-result")
+        data = resp.json()
+        assert data["execution_allowed"] is False
+        assert data["apply_allowed"] is False
+        assert data["rollback_allowed"] is False
+        assert data["dry_run_execution_allowed"] is False
+
+    def test_legacy_chat_still_works(self):
+        """Test 58: legacy /chat still works."""
+        resp = self.client.post("/chat", json={"message": "legacy msg milestone 61a"})
+        data = resp.json()
+        assert data["status"] == "completed"
+
+def _mk_sp_chain(action):
+    """Module-level helper for TestSimulationResultAPI."""
+    from aether.action.approval_queue import create_approval_record
+    rec = create_approval_record({
+        "approval_required": True, "risk_level": "medium",
+        "requested_action": action,
+    }, context={"source": "test"})
+    aid = rec["approval_id"]
+    client = _get_test_client()
+    client.post(f"/approvals/{aid}/approve", json={"reviewer": "result_test"})
+    dr = client.post(f"/approvals/{aid}/dry-run-request", json={"requested_action": action}).json()
+    dry_run_id = dr["dry_run_id"]
+    sp = client.post(f"/dry-runs/{dry_run_id}/simulation-plan").json()
+    return sp["simulation_plan_id"]

@@ -1486,6 +1486,40 @@ def simulation_plan_endpoint(dry_run_id: str, request: SandboxContextBody | None
 
 
 # ===================================================================== #
+# Simulation Result Endpoint (Milestone 61A)
+# ===================================================================== #
+
+from aether.action.simulation_result import build_simulation_result as _build_result
+
+
+class SimResultBody(BaseModel):
+    context: dict | None = None
+
+
+@app.post("/simulation-plans/{simulation_plan_id}/simulation-result")
+def simulation_result_endpoint(simulation_plan_id: str, request: SimResultBody | None = None):
+    record = _get_sp(simulation_plan_id)
+    context = None
+    if request:
+        context = request.context
+    sim_result = _build_result(record, context)
+    return {
+        "name": "Aether",
+        "status": runtime.status(),
+        "simulation_plan_record": record,
+        "simulation_result": sim_result,
+        "simulation_result_required": sim_result is not None,
+        "simulation_result_status": sim_result.get("simulation_result_status") if sim_result else None,
+        "execution_allowed": False,
+        "tool_execution_allowed": False,
+        "dry_run_execution_allowed": False,
+        "simulation_execution_allowed": False,
+        "apply_allowed": False,
+        "rollback_allowed": False,
+    }
+
+
+# ===================================================================== #
 # Simulation Plan Record Endpoints (Milestone 60A)
 # ===================================================================== #
 
