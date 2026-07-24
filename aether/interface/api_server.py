@@ -1444,6 +1444,9 @@ def sandbox_contract_endpoint(dry_run_id: str, request: SandboxContextBody | Non
 # ===================================================================== #
 
 from aether.action.simulation_plan import build_simulation_plan as _build_plan
+from aether.action.simulation_plan_queue import (
+    create_simulation_plan_record as _create_sp_record,
+)
 
 
 @app.post("/dry-runs/{dry_run_id}/simulation-plan")
@@ -1457,11 +1460,21 @@ def simulation_plan_endpoint(dry_run_id: str, request: SandboxContextBody | None
     contract = _build_contract(dr_record, context)
     # Then build the simulation plan from the contract
     sim_plan = _build_plan(contract, context)
+
+    # Persist simulation plan record when a valid simulation_plan exists
+    sim_rec = None
+    sim_plan_id = None
+    if sim_plan is not None:
+        sim_rec = _create_sp_record(simulation_plan=sim_plan, context=context)
+        sim_plan_id = sim_rec["simulation_plan_id"]
+
     return {
         "name": "Aether",
         "status": runtime.status(),
         "sandbox_contract": contract,
         "simulation_plan": sim_plan,
+        "simulation_plan_record": sim_rec,
+        "simulation_plan_id": sim_plan_id,
         "simulation_plan_required": sim_plan is not None,
         "simulation_plan_status": sim_plan.get("simulation_plan_status") if sim_plan else None,
         "execution_allowed": False,
@@ -1469,6 +1482,70 @@ def simulation_plan_endpoint(dry_run_id: str, request: SandboxContextBody | None
         "dry_run_execution_allowed": False,
         "apply_allowed": False,
         "rollback_allowed": False,
+    }
+
+
+# ===================================================================== #
+# Simulation Plan Record Endpoints (Milestone 60A)
+# ===================================================================== #
+
+from aether.action.simulation_plan_queue import (
+    get_simulation_plan_record as _get_sp,
+    list_simulation_plan_records as _list_sp,
+    update_simulation_plan_record_status as _update_sp,
+)
+
+
+class SimPlanDecisionBody(BaseModel):
+    reviewer: str | None = None
+    reason: str | None = None
+
+
+@app.get("/simulation-plans")
+def list_sim_plans(status: str | None = None, limit: int = 50):
+    records = _list_sp(status=status, limit=limit)
+    return {
+        "name": "Aether",
+        "status": runtime.status(),
+        "simulation_plans": records,
+        "count": len(records),
+    }
+
+
+@app.get("/simulation-plans/{simulation_plan_id}")
+def get_sim_plan(simulation_plan_id: str):
+    record = _get_sp(simulation_plan_id)
+    return {
+        "name": "Aether",
+        "status": runtime.status(),
+        "simulation_plan": record,
+        "found": record is not None,
+    }
+
+
+@app.post("/simulation-plans/{simulation_plan_id}/cancel")
+def cancel_sim_plan(simulation_plan_id: str, request: SimPlanDecisionBody | None = None):
+    reviewer = None
+    reason = None
+    if request:
+        reviewer = request.reviewer
+        reason = request.reason
+    record = _update_sp(
+        simulation_plan_id, decision="cancelled", reviewer=reviewer, reason=reason
+    )
+    if record is None:
+        return {
+            "name": "Aether",
+            "status": runtime.status(),
+            "simulation_plan": None,
+            "found": False,
+            "warnings": ["Simulation plan record not found."],
+        }
+    return {
+        "name": "Aether",
+        "status": runtime.status(),
+        "simulation_plan": record,
+        "found": True,
     }
 
 

@@ -949,3 +949,117 @@ class TestSimulationPlanAPI:
         assert data["dry_run_execution_allowed"] is False
         assert data["apply_allowed"] is False
         assert data["rollback_allowed"] is False
+
+
+class TestSimulationPlanRecordAPI:
+    """Tests 42-51: Simulation plan record store endpoints (Milestone 60A)."""
+
+    @classmethod
+    def setup_class(cls):
+        cls.client = _get_test_client()
+
+    def test_simulation_plan_record_created_for_pending_allowed_action(self):
+        """Test 42: simulation-plan endpoint returns simulation_plan_record and sim_plan_id."""
+        aid = _mk_dr({"action_type": "status_check", "tool_id": "project.record.sp.test"})
+        resp = self.client.post(f"/dry-runs/{aid}/simulation-plan")
+        data = resp.json()
+        assert data["simulation_plan_record"] is not None
+        assert data["simulation_plan_id"] is not None
+        assert data["simulation_plan_record"]["status"] == "pending"
+        assert data["simulation_plan_record"]["simulation_executed"] is False
+        assert data["simulation_plan_record"]["execution_allowed"] is False
+
+    def test_cancelled_dry_run_returns_null_sim_plan_record(self):
+        """Test 43: cancelled dry-run returns simulation_plan_record null."""
+        aid = _mk_dr({"action_type": "status_check", "tool_id": "project.cancel.sprecs"})
+        self.client.post(f"/dry-runs/{aid}/cancel", json={"reviewer": "test"})
+        resp = self.client.post(f"/dry-runs/{aid}/simulation-plan")
+        data = resp.json()
+        assert data["simulation_plan_record"] is None
+        assert data["simulation_plan_id"] is None
+
+    def test_unsafe_action_type_returns_null_sim_plan_record(self):
+        """Test 44: unsafe action type returns simulation_plan_record null."""
+        aid = _mk_dr({"action_type": "file_delete", "tool_id": "project.unsafe.sprec"})
+        resp = self.client.post(f"/dry-runs/{aid}/simulation-plan")
+        data = resp.json()
+        assert data["simulation_plan_record"] is None
+        assert data["simulation_plan_id"] is None
+
+    def test_missing_dry_run_id_returns_null_sim_plan_record(self):
+        """Test 45: missing dry_run_id returns simulation_plan_record null."""
+        resp = self.client.post("/dry-runs/not_an_id/simulation-plan")
+        data = resp.json()
+        assert data["simulation_plan_record"] is None
+        assert data["simulation_plan_id"] is None
+
+    def test_get_sim_plans_lists_records(self):
+        """Test 46: GET /simulation-plans lists records."""
+        aid = _mk_dr({"action_type": "status_check", "tool_id": "project.list.sprec"})
+        self.client.post(f"/dry-runs/{aid}/simulation-plan")
+        resp = self.client.get("/simulation-plans?limit=10")
+        data = resp.json()
+        assert "simulation_plans" in data
+        assert "count" in data
+        assert data["count"] >= 1
+
+    def test_get_sim_plan_by_id(self):
+        """Test 47: GET /simulation-plans/{id} reads record."""
+        aid = _mk_dr({"action_type": "status_check", "tool_id": "project.getby.sprec"})
+        sp_resp = self.client.post(f"/dry-runs/{aid}/simulation-plan")
+        sim_id = sp_resp.json()["simulation_plan_id"]
+        resp = self.client.get(f"/simulation-plans/{sim_id}")
+        data = resp.json()
+        assert data["found"] is True
+        assert data["simulation_plan"]["simulation_plan_id"] == sim_id
+
+    def test_cancel_sim_plan_changes_status(self):
+        """Test 48: POST /simulation-plans/{id}/cancel changes status to cancelled."""
+        aid = _mk_dr({"action_type": "status_check", "tool_id": "project.cancel.sp"})
+        sp_resp = self.client.post(f"/dry-runs/{aid}/simulation-plan")
+        sim_id = sp_resp.json()["simulation_plan_id"]
+        resp = self.client.post(
+            f"/simulation-plans/{sim_id}/cancel",
+            json={"reviewer": "sp_canceller", "reason": "cancelled during test"},
+        )
+        data = resp.json()
+        assert data["simulation_plan"]["status"] == "cancelled"
+        assert data["simulation_plan"]["decision"] == "cancelled"
+        assert data["simulation_plan"]["simulation_executed"] is False
+        assert data["simulation_plan"]["apply_allowed"] is False
+        assert data["simulation_plan"]["rollback_allowed"] is False
+
+    def test_cancel_sim_plan_no_execution_or_apply(self):
+        """Test 49: cancel simulation plan does not execute or apply anything."""
+        aid = _mk_dr({"action_type": "status_check", "tool_id": "project.noexec.sp"})
+        sp_resp = self.client.post(f"/dry-runs/{aid}/simulation-plan")
+        sim_id = sp_resp.json()["simulation_plan_id"]
+        resp = self.client.post(
+            f"/simulation-plans/{sim_id}/cancel",
+            json={"reviewer": "test"},
+        )
+        data = resp.json()["simulation_plan"]
+        assert data["simulation_executed"] is False
+        assert data["tool_execution_allowed"] is False
+        assert data["dry_run_execution_allowed"] is False
+        assert data["apply_allowed"] is False
+        assert data["rollback_allowed"] is False
+
+    def test_cancel_missing_sim_plan_id(self):
+        """Test 50: cancel with missing simulation_plan_id returns found false."""
+        resp = self.client.post(
+            "/simulation-plans/nonexistent-simplan/cancel",
+            json={"reviewer": "test"},
+        )
+        data = resp.json()
+        assert data["found"] is False
+        assert data["simulation_plan"] is None
+
+    def test_simulation_plan_no_mutation_of_dry_run_record(self):
+        """Test 51: simulation-plan endpoint does not mutate dry_run_record status."""
+        aid = _mk_dr({"action_type": "status_check", "tool_id": "project.nomut.sp"})
+        before = self.client.get(f"/dry-runs/{aid}").json()
+        assert before["dry_run"]["status"] == "pending"
+        self.client.post(f"/dry-runs/{aid}/simulation-plan")
+        after = self.client.get(f"/dry-runs/{aid}").json()
+        assert after["dry_run"]["status"] == "pending"
