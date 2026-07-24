@@ -1262,6 +1262,39 @@ def cancel_approval_record(approval_id: str, request: ApprovalDecisionBody | Non
     }
 
 
+# ===================================================================== #
+# Approval Decision Gate (Milestone 55A)
+# ===================================================================== #
+
+from aether.action.approval_decision_gate import (
+    validate_approval_for_action as _validate_action,
+)
+
+
+class ActionValidationBody(BaseModel):
+    requested_action: dict | None = None
+    context: dict | None = None
+
+
+@app.post("/approvals/{approval_id}/validate-action")
+def validate_action_endpoint(approval_id: str, request: ActionValidationBody | None = None):
+    requested_action = None
+    context = None
+    if request:
+        requested_action = request.requested_action
+        context = request.context
+    result = _validate_action(
+        approval_id=approval_id,
+        requested_action=requested_action,
+        context=context,
+    )
+    return {
+        "name": "Aether",
+        "status": runtime.status(),
+        **result,
+    }
+
+
 def _add_tool_working_memory_event(tool: dict, event_type: str) -> None:
     runtime.working_memory.add_event(
         role="aether",
