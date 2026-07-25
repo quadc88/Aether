@@ -1444,3 +1444,174 @@ class TestSimulationVerificationVerdictAPI:
         step = resp.json()["verification_verdict"]["recommended_next_step"]
         assert "future" in step.lower()
         assert "apply" in step.lower()
+
+
+class TestVerificationVerdictRecordAPI:
+    """Tests for Verification Verdict Record Store (Milestone 64A)."""
+
+    @classmethod
+    def setup_class(cls):
+        cls.client = _get_test_client()
+
+    def test_verification_verdict_endpoint_returns_record_and_id(self):
+        """Test 26: POST verification-verdict returns verification_verdict_record and verification_verdict_id for clean pending record."""
+        sim_id = _mk_sp_chain({"action_type": "status_check", "tool_id": "project.vvrec.test1"})
+        sr_resp = self.client.post(f"/simulation-plans/{sim_id}/simulation-result")
+        sr_id = sr_resp.json()["simulation_result_id"]
+        resp = self.client.post(
+            f"/simulation-results/{sr_id}/verification-verdict",
+            json={"context": {"session_id": "vv-record-test"}}
+        )
+        data = resp.json()
+        assert data["verification_verdict"] is not None
+        assert data["verification_verdict_record"] is not None
+        assert data["verification_verdict_id"] is not None
+        assert data["verification_verdict_record"]["status"] == "pending"
+        assert data["verification_verdict_record"]["verdict_persisted"] is True
+        assert data["verification_verdict_record"]["apply_authorized"] is False
+
+    def test_pass_verdict_record_has_decision_pass(self):
+        """Test 27: clean pass verdict record has verdict_decision pass."""
+        sim_id = _mk_sp_chain({"action_type": "status_check", "tool_id": "project.pass.vvrec"})
+        sr_resp = self.client.post(f"/simulation-plans/{sim_id}/simulation-result")
+        sr_id = sr_resp.json()["simulation_result_id"]
+        resp = self.client.post(f"/simulation-results/{sr_id}/verification-verdict")
+        data = resp.json()
+        rec = data["verification_verdict_record"]
+        assert rec["verdict_decision"] == "pass"
+
+    def test_pass_verdict_record_has_apply_authorized_false(self):
+        """Test 28: pass verdict record still has apply_authorized false."""
+        sim_id = _mk_sp_chain({"action_type": "status_check", "tool_id": "project.npauth.vvrec"})
+        sr_resp = self.client.post(f"/simulation-plans/{sim_id}/simulation-result")
+        sr_id = sr_resp.json()["simulation_result_id"]
+        resp = self.client.post(f"/simulation-results/{sr_id}/verification-verdict")
+        data = resp.json()
+        rec = data["verification_verdict_record"]
+        assert rec["apply_authorized"] is False
+        assert data["apply_authorized"] is False
+
+    def test_cancelled_simulation_result_produces_blocked_verdict(self):
+        """Test 29: cancelled simulation_result_record produces blocked verdict record."""
+        sim_id = _mk_sp_chain({"action_type": "status_check", "tool_id": "project.cancel.vvrec"})
+        sr_resp = self.client.post(f"/simulation-plans/{sim_id}/simulation-result")
+        sr_id = sr_resp.json()["simulation_result_id"]
+        self.client.post(f"/simulation-results/{sr_id}/cancel")
+        resp = self.client.post(f"/simulation-results/{sr_id}/verification-verdict")
+        data = resp.json()
+        v = data["verification_verdict"]
+        assert v["decision"] == "blocked"
+        assert data["verification_verdict_record"] is not None
+        rec = data["verification_verdict_record"]
+        assert rec["verdict_decision"] == "blocked"
+
+    def test_missing_simulation_result_id_produces_blocked_verdict(self):
+        """Test 30: missing simulation_result_id produces blocked verdict record."""
+        resp = self.client.post(
+            "/simulation-results/not_existing_id/verification-verdict"
+        )
+        data = resp.json()
+        v = data["verification_verdict"]
+        assert v["decision"] == "blocked"
+        assert data["verification_verdict_record"] is not None
+
+    def test_verification_verdict_endpoint_does_not_mutate_simulation_result_record(self):
+        """Test 39: verification-verdict endpoint does not mutate simulation_result_record."""
+        sim_id = _mk_sp_chain({"action_type": "status_check", "tool_id": "project.nomut.vv"})
+        sr_resp = self.client.post(f"/simulation-plans/{sim_id}/simulation-result")
+        sr_id = sr_resp.json()["simulation_result_id"]
+        before = self.client.get(f"/simulation-results/{sr_id}").json()
+        before_status = before["simulation_result"]["status"]
+        self.client.post(f"/simulation-results/{sr_id}/verification-verdict")
+        after = self.client.get(f"/simulation-results/{sr_id}").json()
+        assert after["simulation_result"]["status"] == before_status
+
+    def test_get_verification_verdicts_lists_records(self):
+        """Test 32: GET /verification-verdicts lists records."""
+        sim_id = _mk_sp_chain({"action_type": "status_check", "tool_id": "project.list.vv"})
+        sr_resp = self.client.post(f"/simulation-plans/{sim_id}/simulation-result")
+        sr_id = sr_resp.json()["simulation_result_id"]
+        self.client.post(f"/simulation-results/{sr_id}/verification-verdict")
+        resp = self.client.get("/verification-verdicts?limit=10")
+        data = resp.json()
+        assert "verification_verdicts" in data
+        assert "count" in data
+        assert data["count"] >= 1
+
+    def test_get_verification_verdicts_filters_by_decision_pass(self):
+        """Test 33: GET /verification-verdicts?decision=pass filters pass records."""
+        sim_id = _mk_sp_chain({"action_type": "status_check", "tool_id": "project.filter.pass.vv"})
+        sr_resp = self.client.post(f"/simulation-plans/{sim_id}/simulation-result")
+        sr_id = sr_resp.json()["simulation_result_id"]
+        self.client.post(f"/simulation-results/{sr_id}/verification-verdict")
+        resp = self.client.get("/verification-verdicts?decision=pass&limit=10")
+        data = resp.json()
+        assert data["count"] >= 1
+        for r in data["verification_verdicts"]:
+            assert r["verdict_decision"] == "pass"
+
+    def test_get_verification_verdict_by_id(self):
+        """Test 34: GET /verification-verdicts/{id} reads record."""
+        sim_id = _mk_sp_chain({"action_type": "status_check", "tool_id": "project.getby.vv"})
+        sr_resp = self.client.post(f"/simulation-plans/{sim_id}/simulation-result")
+        sr_id = sr_resp.json()["simulation_result_id"]
+        vv_resp = self.client.post(f"/simulation-results/{sr_id}/verification-verdict")
+        vv_id = vv_resp.json()["verification_verdict_id"]
+        resp = self.client.get(f"/verification-verdicts/{vv_id}")
+        data = resp.json()
+        assert data["found"] is True
+        assert data["verification_verdict"]["verification_verdict_id"] == vv_id
+
+    def test_cancel_verification_verdict_changes_status(self):
+        """Test 35: POST /verification-verdicts/{id}/cancel changes status to cancelled."""
+        sim_id = _mk_sp_chain({"action_type": "status_check", "tool_id": "project.cancel.vv"})
+        sr_resp = self.client.post(f"/simulation-plans/{sim_id}/simulation-result")
+        sr_id = sr_resp.json()["simulation_result_id"]
+        vv_resp = self.client.post(f"/simulation-results/{sr_id}/verification-verdict")
+        vv_id = vv_resp.json()["verification_verdict_id"]
+        resp = self.client.post(
+            f"/verification-verdicts/{vv_id}/cancel",
+            json={"reviewer": "vv_canceller", "reason": "cancelled during test"},
+        )
+        data = resp.json()
+        assert data["verification_verdict"]["status"] == "cancelled"
+        assert data["verification_verdict"]["decision"] == "cancelled"
+
+    def test_cancel_endpoint_does_not_execute_simulation(self):
+        """Test 36: cancel endpoint does not execute simulation."""
+        sim_id = _mk_sp_chain({"action_type": "status_check", "tool_id": "project.noexec.vv"})
+        sr_resp = self.client.post(f"/simulation-plans/{sim_id}/simulation-result")
+        sr_id = sr_resp.json()["simulation_result_id"]
+        vv_resp = self.client.post(f"/simulation-results/{sr_id}/verification-verdict")
+        vv_id = vv_resp.json()["verification_verdict_id"]
+        resp = self.client.post(f"/verification-verdicts/{vv_id}/cancel")
+        data = resp.json()["verification_verdict"]
+        assert data["simulation_executed"] is False
+        assert data["execution_allowed"] is False
+        assert data["tool_execution_allowed"] is False
+
+    def test_cancel_endpoint_does_not_apply_or_rollback(self):
+        """Test 37: cancel endpoint does not apply/rollback."""
+        sim_id = _mk_sp_chain({"action_type": "status_check", "tool_id": "project.norollback.vv"})
+        sr_resp = self.client.post(f"/simulation-plans/{sim_id}/simulation-result")
+        sr_id = sr_resp.json()["simulation_result_id"]
+        vv_resp = self.client.post(f"/simulation-results/{sr_id}/verification-verdict")
+        vv_id = vv_resp.json()["verification_verdict_id"]
+        resp = self.client.post(f"/verification-verdicts/{vv_id}/cancel")
+        data = resp.json()["verification_verdict"]
+        assert data["apply_allowed"] is False
+        assert data["rollback_allowed"] is False
+        assert data["apply_authorized"] is False
+
+    def test_missing_verification_verdict_id_returns_found_false(self):
+        """Test 38: GET /verification-verdicts/{id} with missing id returns found false."""
+        resp = self.client.get("/verification-verdicts/nonexistent-vv-id")
+        data = resp.json()
+        assert data["found"] is False
+        assert data["verification_verdict"] is None
+
+    def test_legacy_chat_still_works(self):
+        """Test 40: legacy /chat still works."""
+        resp = self.client.post("/chat", json={"message": "legacy msg milestone 64a"})
+        data = resp.json()
+        assert data["status"] == "completed"
