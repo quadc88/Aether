@@ -1835,6 +1835,9 @@ def cancel_apply_gate(apply_gate_id: str, request: ApplyGateDecisionBody | None 
 from aether.action.human_apply_authorization_request import (
     build_human_apply_authorization_request as _build_haar,
 )
+from aether.action.human_authorization_queue import (
+    create_human_authorization_record as _create_ha_rec,
+)
 
 
 class HumanAuthContextBody(BaseModel):
@@ -1848,15 +1851,26 @@ def apply_gate_human_authorization_request_endpoint(apply_gate_id: str, request:
     if request:
         context = request.context
     haar = _build_haar(record, context)
+
+    # Persist the human authorization record when a human authorization request exists
+    ha_rec = None
+    ha_id = None
+    if haar is not None:
+        ha_rec = _create_ha_rec(human_apply_authorization_request=haar, context=context)
+        ha_id = ha_rec["human_authorization_id"]
+
     return {
         "name": "Aether",
         "status": runtime.status(),
         "apply_gate_record": record,
         "human_apply_authorization_request": haar,
+        "human_authorization_record": ha_rec,
+        "human_authorization_id": ha_id,
         "human_authorization_required": haar.get("human_authorization_required"),
-        "human_authorization_status": haar.get("human_authorization_status"),
+        "human_authorization_status": ha_rec.get("status") if ha_rec else haar.get("human_authorization_status"),
         "decision": haar.get("decision"),
-        "human_review_completed": haar.get("human_review_completed"),
+        "human_review_completed": False,
+        "human_intent_recorded": False,
         "execution_allowed": False,
         "tool_execution_allowed": False,
         "dry_run_execution_allowed": False,
@@ -1866,6 +1880,125 @@ def apply_gate_human_authorization_request_endpoint(apply_gate_id: str, request:
         "apply_gate_execution_allowed": False,
         "human_authorization_execution_allowed": False,
         "apply_authorized": False,
+    }
+
+
+# ===================================================================== #
+# Human Authorization Record Endpoints (Milestone 68A)
+# ===================================================================== #
+
+from aether.action.human_authorization_queue import (
+    get_human_authorization_record as _get_ha_rec,
+    list_human_authorization_records as _list_ha_rec,
+    update_human_authorization_record_status as _update_ha_rec,
+)
+
+
+class HumanAuthDecisionBody(BaseModel):
+    reviewer: str | None = None
+    reason: str | None = None
+    confirmations: list[str] | None = None
+
+
+@app.get("/human-authorizations")
+def list_human_authorizations(status: str | None = None, decision: str | None = None, limit: int = 50):
+    records = _list_ha_rec(status=status, decision=decision, limit=limit)
+    return {
+        "name": "Aether",
+        "status": runtime.status(),
+        "human_authorizations": records,
+        "count": len(records),
+    }
+
+
+@app.get("/human-authorizations/{human_authorization_id}")
+def get_human_authorization(human_authorization_id: str):
+    record = _get_ha_rec(human_authorization_id)
+    return {
+        "name": "Aether",
+        "status": runtime.status(),
+        "human_authorization": record,
+        "found": record is not None,
+    }
+
+
+@app.post("/human-authorizations/{human_authorization_id}/cancel")
+def cancel_human_authorization(human_authorization_id: str, request: HumanAuthDecisionBody | None = None):
+    reviewer = None
+    reason = None
+    if request:
+        reviewer = request.reviewer
+        reason = request.reason
+    record = _update_ha_rec(
+        human_authorization_id, decision="cancelled", reviewer=reviewer, reason=reason
+    )
+    if record is None:
+        return {
+            "name": "Aether",
+            "status": runtime.status(),
+            "human_authorization": None,
+            "found": False,
+            "warnings": ["Human authorization record not found."],
+        }
+    return {
+        "name": "Aether",
+        "status": runtime.status(),
+        "human_authorization": record,
+        "found": True,
+    }
+
+
+@app.post("/human-authorizations/{human_authorization_id}/reject")
+def reject_human_authorization(human_authorization_id: str, request: HumanAuthDecisionBody | None = None):
+    reviewer = None
+    reason = None
+    if request:
+        reviewer = request.reviewer
+        reason = request.reason
+    record = _update_ha_rec(
+        human_authorization_id, decision="rejected", reviewer=reviewer, reason=reason
+    )
+    if record is None:
+        return {
+            "name": "Aether",
+            "status": runtime.status(),
+            "human_authorization": None,
+            "found": False,
+            "warnings": ["Human authorization record not found."],
+        }
+    return {
+        "name": "Aether",
+        "status": runtime.status(),
+        "human_authorization": record,
+        "found": True,
+    }
+
+
+@app.post("/human-authorizations/{human_authorization_id}/approve-intent")
+def approve_intent_human_authorization(human_authorization_id: str, request: HumanAuthDecisionBody | None = None):
+    reviewer = None
+    reason = None
+    confirmations = None
+    if request:
+        reviewer = request.reviewer
+        reason = request.reason
+        confirmations = request.confirmations or []
+    record = _update_ha_rec(
+        human_authorization_id, decision="approved_intent", reviewer=reviewer, reason=reason, confirmations=confirmations
+    )
+    if record is None:
+        return {
+            "name": "Aether",
+            "status": runtime.status(),
+            "human_authorization": None,
+            "found": False,
+            "warnings": ["Could not approve intent: record not found or conditions not met."],
+        }
+    return {
+        "name": "Aether",
+        "status": runtime.status(),
+        "human_authorization": record,
+        "found": True,
     }
 
 
