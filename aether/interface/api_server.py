@@ -1829,6 +1829,47 @@ def cancel_apply_gate(apply_gate_id: str, request: ApplyGateDecisionBody | None 
 
 
 # ===================================================================== #
+# Human Apply Authorization Request Endpoint (Milestone 67A)
+# ===================================================================== #
+
+from aether.action.human_apply_authorization_request import (
+    build_human_apply_authorization_request as _build_haar,
+)
+
+
+class HumanAuthContextBody(BaseModel):
+    context: dict | None = None
+
+
+@app.post("/apply-gates/{apply_gate_id}/human-authorization-request")
+def apply_gate_human_authorization_request_endpoint(apply_gate_id: str, request: HumanAuthContextBody | None = None):
+    record = _get_agr(apply_gate_id)
+    context = None
+    if request:
+        context = request.context
+    haar = _build_haar(record, context)
+    return {
+        "name": "Aether",
+        "status": runtime.status(),
+        "apply_gate_record": record,
+        "human_apply_authorization_request": haar,
+        "human_authorization_required": haar.get("human_authorization_required"),
+        "human_authorization_status": haar.get("human_authorization_status"),
+        "decision": haar.get("decision"),
+        "human_review_completed": haar.get("human_review_completed"),
+        "execution_allowed": False,
+        "tool_execution_allowed": False,
+        "dry_run_execution_allowed": False,
+        "simulation_execution_allowed": False,
+        "apply_allowed": False,
+        "rollback_allowed": False,
+        "apply_gate_execution_allowed": False,
+        "human_authorization_execution_allowed": False,
+        "apply_authorized": False,
+    }
+
+
+# ===================================================================== #
 # Simulation Plan Record Endpoints (Milestone 60A)
 # ===================================================================== #
 

@@ -2068,3 +2068,189 @@ class TestApplyGateRecordAPI:
         resp = self.client.post("/chat", json={"message": "legacy msg milestone 66a"})
         data = resp.json()
         assert data["status"] == "completed"
+
+
+class TestHumanApplyAuthorizationRequestAPI:
+    """Tests for Human Apply Authorization Request endpoint (Milestone 67A)."""
+
+    @classmethod
+    def setup_class(cls):
+        cls.client = _get_test_client()
+
+    def test_human_auth_returns_ready_for_pending_eligible_gate(self):
+        sim_id = _mk_sp_chain({"action_type": "status_check", "tool_id": "project.haar.test1"})
+        sr_resp = self.client.post(f"/simulation-plans/{sim_id}/simulation-result")
+        sr_id = sr_resp.json()["simulation_result_id"]
+        vv_resp = self.client.post(f"/simulation-results/{sr_id}/verification-verdict")
+        vv_id = vv_resp.json()["verification_verdict_id"]
+        agr_resp = self.client.post(f"/verification-verdicts/{vv_id}/apply-gate-request")
+        ag_id = agr_resp.json()["apply_gate_id"]
+        resp = self.client.post(
+            f"/apply-gates/{ag_id}/human-authorization-request",
+            json={"context": {"session_id": "haar-api-test"}}
+        )
+        data = resp.json()
+        haar = data["human_apply_authorization_request"]
+        assert haar["decision"] == "ready_for_human_authorization"
+        assert data["human_authorization_required"] is True
+        assert data["apply_authorized"] is False
+        assert data["execution_allowed"] is False
+        assert data["tool_execution_allowed"] is False
+        assert data["human_authorization_execution_allowed"] is False
+
+    def test_pending_eligible_haar_has_human_authorization_required_true(self):
+        sim_id = _mk_sp_chain({"action_type": "status_check", "tool_id": "project.haur.auth"})
+        sr_resp = self.client.post(f"/simulation-plans/{sim_id}/simulation-result")
+        sr_id = sr_resp.json()["simulation_result_id"]
+        vv_resp = self.client.post(f"/simulation-results/{sr_id}/verification-verdict")
+        vv_id = vv_resp.json()["verification_verdict_id"]
+        agr_resp = self.client.post(f"/verification-verdicts/{vv_id}/apply-gate-request")
+        ag_id = agr_resp.json()["apply_gate_id"]
+        resp = self.client.post(f"/apply-gates/{ag_id}/human-authorization-request")
+        data = resp.json()
+        assert data["human_apply_authorization_request"]["human_authorization_required"] is True
+
+    def test_pending_eligible_haar_still_has_apply_authorized_false(self):
+        sim_id = _mk_sp_chain({"action_type": "status_check", "tool_id": "project.haur.npauth"})
+        sr_resp = self.client.post(f"/simulation-plans/{sim_id}/simulation-result")
+        sr_id = sr_resp.json()["simulation_result_id"]
+        vv_resp = self.client.post(f"/simulation-results/{sr_id}/verification-verdict")
+        vv_id = vv_resp.json()["verification_verdict_id"]
+        agr_resp = self.client.post(f"/verification-verdicts/{vv_id}/apply-gate-request")
+        ag_id = agr_resp.json()["apply_gate_id"]
+        resp = self.client.post(f"/apply-gates/{ag_id}/human-authorization-request")
+        data = resp.json()
+        assert data["apply_authorized"] is False
+        assert data["human_apply_authorization_request"]["apply_authorized"] is False
+
+    def test_pending_eligible_haar_all_flags_false(self):
+        sim_id = _mk_sp_chain({"action_type": "status_check", "tool_id": "project.haur.flags"})
+        sr_resp = self.client.post(f"/simulation-plans/{sim_id}/simulation-result")
+        sr_id = sr_resp.json()["simulation_result_id"]
+        vv_resp = self.client.post(f"/simulation-results/{sr_id}/verification-verdict")
+        vv_id = vv_resp.json()["verification_verdict_id"]
+        agr_resp = self.client.post(f"/verification-verdicts/{vv_id}/apply-gate-request")
+        ag_id = agr_resp.json()["apply_gate_id"]
+        resp = self.client.post(f"/apply-gates/{ag_id}/human-authorization-request")
+        data = resp.json()
+        assert data["apply_allowed"] is False
+        assert data["rollback_allowed"] is False
+        assert data["dry_run_execution_allowed"] is False
+        assert data["simulation_execution_allowed"] is False
+        assert data["apply_gate_execution_allowed"] is False
+        assert data["human_authorization_execution_allowed"] is False
+
+    def test_not_eligible_gate_returns_not_ready(self):
+        from aether.action.human_apply_authorization_request import build_human_apply_authorization_request as _build_haar
+        agr_req = {
+            "decision": "not_eligible", "required_human_confirmations": [],
+            "blocking_reasons": [], "unresolved_risks": [],
+            "apply_authorized": False, "execution_allowed": False,
+            "tool_execution_allowed": False, "apply_allowed": False,
+            "metadata": {}, "warnings": [],
+        }
+        rec = {
+            "apply_gate_id": "test-ne-id", "status": "pending",
+            "apply_gate_request": agr_req, "gate_decision": "not_eligible",
+            "apply_authorized": False, "apply_executed": False, "rollback_executed": False,
+            "apply_gate_persisted": True, "human_review_completed": False,
+            "execution_allowed": False, "tool_execution_allowed": False,
+            "dry_run_execution_allowed": False, "simulation_execution_allowed": False,
+            "apply_gate_execution_allowed": False, "apply_allowed": False, "rollback_allowed": False,
+            "metadata": {}, "warnings": [],
+        }
+        haar = _build_haar(rec)
+        assert haar["decision"] == "not_ready"
+        assert haar["human_authorization_required"] is False
+
+    def test_blocked_gate_returns_blocked(self):
+        from aether.action.human_apply_authorization_request import build_human_apply_authorization_request as _build_haar
+        agr_req = {
+            "decision": "blocked", "required_human_confirmations": [],
+            "blocking_reasons": ["blocked_reason"], "unresolved_risks": [],
+            "apply_authorized": False, "execution_allowed": False,
+            "tool_execution_allowed": False, "apply_allowed": False,
+            "metadata": {}, "warnings": [],
+        }
+        rec = {
+            "apply_gate_id": "test-blk-id", "status": "pending",
+            "apply_gate_request": agr_req, "gate_decision": "blocked",
+            "apply_authorized": False, "apply_executed": False, "rollback_executed": False,
+            "apply_gate_persisted": True, "human_review_completed": False,
+            "execution_allowed": False, "tool_execution_allowed": False,
+            "dry_run_execution_allowed": False, "simulation_execution_allowed": False,
+            "apply_gate_execution_allowed": False, "apply_allowed": False, "rollback_allowed": False,
+            "metadata": {}, "warnings": [],
+        }
+        haar = _build_haar(rec)
+        assert haar["decision"] == "blocked"
+        assert haar["human_authorization_required"] is False
+
+    def test_cancelled_apply_gate_record_returns_blocked(self):
+        sim_id = _mk_sp_chain({"action_type": "status_check", "tool_id": "project.cancel.haar"})
+        sr_resp = self.client.post(f"/simulation-plans/{sim_id}/simulation-result")
+        sr_id = sr_resp.json()["simulation_result_id"]
+        vv_resp = self.client.post(f"/simulation-results/{sr_id}/verification-verdict")
+        vv_id = vv_resp.json()["verification_verdict_id"]
+        agr_resp = self.client.post(f"/verification-verdicts/{vv_id}/apply-gate-request")
+        ag_id = agr_resp.json()["apply_gate_id"]
+        self.client.post(f"/apply-gates/{ag_id}/cancel")
+        resp = self.client.post(f"/apply-gates/{ag_id}/human-authorization-request")
+        data = resp.json()
+        haar = data["human_apply_authorization_request"]
+        assert haar["decision"] == "blocked"
+        assert haar["human_authorization_required"] is False
+
+    def test_missing_apply_gate_id_returns_blocked(self):
+        resp = self.client.post("/apply-gates/not_existing_agr_id/human-authorization-request")
+        data = resp.json()
+        haar = data["human_apply_authorization_request"]
+        assert haar["decision"] == "blocked"
+        assert data.get("apply_gate_record") is None
+
+    def test_human_auth_does_not_mutate_apply_gate_record(self):
+        sim_id = _mk_sp_chain({"action_type": "status_check", "tool_id": "project.nomut.haar"})
+        sr_resp = self.client.post(f"/simulation-plans/{sim_id}/simulation-result")
+        sr_id = sr_resp.json()["simulation_result_id"]
+        vv_resp = self.client.post(f"/simulation-results/{sr_id}/verification-verdict")
+        vv_id = vv_resp.json()["verification_verdict_id"]
+        agr_resp = self.client.post(f"/verification-verdicts/{vv_id}/apply-gate-request")
+        ag_id = agr_resp.json()["apply_gate_id"]
+        before = self.client.get(f"/apply-gates/{ag_id}").json()
+        before_status = before["apply_gate"]["status"]
+        self.client.post(f"/apply-gates/{ag_id}/human-authorization-request")
+        after = self.client.get(f"/apply-gates/{ag_id}").json()
+        assert after["apply_gate"]["status"] == before_status
+
+    def test_human_auth_does_not_mutate_verification_verdict_record(self):
+        sim_id = _mk_sp_chain({"action_type": "status_check", "tool_id": "project.nomut.vv.haar"})
+        sr_resp = self.client.post(f"/simulation-plans/{sim_id}/simulation-result")
+        sr_id = sr_resp.json()["simulation_result_id"]
+        vv_resp = self.client.post(f"/simulation-results/{sr_id}/verification-verdict")
+        vv_id = vv_resp.json()["verification_verdict_id"]
+        agr_resp = self.client.post(f"/verification-verdicts/{vv_id}/apply-gate-request")
+        ag_id = agr_resp.json()["apply_gate_id"]
+        before = self.client.get(f"/verification-verdicts/{vv_id}").json()
+        before_status = before["verification_verdict"]["status"]
+        self.client.post(f"/apply-gates/{ag_id}/human-authorization-request")
+        after = self.client.get(f"/verification-verdicts/{vv_id}").json()
+        assert after["verification_verdict"]["status"] == before_status
+
+    def test_human_auth_does_not_mutate_simulation_result_record(self):
+        sim_id = _mk_sp_chain({"action_type": "status_check", "tool_id": "project.nomut.sr.haar"})
+        sr_resp = self.client.post(f"/simulation-plans/{sim_id}/simulation-result")
+        sr_id = sr_resp.json()["simulation_result_id"]
+        vv_resp = self.client.post(f"/simulation-results/{sr_id}/verification-verdict")
+        vv_id = vv_resp.json()["verification_verdict_id"]
+        agr_resp = self.client.post(f"/verification-verdicts/{vv_id}/apply-gate-request")
+        ag_id = agr_resp.json()["apply_gate_id"]
+        before = self.client.get(f"/simulation-results/{sr_id}").json()
+        before_status = before["simulation_result"]["status"]
+        self.client.post(f"/apply-gates/{ag_id}/human-authorization-request")
+        after = self.client.get(f"/simulation-results/{sr_id}").json()
+        assert after["simulation_result"]["status"] == before_status
+
+    def test_legacy_chat_still_works(self):
+        resp = self.client.post("/chat", json={"message": "legacy msg milestone 67a"})
+        data = resp.json()
+        assert data["status"] == "completed"
