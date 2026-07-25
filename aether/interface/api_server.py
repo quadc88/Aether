@@ -1597,6 +1597,44 @@ def cancel_simulation_result(simulation_result_id: str, request: SimResultDecisi
 
 
 # ===================================================================== #
+# Simulation Verification Verdict Endpoint (Milestone 63A)
+# ===================================================================== #
+
+from aether.action.simulation_verdict import (
+    build_simulation_verification_verdict as _build_verdict,
+)
+
+
+class VerdictContextBody(BaseModel):
+    context: dict | None = None
+
+
+@app.post("/simulation-results/{simulation_result_id}/verification-verdict")
+def simulation_verification_verdict_endpoint(simulation_result_id: str, request: VerdictContextBody | None = None):
+    record = _get_srr(simulation_result_id)
+    context = None
+    if request:
+        context = request.context
+    verdict = _build_verdict(record, context)
+    return {
+        "name": "Aether",
+        "status": runtime.status(),
+        "simulation_result_record": record,
+        "verification_verdict": verdict,
+        "verification_verdict_required": verdict.get("verification_verdict_required"),
+        "verification_verdict_status": verdict.get("verification_verdict_status"),
+        "decision": verdict.get("decision"),
+        "execution_allowed": False,
+        "tool_execution_allowed": False,
+        "dry_run_execution_allowed": False,
+        "simulation_execution_allowed": False,
+        "apply_allowed": False,
+        "rollback_allowed": False,
+        "verdict_apply_allowed": False,
+    }
+
+
+# ===================================================================== #
 # Simulation Plan Record Endpoints (Milestone 60A)
 # ===================================================================== #
 

@@ -1300,3 +1300,147 @@ class TestSimulationResultRecordAPI:
         assert sr_rec["simulation_execution_allowed"] is False
         assert sr_rec["apply_allowed"] is False
         assert sr_rec["rollback_allowed"] is False
+
+
+class TestSimulationVerificationVerdictAPI:
+    """Tests 72-82: Verification verdict endpoint (Milestone 63A)."""
+
+    @classmethod
+    def setup_class(cls):
+        cls.client = _get_test_client()
+
+    def test_verdict_returns_pass_for_pending_clean_record(self):
+        """Test 72: POST verification-verdict returns pass for pending clean record."""
+        sim_id = _mk_sp_chain({"action_type": "status_check", "tool_id": "project.verdict.test1"})
+        sr_resp = self.client.post(f"/simulation-plans/{sim_id}/simulation-result")
+        sr_id = sr_resp.json()["simulation_result_id"]
+        resp = self.client.post(
+            f"/simulation-results/{sr_id}/verification-verdict",
+            json={"context": {"session_id": "verdict-test"}}
+        )
+        data = resp.json()
+        v = data.get("verification_verdict")
+        assert v is not None
+        assert v["decision"] == "pass"
+        assert v["verification_verdict_required"] is True
+        assert v["simulation_result_id"] == sr_id
+
+    def test_verdict_returns_blocked_for_cancelled_record(self):
+        """Test 73: cancelled simulation_result_record returns blocked."""
+        sim_id = _mk_sp_chain({"action_type": "status_check", "tool_id": "project.cancel.verdict"})
+        sr_resp = self.client.post(f"/simulation-plans/{sim_id}/simulation-result")
+        sr_id = sr_resp.json()["simulation_result_id"]
+        # Cancel it first
+        self.client.post(f"/simulation-results/{sr_id}/cancel")
+        resp = self.client.post(f"/simulation-results/{sr_id}/verification-verdict")
+        data = resp.json()
+        v = data.get("verification_verdict")
+        assert v["decision"] == "blocked"
+        assert v["reason"] == "Simulation result record is not pending."
+
+    def test_verdict_returns_blocked_for_missing_id(self):
+        """Test 74: missing simulation_result_id returns blocked."""
+        resp = self.client.post(
+            "/simulation-results/not_existing_id/verification-verdict",
+            json={"context": {"source": "verdict"}}
+        )
+        data = resp.json()
+        v = data.get("verification_verdict")
+        assert v["decision"] == "blocked"
+        assert v["reason"] == "Simulation result record was not found."
+        assert data.get("simulation_result_record") is None
+
+    def test_verdict_does_not_mutate_simulation_result_record(self):
+        """Test 75: verdict endpoint does not mutate simulation_result_record."""
+        sim_id = _mk_sp_chain({"action_type": "status_check", "tool_id": "project.nomut.verdict"})
+        sr_resp = self.client.post(f"/simulation-plans/{sim_id}/simulation-result")
+        sr_id = sr_resp.json()["simulation_result_id"]
+        before = self.client.get(f"/simulation-results/{sr_id}").json()
+        before_status = before["simulation_result"]["status"]
+        self.client.post(f"/simulation-results/{sr_id}/verification-verdict")
+        after = self.client.get(f"/simulation-results/{sr_id}").json()
+        assert after["simulation_result"]["status"] == before_status
+
+    def test_verdict_endpoint_does_not_execute_tools(self):
+        """Test 76: verdict endpoint does not execute tools."""
+        sim_id = _mk_sp_chain({"action_type": "status_check", "tool_id": "project.noe.verdict"})
+        sr_resp = self.client.post(f"/simulation-plans/{sim_id}/simulation-result")
+        sr_id = sr_resp.json()["simulation_result_id"]
+        resp = self.client.post(f"/simulation-results/{sr_id}/verification-verdict")
+        data = resp.json()
+        assert data["execution_allowed"] is False
+        assert data["tool_execution_allowed"] is False
+        assert data["dry_run_execution_allowed"] is False
+        assert data["simulation_execution_allowed"] is False
+
+    def test_verdict_returns_all_flags_false(self):
+        """Test 77: verdict endpoint returns all execution/apply/rollback flags false."""
+        sim_id = _mk_sp_chain({"action_type": "inspection", "tool_id": "project.flags.verdict"})
+        sr_resp = self.client.post(f"/simulation-plans/{sim_id}/simulation-result")
+        sr_id = sr_resp.json()["simulation_result_id"]
+        resp = self.client.post(f"/simulation-results/{sr_id}/verification-verdict")
+        data = resp.json()
+        assert data["execution_allowed"] is False
+        assert data["tool_execution_allowed"] is False
+        assert data["dry_run_execution_allowed"] is False
+        assert data["simulation_execution_allowed"] is False
+        assert data["apply_allowed"] is False
+        assert data["rollback_allowed"] is False
+        assert data["verdict_apply_allowed"] is False
+
+    def test_legacy_chat_still_works(self):
+        """Test 78: legacy /chat still works."""
+        resp = self.client.post("/chat", json={"message": "legacy msg milestone 63a"})
+        data = resp.json()
+        assert data["status"] == "completed"
+
+    def test_verdict_includes_checks_list(self):
+        """Test 79: verdict includes all 10 required checks."""
+        sim_id = _mk_sp_chain({"action_type": "status_check", "tool_id": "project.checks.verdict"})
+        sr_resp = self.client.post(f"/simulation-plans/{sim_id}/simulation-result")
+        sr_id = sr_resp.json()["simulation_result_id"]
+        resp = self.client.post(f"/simulation-results/{sr_id}/verification-verdict")
+        data = resp.json()
+        checks = data["verification_verdict"].get("checks", [])
+        names = [c["name"] for c in checks]
+        expected = [
+            "record_pending", "result_persisted", "simulation_not_executed",
+            "tool_execution_blocked", "apply_blocked", "rollback_blocked",
+            "observations_are_synthetic", "no_mutation_proof_clean",
+            "verification_evidence_present", "risk_findings_present",
+        ]
+        for name in expected:
+            assert name in names, f"Missing check: {name}"
+
+    def test_verdict_with_context_session_id(self):
+        """Test 80: context session_id is copied into verdict metadata."""
+        sim_id = _mk_sp_chain({"action_type": "status_check", "tool_id": "project.ctx.verdict"})
+        sr_resp = self.client.post(f"/simulation-plans/{sim_id}/simulation-result")
+        sr_id = sr_resp.json()["simulation_result_id"]
+        resp = self.client.post(
+            f"/simulation-results/{sr_id}/verification-verdict",
+            json={"context": {"session_id": "manual-63a-sid"}}
+        )
+        sid = resp.json()["verification_verdict"]["metadata"]["session_id"]
+        assert sid == "manual-63a-sid"
+
+    def test_verdict_includes_evidence_summary(self):
+        """Test 81: verdict evidence_summary contains no_real_tool_execution."""
+        sim_id = _mk_sp_chain({"action_type": "status_check", "tool_id": "project.evi.verdict"})
+        sr_resp = self.client.post(f"/simulation-plans/{sim_id}/simulation-result")
+        sr_id = sr_resp.json()["simulation_result_id"]
+        resp = self.client.post(f"/simulation-results/{sr_id}/verification-verdict")
+        es = resp.json()["verification_verdict"]["evidence_summary"]
+        names = [e["name"] for e in es]
+        assert "no_real_tool_execution" in names
+        assert "synthetic_observations_only" in names
+
+    def test_verdict_recommended_next_step_for_pass(self):
+        """Test 82: pass verdict recommended_next_step mentions future apply-gate."""
+        sim_id = _mk_sp_chain({"action_type": "status_check", "tool_id": "project.step.verdict"})
+        sr_resp = self.client.post(f"/simulation-plans/{sim_id}/simulation-result")
+        sr_id = sr_resp.json()["simulation_result_id"]
+        resp = self.client.post(f"/simulation-results/{sr_id}/verification-verdict")
+        step = resp.json()["verification_verdict"]["recommended_next_step"]
+        assert "future" in step.lower()
+        assert "apply" in step.lower()
