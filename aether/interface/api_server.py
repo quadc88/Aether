@@ -1719,6 +1719,9 @@ def cancel_verification_verdict(verification_verdict_id: str, request: VerdictDe
 from aether.action.apply_gate_request import (
     build_apply_gate_request as _build_agr,
 )
+from aether.action.apply_gate_queue import (
+    create_apply_gate_record as _create_agr_rec,
+)
 
 
 class ApplyGateContextBody(BaseModel):
@@ -1732,13 +1735,23 @@ def verification_verdict_apply_gate_request_endpoint(verification_verdict_id: st
     if request:
         context = request.context
     agr = _build_agr(record, context)
+
+    # Persist the apply gate record when an apply gate request exists
+    ag_rec = None
+    ag_id = None
+    if agr is not None:
+        ag_rec = _create_agr_rec(apply_gate_request=agr, context=context)
+        ag_id = ag_rec["apply_gate_id"]
+
     return {
         "name": "Aether",
         "status": runtime.status(),
         "verification_verdict_record": record,
         "apply_gate_request": agr,
+        "apply_gate_record": ag_rec,
+        "apply_gate_id": ag_id,
         "apply_gate_required": agr.get("apply_gate_required"),
-        "apply_gate_status": agr.get("apply_gate_status"),
+        "apply_gate_status": ag_rec.get("status") if ag_rec else agr.get("apply_gate_status"),
         "decision": agr.get("decision"),
         "execution_allowed": False,
         "tool_execution_allowed": False,
@@ -1748,6 +1761,70 @@ def verification_verdict_apply_gate_request_endpoint(verification_verdict_id: st
         "rollback_allowed": False,
         "apply_gate_execution_allowed": False,
         "apply_authorized": False,
+    }
+
+
+# ===================================================================== #
+# Apply Gate Record Endpoints (Milestone 66A)
+# ===================================================================== #
+
+from aether.action.apply_gate_queue import (
+    get_apply_gate_record as _get_agr,
+    list_apply_gate_records as _list_agr,
+    update_apply_gate_record_status as _update_agr,
+)
+
+
+class ApplyGateDecisionBody(BaseModel):
+    reviewer: str | None = None
+    reason: str | None = None
+
+
+@app.get("/apply-gates")
+def list_apply_gates(status: str | None = None, decision: str | None = None, limit: int = 50):
+    records = _list_agr(status=status, decision=decision, limit=limit)
+    return {
+        "name": "Aether",
+        "status": runtime.status(),
+        "apply_gates": records,
+        "count": len(records),
+    }
+
+
+@app.get("/apply-gates/{apply_gate_id}")
+def get_apply_gate(apply_gate_id: str):
+    record = _get_agr(apply_gate_id)
+    return {
+        "name": "Aether",
+        "status": runtime.status(),
+        "apply_gate": record,
+        "found": record is not None,
+    }
+
+
+@app.post("/apply-gates/{apply_gate_id}/cancel")
+def cancel_apply_gate(apply_gate_id: str, request: ApplyGateDecisionBody | None = None):
+    reviewer = None
+    reason = None
+    if request:
+        reviewer = request.reviewer
+        reason = request.reason
+    record = _update_agr(
+        apply_gate_id, decision="cancelled", reviewer=reviewer, reason=reason
+    )
+    if record is None:
+        return {
+            "name": "Aether",
+            "status": runtime.status(),
+            "apply_gate": None,
+            "found": False,
+            "warnings": ["Apply gate record not found."],
+        }
+    return {
+        "name": "Aether",
+        "status": runtime.status(),
+        "apply_gate": record,
+        "found": True,
     }
 
 

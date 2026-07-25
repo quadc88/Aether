@@ -1796,3 +1796,275 @@ class TestApplyGateRequestAPI:
         resp = self.client.post("/chat", json={"message": "legacy msg milestone 65a"})
         data = resp.json()
         assert data["status"] == "completed"
+
+
+class TestApplyGateRecordAPI:
+    """Tests for Apply Gate Record Store (Milestone 66A)."""
+
+    @classmethod
+    def setup_class(cls):
+        cls.client = _get_test_client()
+
+    def test_apply_gate_request_returns_record_and_id_for_pending_pass(self):
+        sim_id = _mk_sp_chain({"action_type": "status_check", "tool_id": "project.agr.rec.test1"})
+        sr_resp = self.client.post(f"/simulation-plans/{sim_id}/simulation-result")
+        sr_id = sr_resp.json()["simulation_result_id"]
+        vv_resp = self.client.post(f"/simulation-results/{sr_id}/verification-verdict")
+        vv_id = vv_resp.json()["verification_verdict_id"]
+        resp = self.client.post(f"/verification-verdicts/{vv_id}/apply-gate-request")
+        data = resp.json()
+        assert data["apply_gate_request"] is not None
+        assert data["apply_gate_record"] is not None
+        assert data["apply_gate_id"] is not None
+        ag_rec = data["apply_gate_record"]
+        assert ag_rec["status"] == "pending"
+        assert ag_rec["gate_decision"] == "eligible_for_human_review"
+        assert ag_rec["apply_gate_persisted"] is True
+        assert ag_rec["human_review_completed"] is False
+        assert ag_rec["apply_authorized"] is False
+
+    def test_eligible_gate_record_has_gate_decision_eligible(self):
+        sim_id = _mk_sp_chain({"action_type": "status_check", "tool_id": "project.elig.agr.rec"})
+        sr_resp = self.client.post(f"/simulation-plans/{sim_id}/simulation-result")
+        sr_id = sr_resp.json()["simulation_result_id"]
+        vv_resp = self.client.post(f"/simulation-results/{sr_id}/verification-verdict")
+        vv_id = vv_resp.json()["verification_verdict_id"]
+        resp = self.client.post(f"/verification-verdicts/{vv_id}/apply-gate-request")
+        data = resp.json()
+        assert data["apply_gate_record"]["gate_decision"] == "eligible_for_human_review"
+
+    def test_eligible_gate_record_has_human_review_completed_false(self):
+        sim_id = _mk_sp_chain({"action_type": "status_check", "tool_id": "project.hrc.agr.rec"})
+        sr_resp = self.client.post(f"/simulation-plans/{sim_id}/simulation-result")
+        sr_id = sr_resp.json()["simulation_result_id"]
+        vv_resp = self.client.post(f"/simulation-results/{sr_id}/verification-verdict")
+        vv_id = vv_resp.json()["verification_verdict_id"]
+        resp = self.client.post(f"/verification-verdicts/{vv_id}/apply-gate-request")
+        data = resp.json()
+        assert data["apply_gate_record"]["human_review_completed"] is False
+
+    def test_eligible_gate_record_has_apply_authorized_false(self):
+        sim_id = _mk_sp_chain({"action_type": "status_check", "tool_id": "project.npauth.agr.rec"})
+        sr_resp = self.client.post(f"/simulation-plans/{sim_id}/simulation-result")
+        sr_id = sr_resp.json()["simulation_result_id"]
+        vv_resp = self.client.post(f"/simulation-results/{sr_id}/verification-verdict")
+        vv_id = vv_resp.json()["verification_verdict_id"]
+        resp = self.client.post(f"/verification-verdicts/{vv_id}/apply-gate-request")
+        data = resp.json()
+        assert data["apply_gate_record"]["apply_authorized"] is False
+
+    def test_warning_verdict_produces_not_eligible_gate_record(self):
+        from aether.action.apply_gate_request import build_apply_gate_request as _build_agr
+        warning_verdict = {
+            "decision": "warning", "unresolved_risks": [],
+            "blocking_reasons": [], "simulation_result_id": "sim-w",
+            "simulation_plan_id": "plan-w", "dry_run_id": None,
+            "requested_action": None, "apply_allowed": False,
+            "execution_allowed": False, "tool_execution_allowed": False,
+            "dry_run_execution_allowed": False, "simulation_execution_allowed": False,
+            "rollback_allowed": False, "verdict_apply_allowed": False,
+            "metadata": {}, "warnings": [],
+        }
+        rec = {
+            "verification_verdict_id": "test-w-id", "status": "pending",
+            "verification_verdict": warning_verdict, "verdict_decision": "warning",
+            "apply_authorized": False, "apply_allowed": False, "rollback_allowed": False,
+            "execution_allowed": False, "tool_execution_allowed": False,
+            "dry_run_execution_allowed": False, "simulation_execution_allowed": False,
+            "verdict_apply_allowed": False, "metadata": {}, "warnings": [],
+        }
+        agr = _build_agr(rec)
+        assert agr["decision"] == "not_eligible"
+
+    def test_fail_verdict_produces_blocked_gate_record(self):
+        from aether.action.apply_gate_request import build_apply_gate_request as _build_agr
+        fail_verdict = {
+            "decision": "fail", "unresolved_risks": [],
+            "blocking_reasons": ["fail"], "simulation_result_id": "sim-f",
+            "simulation_plan_id": "plan-f", "dry_run_id": None,
+            "requested_action": None, "apply_allowed": False,
+            "execution_allowed": False, "tool_execution_allowed": False,
+            "dry_run_execution_allowed": False, "simulation_execution_allowed": False,
+            "rollback_allowed": False, "verdict_apply_allowed": False,
+            "metadata": {}, "warnings": [],
+        }
+        rec = {
+            "verification_verdict_id": "test-f-id", "status": "pending",
+            "verification_verdict": fail_verdict, "verdict_decision": "fail",
+            "apply_authorized": False, "apply_allowed": False, "rollback_allowed": False,
+            "execution_allowed": False, "tool_execution_allowed": False,
+            "dry_run_execution_allowed": False, "simulation_execution_allowed": False,
+            "verdict_apply_allowed": False, "metadata": {}, "warnings": [],
+        }
+        agr = _build_agr(rec)
+        assert agr["decision"] == "blocked"
+
+    def test_blocked_verdict_produces_blocked_gate_record(self):
+        from aether.action.apply_gate_request import build_apply_gate_request as _build_agr
+        blocked_verdict = {
+            "decision": "blocked", "unresolved_risks": [],
+            "blocking_reasons": ["blocked"], "simulation_result_id": "sim-b",
+            "simulation_plan_id": "plan-b", "dry_run_id": None,
+            "requested_action": None, "apply_allowed": False,
+            "execution_allowed": False, "tool_execution_allowed": False,
+            "dry_run_execution_allowed": False, "simulation_execution_allowed": False,
+            "rollback_allowed": False, "verdict_apply_allowed": False,
+            "metadata": {}, "warnings": [],
+        }
+        rec = {
+            "verification_verdict_id": "test-b-id", "status": "pending",
+            "verification_verdict": blocked_verdict, "verdict_decision": "blocked",
+            "apply_authorized": False, "apply_allowed": False, "rollback_allowed": False,
+            "execution_allowed": False, "tool_execution_allowed": False,
+            "dry_run_execution_allowed": False, "simulation_execution_allowed": False,
+            "verdict_apply_allowed": False, "metadata": {}, "warnings": [],
+        }
+        agr = _build_agr(rec)
+        assert agr["decision"] == "blocked"
+
+    def test_missing_verification_verdict_produces_blocked_gate_record(self):
+        sim_id = _mk_sp_chain({"action_type": "status_check", "tool_id": "project.miss.agr.rec"})
+        sr_resp = self.client.post(f"/simulation-plans/{sim_id}/simulation-result")
+        sr_id = sr_resp.json()["simulation_result_id"]
+        self.client.post(f"/simulation-results/{sr_id}/verification-verdict")
+        resp = self.client.post(
+            "/verification-verdicts/not_existing_vv_id/apply-gate-request"
+        )
+        data = resp.json()
+        agr = data["apply_gate_request"]
+        assert agr["decision"] == "blocked"
+
+    def test_get_apply_gates_lists_records(self):
+        sim_id = _mk_sp_chain({"action_type": "status_check", "tool_id": "project.list.agr.rec"})
+        sr_resp = self.client.post(f"/simulation-plans/{sim_id}/simulation-result")
+        sr_id = sr_resp.json()["simulation_result_id"]
+        vv_resp = self.client.post(f"/simulation-results/{sr_id}/verification-verdict")
+        vv_id = vv_resp.json()["verification_verdict_id"]
+        self.client.post(f"/verification-verdicts/{vv_id}/apply-gate-request")
+        resp = self.client.get("/apply-gates?limit=10")
+        data = resp.json()
+        assert "apply_gates" in data
+        assert "count" in data
+        assert data["count"] >= 1
+
+    def test_get_apply_gates_filters_by_decision_eligible(self):
+        sim_id = _mk_sp_chain({"action_type": "status_check", "tool_id": "project.filter.elig.agr"})
+        sr_resp = self.client.post(f"/simulation-plans/{sim_id}/simulation-result")
+        sr_id = sr_resp.json()["simulation_result_id"]
+        vv_resp = self.client.post(f"/simulation-results/{sr_id}/verification-verdict")
+        vv_id = vv_resp.json()["verification_verdict_id"]
+        self.client.post(f"/verification-verdicts/{vv_id}/apply-gate-request")
+        resp = self.client.get("/apply-gates?decision=eligible_for_human_review&limit=10")
+        data = resp.json()
+        assert data["count"] >= 1
+        for r in data["apply_gates"]:
+            assert r["gate_decision"] == "eligible_for_human_review"
+
+    def test_get_apply_gates_filters_by_decision_not_eligible(self):
+        from aether.action.apply_gate_queue import create_apply_gate_record as _car
+        agr = {"decision": "not_eligible", "reason": "Test", "metadata": {}, "warnings": []}
+        _car(agr)
+        resp = self.client.get("/apply-gates?decision=not_eligible&limit=10")
+        data = resp.json()
+        assert data["count"] >= 1
+
+    def test_get_apply_gates_filters_by_decision_blocked(self):
+        from aether.action.apply_gate_queue import create_apply_gate_record as _car
+        agr = {"decision": "blocked", "reason": "Test", "metadata": {}, "warnings": []}
+        _car(agr)
+        resp = self.client.get("/apply-gates?decision=blocked&limit=10")
+        data = resp.json()
+        assert data["count"] >= 1
+
+    def test_get_apply_gate_by_id(self):
+        sim_id = _mk_sp_chain({"action_type": "status_check", "tool_id": "project.getby.agr.rec"})
+        sr_resp = self.client.post(f"/simulation-plans/{sim_id}/simulation-result")
+        sr_id = sr_resp.json()["simulation_result_id"]
+        vv_resp = self.client.post(f"/simulation-results/{sr_id}/verification-verdict")
+        vv_id = vv_resp.json()["verification_verdict_id"]
+        agr_resp = self.client.post(f"/verification-verdicts/{vv_id}/apply-gate-request")
+        agr_id = agr_resp.json()["apply_gate_id"]
+        resp = self.client.get(f"/apply-gates/{agr_id}")
+        data = resp.json()
+        assert data["found"] is True
+        assert data["apply_gate"]["apply_gate_id"] == agr_id
+
+    def test_cancel_apply_gate_changes_status(self):
+        sim_id = _mk_sp_chain({"action_type": "status_check", "tool_id": "project.cancel.agr.rec"})
+        sr_resp = self.client.post(f"/simulation-plans/{sim_id}/simulation-result")
+        sr_id = sr_resp.json()["simulation_result_id"]
+        vv_resp = self.client.post(f"/simulation-results/{sr_id}/verification-verdict")
+        vv_id = vv_resp.json()["verification_verdict_id"]
+        agr_resp = self.client.post(f"/verification-verdicts/{vv_id}/apply-gate-request")
+        agr_id = agr_resp.json()["apply_gate_id"]
+        resp = self.client.post(
+            f"/apply-gates/{agr_id}/cancel",
+            json={"reviewer": "agr_canceller", "reason": "cancelled during test"},
+        )
+        data = resp.json()
+        assert data["apply_gate"]["status"] == "cancelled"
+        assert data["apply_gate"]["decision"] == "cancelled"
+
+    def test_cancel_does_not_execute_apply(self):
+        sim_id = _mk_sp_chain({"action_type": "status_check", "tool_id": "project.noexec.agr.rec"})
+        sr_resp = self.client.post(f"/simulation-plans/{sim_id}/simulation-result")
+        sr_id = sr_resp.json()["simulation_result_id"]
+        vv_resp = self.client.post(f"/simulation-results/{sr_id}/verification-verdict")
+        vv_id = vv_resp.json()["verification_verdict_id"]
+        agr_resp = self.client.post(f"/verification-verdicts/{vv_id}/apply-gate-request")
+        agr_id = agr_resp.json()["apply_gate_id"]
+        resp = self.client.post(f"/apply-gates/{agr_id}/cancel")
+        data = resp.json()["apply_gate"]
+        assert data["apply_authorized"] is False
+        assert data["apply_executed"] is False
+        assert data["apply_allowed"] is False
+        assert data["rollback_allowed"] is False
+
+    def test_cancel_does_not_authorize_apply(self):
+        sim_id = _mk_sp_chain({"action_type": "status_check", "tool_id": "project.nauth.agr.rec"})
+        sr_resp = self.client.post(f"/simulation-plans/{sim_id}/simulation-result")
+        sr_id = sr_resp.json()["simulation_result_id"]
+        vv_resp = self.client.post(f"/simulation-results/{sr_id}/verification-verdict")
+        vv_id = vv_resp.json()["verification_verdict_id"]
+        agr_resp = self.client.post(f"/verification-verdicts/{vv_id}/apply-gate-request")
+        agr_id = agr_resp.json()["apply_gate_id"]
+        resp = self.client.post(f"/apply-gates/{agr_id}/cancel")
+        data = resp.json()["apply_gate"]
+        assert data["apply_authorized"] is False
+        assert data["execution_allowed"] is False
+        assert data["tool_execution_allowed"] is False
+
+    def test_missing_apply_gate_id_returns_found_false(self):
+        resp = self.client.get("/apply-gates/nonexistent-agr-id")
+        data = resp.json()
+        assert data["found"] is False
+        assert data["apply_gate"] is None
+
+    def test_apply_gate_request_does_not_mutate_verification_verdict_record(self):
+        sim_id = _mk_sp_chain({"action_type": "status_check", "tool_id": "project.nomut.vv.agr"})
+        sr_resp = self.client.post(f"/simulation-plans/{sim_id}/simulation-result")
+        sr_id = sr_resp.json()["simulation_result_id"]
+        vv_resp = self.client.post(f"/simulation-results/{sr_id}/verification-verdict")
+        vv_id = vv_resp.json()["verification_verdict_id"]
+        before = self.client.get(f"/verification-verdicts/{vv_id}").json()
+        before_status = before["verification_verdict"]["status"]
+        self.client.post(f"/verification-verdicts/{vv_id}/apply-gate-request")
+        after = self.client.get(f"/verification-verdicts/{vv_id}").json()
+        assert after["verification_verdict"]["status"] == before_status
+
+    def test_apply_gate_request_does_not_mutate_simulation_result_record(self):
+        sim_id = _mk_sp_chain({"action_type": "status_check", "tool_id": "project.nomut.sr.agr2"})
+        sr_resp = self.client.post(f"/simulation-plans/{sim_id}/simulation-result")
+        sr_id = sr_resp.json()["simulation_result_id"]
+        vv_resp = self.client.post(f"/simulation-results/{sr_id}/verification-verdict")
+        vv_id = vv_resp.json()["verification_verdict_id"]
+        before = self.client.get(f"/simulation-results/{sr_id}").json()
+        before_status = before["simulation_result"]["status"]
+        self.client.post(f"/verification-verdicts/{vv_id}/apply-gate-request")
+        after = self.client.get(f"/simulation-results/{sr_id}").json()
+        assert after["simulation_result"]["status"] == before_status
+
+    def test_legacy_chat_still_works(self):
+        resp = self.client.post("/chat", json={"message": "legacy msg milestone 66a"})
+        data = resp.json()
+        assert data["status"] == "completed"
