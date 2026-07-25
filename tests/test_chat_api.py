@@ -1147,3 +1147,156 @@ def _mk_sp_chain(action):
     dry_run_id = dr["dry_run_id"]
     sp = client.post(f"/dry-runs/{dry_run_id}/simulation-plan").json()
     return sp["simulation_plan_id"]
+
+
+class TestSimulationResultRecordAPI:
+    """Tests 59-71: Simulation result record store API (Milestone 62A)."""
+
+    @classmethod
+    def setup_class(cls):
+        cls.client = _get_test_client()
+
+    def test_simulation_result_endpoint_returns_record_and_id(self):
+        """Test 59: POST simulation-result returns simulation_result_record and simulation_result_id for pending plan."""
+        sim_id = _mk_sp_chain({"action_type": "status_check", "tool_id": "project.rec.test1"})
+        resp = self.client.post(f"/simulation-plans/{sim_id}/simulation-result")
+        data = resp.json()
+        assert data["simulation_result_record"] is not None
+        assert data["simulation_result_id"] is not None
+        assert data["simulation_result_record"]["status"] == "pending"
+        assert data["simulation_result_record"]["result_persisted"] is True
+        assert data["simulation_result_record"]["simulation_executed"] is False
+
+    def test_cancelled_plan_returns_null_sim_result_record(self):
+        """Test 60: cancelled simulation_plan_record returns simulation_result_record null."""
+        sim_id = _mk_sp_chain({"action_type": "status_check", "tool_id": "project.cancel.srr"})
+        self.client.post(f"/simulation-plans/{sim_id}/cancel", json={"reviewer": "test"})
+        resp = self.client.post(f"/simulation-plans/{sim_id}/simulation-result")
+        data = resp.json()
+        assert data["simulation_result_record"] is None
+        assert data["simulation_result_id"] is None
+
+    def test_missing_plan_id_returns_null_sim_result_record(self):
+        """Test 61: missing simulation_plan_id returns simulation_result_record null."""
+        resp = self.client.post("/simulation-plans/not_an_id/simulation-result")
+        data = resp.json()
+        assert data["simulation_result_record"] is None
+        assert data["simulation_result_id"] is None
+
+    def test_get_simulation_results_lists_records(self):
+        """Test 62: GET /simulation-results lists records."""
+        sim_id = _mk_sp_chain({"action_type": "status_check", "tool_id": "project.list.srr"})
+        self.client.post(f"/simulation-plans/{sim_id}/simulation-result")
+        resp = self.client.get("/simulation-results?limit=10")
+        data = resp.json()
+        assert "simulation_results" in data
+        assert "count" in data
+        assert data["count"] >= 1
+
+    def test_get_simulation_result_by_id(self):
+        """Test 63: GET /simulation-results/{id} reads record."""
+        sim_id = _mk_sp_chain({"action_type": "status_check", "tool_id": "project.getby.srr"})
+        sr_resp = self.client.post(f"/simulation-plans/{sim_id}/simulation-result")
+        sr_id = sr_resp.json()["simulation_result_id"]
+        resp = self.client.get(f"/simulation-results/{sr_id}")
+        data = resp.json()
+        assert data["found"] is True
+        assert data["simulation_result"]["simulation_result_id"] == sr_id
+
+    def test_cancel_simulation_result_changes_status(self):
+        """Test 64: POST /simulation-results/{id}/cancel changes status to cancelled."""
+        sim_id = _mk_sp_chain({"action_type": "status_check", "tool_id": "project.cancel.sr"})
+        sr_resp = self.client.post(f"/simulation-plans/{sim_id}/simulation-result")
+        sr_id = sr_resp.json()["simulation_result_id"]
+        resp = self.client.post(
+            f"/simulation-results/{sr_id}/cancel",
+            json={"reviewer": "sr_canceller", "reason": "cancelled during test"},
+        )
+        data = resp.json()
+        assert data["simulation_result"]["status"] == "cancelled"
+        assert data["simulation_result"]["decision"] == "cancelled"
+        assert data["simulation_result"]["simulation_executed"] is False
+        assert data["simulation_result"]["apply_allowed"] is False
+        assert data["simulation_result"]["rollback_allowed"] is False
+
+    def test_cancel_endpoint_does_not_execute_simulation(self):
+        """Test 65: cancel endpoint does not execute simulation."""
+        sim_id = _mk_sp_chain({"action_type": "status_check", "tool_id": "project.noexec.sr"})
+        sr_resp = self.client.post(f"/simulation-plans/{sim_id}/simulation-result")
+        sr_id = sr_resp.json()["simulation_result_id"]
+        resp = self.client.post(
+            f"/simulation-results/{sr_id}/cancel",
+            json={"reviewer": "test"},
+        )
+        data = resp.json()["simulation_result"]
+        assert data["simulation_executed"] is False
+        assert data["execution_allowed"] is False
+        assert data["tool_execution_allowed"] is False
+        assert data["apply_allowed"] is False
+        assert data["rollback_allowed"] is False
+
+    def test_cancel_does_not_apply_or_rollback(self):
+        """Test 66: cancel endpoint does not apply/rollback."""
+        sim_id = _mk_sp_chain({"action_type": "status_check", "tool_id": "project.norollback.sr"})
+        sr_resp = self.client.post(f"/simulation-plans/{sim_id}/simulation-result")
+        sr_id = sr_resp.json()["simulation_result_id"]
+        resp = self.client.post(
+            f"/simulation-results/{sr_id}/cancel",
+            json={"reviewer": "test"},
+        )
+        data = resp.json()["simulation_result"]
+        assert data["apply_allowed"] is False
+        assert data["rollback_allowed"] is False
+
+    def test_cancel_missing_result_id_returns_found_false(self):
+        """Test 67: missing simulation_result_id returns found false."""
+        resp = self.client.post(
+            "/simulation-results/nonexistent-simresult/cancel",
+            json={"reviewer": "test"},
+        )
+        data = resp.json()
+        assert data["found"] is False
+        assert data["simulation_result"] is None
+
+    def test_simulation_result_no_mutation_of_plan_record(self):
+        """Test 68: simulation-result endpoint does not mutate simulation_plan_record."""
+        sim_id = _mk_sp_chain({"action_type": "status_check", "tool_id": "project.nomut.sr"})
+        before = self.client.get(f"/simulation-plans/{sim_id}").json()
+        assert before["simulation_plan"]["status"] == "pending"
+        self.client.post(f"/simulation-plans/{sim_id}/simulation-result")
+        after = self.client.get(f"/simulation-plans/{sim_id}").json()
+        assert after["simulation_plan"]["status"] == "pending"
+
+    def test_legacy_chat_still_works(self):
+        """Test 69: legacy /chat still works."""
+        resp = self.client.post("/chat", json={"message": "legacy msg milestone 62a"})
+        data = resp.json()
+        assert data["status"] == "completed"
+
+    def test_list_filters_simulation_results_by_status(self):
+        """Test 70: GET /simulation-results filters by status."""
+        sim_id = _mk_sp_chain({"action_type": "status_check", "tool_id": "project.filter.sr"})
+        sr_resp = self.client.post(f"/simulation-plans/{sim_id}/simulation-result")
+        sr_id = sr_resp.json()["simulation_result_id"]
+        # Cancel it
+        self.client.post(f"/simulation-results/{sr_id}/cancel", json={"reviewer": "filter_test"})
+        cancelled_only = self.client.get("/simulation-results?status=cancelled&limit=10")
+        data = cancelled_only.json()
+        assert data["count"] >= 1
+        for r in data["simulation_results"]:
+            assert r["status"] == "cancelled"
+
+    def test_persisted_record_has_required_safety_flags(self):
+        """Test 71: persisted simulation result record has all required safety flags."""
+        sim_id = _mk_sp_chain({"action_type": "status_check", "tool_id": "project.flags.sr"})
+        sr_resp = self.client.post(f"/simulation-plans/{sim_id}/simulation-result")
+        data = sr_resp.json()
+        sr_rec = data["simulation_result_record"]
+        assert sr_rec["result_persisted"] is True
+        assert sr_rec["simulation_executed"] is False
+        assert sr_rec["execution_allowed"] is False
+        assert sr_rec["tool_execution_allowed"] is False
+        assert sr_rec["dry_run_execution_allowed"] is False
+        assert sr_rec["simulation_execution_allowed"] is False
+        assert sr_rec["apply_allowed"] is False
+        assert sr_rec["rollback_allowed"] is False
