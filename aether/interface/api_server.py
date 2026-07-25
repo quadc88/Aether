@@ -1713,6 +1713,45 @@ def cancel_verification_verdict(verification_verdict_id: str, request: VerdictDe
 
 
 # ===================================================================== #
+# Apply Gate Request Endpoint (Milestone 65A)
+# ===================================================================== #
+
+from aether.action.apply_gate_request import (
+    build_apply_gate_request as _build_agr,
+)
+
+
+class ApplyGateContextBody(BaseModel):
+    context: dict | None = None
+
+
+@app.post("/verification-verdicts/{verification_verdict_id}/apply-gate-request")
+def verification_verdict_apply_gate_request_endpoint(verification_verdict_id: str, request: ApplyGateContextBody | None = None):
+    record = _get_vv(verification_verdict_id)
+    context = None
+    if request:
+        context = request.context
+    agr = _build_agr(record, context)
+    return {
+        "name": "Aether",
+        "status": runtime.status(),
+        "verification_verdict_record": record,
+        "apply_gate_request": agr,
+        "apply_gate_required": agr.get("apply_gate_required"),
+        "apply_gate_status": agr.get("apply_gate_status"),
+        "decision": agr.get("decision"),
+        "execution_allowed": False,
+        "tool_execution_allowed": False,
+        "dry_run_execution_allowed": False,
+        "simulation_execution_allowed": False,
+        "apply_allowed": False,
+        "rollback_allowed": False,
+        "apply_gate_execution_allowed": False,
+        "apply_authorized": False,
+    }
+
+
+# ===================================================================== #
 # Simulation Plan Record Endpoints (Milestone 60A)
 # ===================================================================== #
 
