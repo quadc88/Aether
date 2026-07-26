@@ -2184,11 +2184,14 @@ def approve_execution_intent_apply_gate(apply_execution_gate_id: str, request: A
 
 
 # ===================================================================== #
-# Apply Executor Contract Endpoint (Milestone 71A)
+# Apply Executor Contract Endpoint (Milestone 71A, 72A)
 # ===================================================================== #
 
 from aether.action.apply_executor_contract import (
     build_apply_executor_contract as _build_aec,
+)
+from aether.action.apply_executor_contract_queue import (
+    create_apply_executor_contract_record as _create_aecri,
 )
 
 
@@ -2201,17 +2204,22 @@ def apply_executor_contract_endpoint(
         pass  # no context field yet, but leave room
     aeg_record = _get_aeg(apply_execution_gate_id)
     contract = _build_aec(aeg_record, context)
+    persisted = _create_aecri(contract, context)
 
     return {
         "name": "Aether",
         "status": runtime.status(),
         "apply_execution_gate_record": aeg_record,
         "apply_executor_contract": contract,
+        "apply_executor_contract_record": persisted,
+        "apply_executor_contract_id": persisted.get("apply_executor_contract_id"),
         "contract_required": contract.get("contract_required"),
         "contract_status": contract.get("contract_status"),
         "decision": contract.get("decision"),
-        "execution_review_completed": contract.get("execution_review_completed"),
-        "execution_intent_recorded": contract.get("execution_intent_recorded"),
+        "contract_review_completed": persisted.get("contract_review_completed", False),
+        "contract_intent_recorded": persisted.get("contract_intent_recorded", False),
+        "evidence_collected": persisted.get("evidence_collected", False),
+        "rollback_plan_attached": persisted.get("rollback_plan_attached", False),
         "apply_authorized": False,
         "apply_allowed": False,
         "rollback_allowed": False,
@@ -2223,6 +2231,131 @@ def apply_executor_contract_endpoint(
         "human_authorization_execution_allowed": False,
         "apply_execution_gate_execution_allowed": False,
         "apply_executor_contract_execution_allowed": False,
+    }
+
+
+# ===================================================================== #
+# Apply Executor Contract Record Store Endpoints (Milestone 72A)
+# ===================================================================== #
+
+from aether.action.apply_executor_contract_queue import (
+    get_apply_executor_contract_record as _get_aecr,
+    list_apply_executor_contract_records as _list_aecr,
+    update_apply_executor_contract_record_status as _update_aecr,
+)
+
+
+@app.get("/apply-executor-contracts")
+def list_apply_executor_contracts(
+    status: str | None = None,
+    decision: str | None = None,
+    limit: int = 50,
+):
+    records = _list_aecr(status=status, decision=decision, limit=limit)
+    return {
+        "name": "Aether",
+        "status": runtime.status(),
+        "apply_executor_contracts": records,
+        "count": len(records),
+    }
+
+
+@app.get("/apply-executor-contracts/{apply_executor_contract_id}")
+def get_apply_executor_contract(apply_executor_contract_id: str):
+    record = _get_aecr(apply_executor_contract_id)
+    if record is None:
+        return {
+            "name": "Aether",
+            "status": runtime.status(),
+            "apply_executor_contract": None,
+            "found": False,
+        }
+    return {
+        "name": "Aether",
+        "status": runtime.status(),
+        "apply_executor_contract": record,
+        "found": True,
+    }
+
+
+@app.post("/apply-executor-contracts/{apply_executor_contract_id}/cancel")
+def cancel_apply_executor_contract(apply_executor_contract_id: str, request: ApplyExecGateDecisionBody | None = None):
+    reviewer = None
+    reason = None
+    if request:
+        reviewer = request.reviewer
+        reason = request.reason
+    record = _update_aecr(
+        apply_executor_contract_id, decision="cancelled", reviewer=reviewer, reason=reason
+    )
+    if record is None:
+        return {
+            "name": "Aether",
+            "status": runtime.status(),
+            "apply_executor_contract": None,
+            "found": False,
+        }
+    return {
+        "name": "Aether",
+        "status": runtime.status(),
+        "apply_executor_contract": record,
+        "found": True,
+    }
+
+
+@app.post("/apply-executor-contracts/{apply_executor_contract_id}/reject")
+def reject_apply_executor_contract(apply_executor_contract_id: str, request: ApplyExecGateDecisionBody | None = None):
+    reviewer = None
+    reason = None
+    if request:
+        reviewer = request.reviewer
+        reason = request.reason
+    record = _update_aecr(
+        apply_executor_contract_id, decision="rejected", reviewer=reviewer, reason=reason
+    )
+    if record is None:
+        return {
+            "name": "Aether",
+            "status": runtime.status(),
+            "apply_executor_contract": None,
+            "found": False,
+        }
+    return {
+        "name": "Aether",
+        "status": runtime.status(),
+        "apply_executor_contract": record,
+        "found": True,
+    }
+
+
+@app.post("/apply-executor-contracts/{apply_executor_contract_id}/approve-contract-intent")
+def approve_contract_intent_executor(apply_executor_contract_id: str, request: ApplyExecGateDecisionBody | None = None):
+    reviewer = None
+    reason = None
+    confirmations = None
+    if request:
+        reviewer = request.reviewer
+        reason = request.reason
+        confirmations = request.confirmations or []
+    record = _update_aecr(
+        apply_executor_contract_id,
+        decision="approved_contract_intent",
+        reviewer=reviewer,
+        reason=reason,
+        confirmations=confirmations,
+    )
+    if record is None:
+        return {
+            "name": "Aether",
+            "status": runtime.status(),
+            "apply_executor_contract": None,
+            "found": False,
+        }
+    return {
+        "name": "Aether",
+        "status": runtime.status(),
+        "apply_executor_contract": record,
+        "found": True,
     }
 
 
