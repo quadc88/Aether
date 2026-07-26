@@ -2003,6 +2003,45 @@ def approve_intent_human_authorization(human_authorization_id: str, request: Hum
 
 
 # ===================================================================== #
+# Apply Execution Gate Request Endpoint (Milestone 69A)
+# ===================================================================== #
+
+from aether.action.apply_execution_gate_request import (
+    build_apply_execution_gate_request as _build_aegr,
+)
+
+
+@app.post("/human-authorizations/{human_authorization_id}/apply-execution-gate-request")
+def human_auth_apply_execution_gate_request_endpoint(human_authorization_id: str, request: HumanAuthContextBody | None = None):
+    record = _get_ha_rec(human_authorization_id)
+    context = None
+    if request:
+        context = request.context
+    aegr = _build_aegr(record, context)
+    return {
+        "name": "Aether",
+        "status": runtime.status(),
+        "human_authorization_record": record,
+        "apply_execution_gate_request": aegr,
+        "apply_execution_gate_required": aegr.get("apply_execution_gate_required"),
+        "apply_execution_gate_status": aegr.get("apply_execution_gate_status"),
+        "decision": aegr.get("decision"),
+        "human_review_completed": aegr.get("human_review_completed"),
+        "human_intent_recorded": aegr.get("human_intent_recorded"),
+        "execution_allowed": False,
+        "tool_execution_allowed": False,
+        "dry_run_execution_allowed": False,
+        "simulation_execution_allowed": False,
+        "apply_allowed": False,
+        "rollback_allowed": False,
+        "apply_gate_execution_allowed": False,
+        "human_authorization_execution_allowed": False,
+        "apply_execution_gate_execution_allowed": False,
+        "apply_authorized": False,
+    }
+
+
+# ===================================================================== #
 # Simulation Plan Record Endpoints (Milestone 60A)
 # ===================================================================== #
 
