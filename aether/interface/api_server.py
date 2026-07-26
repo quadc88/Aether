@@ -2184,6 +2184,49 @@ def approve_execution_intent_apply_gate(apply_execution_gate_id: str, request: A
 
 
 # ===================================================================== #
+# Apply Executor Contract Endpoint (Milestone 71A)
+# ===================================================================== #
+
+from aether.action.apply_executor_contract import (
+    build_apply_executor_contract as _build_aec,
+)
+
+
+@app.post("/apply-execution-gates/{apply_execution_gate_id}/executor-contract")
+def apply_executor_contract_endpoint(
+    apply_execution_gate_id: str, request: ApplyExecGateDecisionBody | None = None
+):
+    context = None
+    if request and request.reason is not None and hasattr(request, "context"):
+        pass  # no context field yet, but leave room
+    aeg_record = _get_aeg(apply_execution_gate_id)
+    contract = _build_aec(aeg_record, context)
+
+    return {
+        "name": "Aether",
+        "status": runtime.status(),
+        "apply_execution_gate_record": aeg_record,
+        "apply_executor_contract": contract,
+        "contract_required": contract.get("contract_required"),
+        "contract_status": contract.get("contract_status"),
+        "decision": contract.get("decision"),
+        "execution_review_completed": contract.get("execution_review_completed"),
+        "execution_intent_recorded": contract.get("execution_intent_recorded"),
+        "apply_authorized": False,
+        "apply_allowed": False,
+        "rollback_allowed": False,
+        "execution_allowed": False,
+        "tool_execution_allowed": False,
+        "dry_run_execution_allowed": False,
+        "simulation_execution_allowed": False,
+        "apply_gate_execution_allowed": False,
+        "human_authorization_execution_allowed": False,
+        "apply_execution_gate_execution_allowed": False,
+        "apply_executor_contract_execution_allowed": False,
+    }
+
+
+# ===================================================================== #
 # Simulation Plan Record Endpoints (Milestone 60A)
 # ===================================================================== #
 

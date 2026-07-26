@@ -27,6 +27,72 @@ def _get_test_client():
     return TestClient(ap_mod.app)
 
 
+def _make_test_aeg_record(status, gate_decision="ready_for_execution_gate_review"):
+    """Helper to create a fake apply execution gate record for API tests."""
+    is_approved = status == "approved_execution_intent"
+    return {
+        "apply_execution_gate_id": "test-aeg-id",
+        "status": status,
+        "gate_decision": gate_decision,
+        "decision": "approved_execution_intent" if is_approved else status,
+        "reviewer": "test",
+        "decided_at": "2026-01-01T00:00:01+00:00",
+        "human_authorization_id": "ha-test",
+        "apply_gate_id": "ag-test",
+        "verification_verdict_id": "vv-test",
+        "simulation_result_id": "sr-test",
+        "simulation_plan_id": "sp-test",
+        "dry_run_id": "dr-test",
+        "created_at": "2026-01-01T00:00:00+00:00",
+        "updated_at": "2026-01-01T00:00:00+00:00",
+        "execution_review_completed": is_approved,
+        "execution_intent_recorded": is_approved,
+        "confirmations_required": ["c1", "c2"],
+        "confirmations_received": ["c1", "c2"] if is_approved else [],
+        "apply_authorized": False,
+        "apply_executed": False,
+        "rollback_executed": False,
+        "simulation_executed": False,
+        "execution_allowed": False,
+        "tool_execution_allowed": False,
+        "dry_run_execution_allowed": False,
+        "simulation_execution_allowed": False,
+        "apply_gate_execution_allowed": False,
+        "human_authorization_execution_allowed": False,
+        "apply_execution_gate_execution_allowed": False,
+        "apply_allowed": False,
+        "rollback_allowed": False,
+        "apply_execution_gate_persisted": True,
+        "metadata": {},
+        "warnings": [],
+        "apply_execution_gate_request": {
+            "decision": "ready_for_execution_gate_review" if gate_decision == "ready_for_execution_gate_review" else gate_decision,
+            "apply_execution_gate_required": gate_decision == "ready_for_execution_gate_review",
+            "apply_execution_gate_status": "prepared",
+            "human_authorization_id": "ha-test",
+            "human_authorization_record_status": "approved_intent" if is_approved else "pending",
+            "authorization_decision": "ready_for_human_authorization",
+            "apply_gate_id": "ag-test",
+            "verification_verdict_id": "vv-test",
+            "simulation_result_id": "sr-test",
+            "simulation_plan_id": "sp-test",
+            "dry_run_id": "dr-test",
+            "requested_action": {"tool_id": "t", "action_type": "status_check", "target": "tgt"},
+            "required_pre_execution_confirmations": ["c1", "c2"] if is_approved else [],
+            "blocking_reasons": [],
+            "unresolved_risks": [],
+            "recommended_next_step": "Proceed.",
+            "apply_authorized": False, "apply_allowed": False, "rollback_allowed": False,
+            "execution_allowed": False, "tool_execution_allowed": False,
+            "dry_run_execution_allowed": False, "simulation_execution_allowed": False,
+            "apply_gate_execution_allowed": False, "human_authorization_execution_allowed": False,
+            "apply_execution_gate_execution_allowed": False,
+            "metadata": {},
+            "warnings": [],
+        },
+    }
+
+
 class TestChatEndpoint:
     client = None
 
@@ -3225,5 +3291,247 @@ class TestApplyExecutionGateRecordAPIMilestone70A:
     def test_legacy_chat_still_works(self):
         """Test 68: legacy /chat still works."""
         resp = self.client.post("/chat", json={"message": "legacy msg milestone 70a"})
+        data = resp.json()
+        assert data["status"] == "completed"
+
+
+class TestApplyExecutorContractAPIMilestone71A:
+    """Tests 46-61: Apply executor contract endpoints (Milestone 71A)."""
+
+    @classmethod
+    def setup_class(cls):
+        cls.client = _get_test_client()
+
+    def _build_and_approve_exec_intent(self, action_type="status_check"):
+        """Build full pipeline through approved_execution_intent AEG record."""
+        aid = _mk_dr({"action_type": action_type, "tool_id": f"project.aec71.{action_type}", "target": "test_target"})
+        sr_id = _mk_sp_chain({"action_type": action_type, "tool_id": f"project.aec71plan.{action_type}", "target": "test_target"})
+        sr_resp = self.client.post(f"/simulation-plans/{sr_id}/simulation-result")
+        sr_id2 = sr_resp.json()["simulation_result_id"]
+        vv_resp = self.client.post(f"/simulation-results/{sr_id2}/verification-verdict")
+        vv_id = vv_resp.json()["verification_verdict_id"]
+        agr_resp = self.client.post(f"/verification-verdicts/{vv_id}/apply-gate-request")
+        ag_id = agr_resp.json()["apply_gate_id"]
+        ha_resp = self.client.post(f"/apply-gates/{ag_id}/human-authorization-request")
+        ha_id = ha_resp.json()["human_authorization_id"]
+        confs = ha_resp.json()["human_apply_authorization_request"]["required_human_confirmations"]
+        self.client.post(f"/human-authorizations/{ha_id}/approve-intent", json={
+            "reviewer": "test", "confirmations": confs
+        })
+        aeg_resp = self.client.post(f"/human-authorizations/{ha_id}/apply-execution-gate-request")
+        aeg_id = aeg_resp.json()["apply_execution_gate_id"]
+        rec = self.client.get(f"/apply-execution-gates/{aeg_id}").json()
+        req_confs = rec["apply_execution_gate"]["apply_execution_gate_request"][
+            "required_pre_execution_confirmations"
+        ]
+        self.client.post(
+            f"/apply-execution-gates/{aeg_id}/approve-execution-intent",
+            json={"reviewer": "test", "reason": "val", "confirmations": req_confs},
+        )
+        return aeg_id
+
+    def test_executor_contract_returns_ready_for_approved_intent_record(self):
+        """Test 46: POST executor-contract returns contract_ready for approved_execution_intent ready record."""
+        aeg_id = self._build_and_approve_exec_intent()
+        resp = self.client.post(f"/apply-execution-gates/{aeg_id}/executor-contract")
+        data = resp.json()
+        contract = data["apply_executor_contract"]
+        assert data["decision"] == "contract_ready"
+        assert data["contract_required"] is True
+        assert contract["execution_review_completed"] is True
+        assert contract["execution_intent_recorded"] is True
+        assert data["apply_authorized"] is False
+
+    def test_contract_ready_has_contract_required_true(self):
+        """Test 47: contract_ready has contract_required true."""
+        aeg_id = self._build_and_approve_exec_intent()
+        resp = self.client.post(f"/apply-execution-gates/{aeg_id}/executor-contract")
+        assert resp.json()["contract_required"] is True
+
+    def test_contract_ready_still_has_apply_authorized_false(self):
+        """Test 48: contract_ready still has apply_authorized false."""
+        aeg_id = self._build_and_approve_exec_intent()
+        resp = self.client.post(f"/apply-execution-gates/{aeg_id}/executor-contract")
+        data = resp.json()
+        assert data["apply_authorized"] is False
+
+    def test_contract_ready_all_flags_false(self):
+        """Test 49: contract_ready still has all flags false."""
+        aeg_id = self._build_and_approve_exec_intent()
+        resp = self.client.post(f"/apply-execution-gates/{aeg_id}/executor-contract")
+        data = resp.json()
+        assert data["apply_allowed"] is False
+        assert data["rollback_allowed"] is False
+        assert data["execution_allowed"] is False
+        assert data["tool_execution_allowed"] is False
+        assert data["dry_run_execution_allowed"] is False
+        assert data["simulation_execution_allowed"] is False
+        assert data["apply_gate_execution_allowed"] is False
+        assert data["human_authorization_execution_allowed"] is False
+        assert data["apply_execution_gate_execution_allowed"] is False
+        assert data["apply_executor_contract_execution_allowed"] is False
+
+    def test_pending_record_returns_blocked(self):
+        """Test 50: pending apply_execution_gate_record returns blocked."""
+        from aether.action.apply_execution_gate_queue import create_apply_execution_gate_record as _caegq
+        from aether.action.apply_executor_contract import build_apply_executor_contract as _build_aec
+        clean_req = {
+            "decision": "ready_for_execution_gate_review",
+            "apply_execution_gate_required": True,
+            "required_pre_execution_confirmations": ["c1"],
+            "warnings": [],
+            "apply_authorized": False, "apply_allowed": False,
+            "requested_action": {"tool_id": "t", "action_type": "status_check", "target": "tgt"},
+            "blocking_reasons": [], "unresolved_risks": [],
+            "metadata": {},
+        }
+        rec = _caegq(clean_req)
+        rec["status"] = "pending"
+        rec["gate_decision"] = "ready_for_execution_gate_review"
+        rec["execution_review_completed"] = True
+        rec["execution_intent_recorded"] = False
+        path = type(_caegq).__module__
+        c = _build_aec(rec)
+        assert c["decision"] == "blocked"
+
+    def test_rejected_record_returns_blocked(self):
+        """Test 51: rejected apply_execution_gate_record returns blocked."""
+        from aether.action.apply_executor_contract import build_apply_executor_contract as _build_aec
+        rec = _make_test_aeg_record("rejected")
+        c = _build_aec(rec)
+        assert c["decision"] == "blocked"
+
+    def test_cancelled_record_returns_blocked(self):
+        """Test 52: cancelled apply_execution_gate_record returns blocked."""
+        from aether.action.apply_executor_contract import build_apply_executor_contract as _build_aec
+        rec = _make_test_aeg_record("cancelled")
+        c = _build_aec(rec)
+        assert c["decision"] == "blocked"
+
+    def test_not_ready_gate_decision_returns_blocked(self):
+        """Test 53: not_ready gate_decision returns blocked."""
+        from aether.action.apply_executor_contract import build_apply_executor_contract as _build_aec
+        rec = _make_test_aeg_record("approved_execution_intent", gate_decision="not_ready")
+        c = _build_aec(rec)
+        assert c["decision"] == "blocked"
+
+    def test_blocked_gate_decision_returns_blocked(self):
+        """Test 54: blocked gate_decision returns blocked."""
+        from aether.action.apply_executor_contract import build_apply_executor_contract as _build_aec
+        rec = _make_test_aeg_record("approved_execution_intent", gate_decision="blocked")
+        c = _build_aec(rec)
+        assert c["decision"] == "blocked"
+
+    def test_missing_apply_execution_gate_id_returns_blocked(self):
+        """Test 55: missing apply_execution_gate_id returns blocked."""
+        resp = self.client.post("/apply-execution-gates/nonexistent-aeg-id/executor-contract")
+        data = resp.json()
+        assert data["decision"] == "blocked"
+        assert data["apply_execution_gate_record"] is None
+
+    def test_executor_contract_does_not_mutate_apply_execution_gate_record(self):
+        """Test 56: executor-contract does not mutate apply_execution_gate_record."""
+        aeg_id = self._build_and_approve_exec_intent()
+        before = self.client.get(f"/apply-execution-gates/{aeg_id}").json()
+        before_status = before["apply_execution_gate"]["status"]
+        self.client.post(f"/apply-execution-gates/{aeg_id}/executor-contract")
+        after = self.client.get(f"/apply-execution-gates/{aeg_id}").json()
+        assert after["apply_execution_gate"]["status"] == before_status
+
+    def test_executor_contract_does_not_mutate_human_authorization_record(self):
+        """Test 57: endpoint does not mutate human_authorization_record."""
+        sim_id = _mk_sp_chain({"action_type": "status_check", "tool_id": "project.nomut.ha71"})
+        sr_resp = self.client.post(f"/simulation-plans/{sim_id}/simulation-result")
+        sr_id = sr_resp.json()["simulation_result_id"]
+        vv_resp = self.client.post(f"/simulation-results/{sr_id}/verification-verdict")
+        vv_id = vv_resp.json()["verification_verdict_id"]
+        agr_resp = self.client.post(f"/verification-verdicts/{vv_id}/apply-gate-request")
+        ag_id = agr_resp.json()["apply_gate_id"]
+        ha_resp = self.client.post(f"/apply-gates/{ag_id}/human-authorization-request")
+        ha_id = ha_resp.json()["human_authorization_id"]
+        confs = ha_resp.json()["human_apply_authorization_request"]["required_human_confirmations"]
+        self.client.post(f"/human-authorizations/{ha_id}/approve-intent", json={"reviewer": "test", "confirmations": confs})
+        aeg_resp = self.client.post(f"/human-authorizations/{ha_id}/apply-execution-gate-request")
+        aeg_id = aeg_resp.json()["apply_execution_gate_id"]
+        req_confs = self.client.get(f"/apply-execution-gates/{aeg_id}").json()["apply_execution_gate"]["apply_execution_gate_request"]["required_pre_execution_confirmations"]
+        self.client.post(f"/apply-execution-gates/{aeg_id}/approve-execution-intent", json={"reviewer": "test", "confirmations": req_confs})
+        before = self.client.get(f"/human-authorizations/{ha_id}").json()
+        before_status = before["human_authorization"]["status"]
+        self.client.post(f"/apply-execution-gates/{aeg_id}/executor-contract")
+        after = self.client.get(f"/human-authorizations/{ha_id}").json()
+        assert after["human_authorization"]["status"] == before_status
+
+    def test_executor_contract_does_not_mutate_apply_gate_record(self):
+        """Test 58: endpoint does not mutate apply_gate_record."""
+        sim_id = _mk_sp_chain({"action_type": "status_check", "tool_id": "project.nomut.ag71"})
+        sr_resp = self.client.post(f"/simulation-plans/{sim_id}/simulation-result")
+        sr_id = sr_resp.json()["simulation_result_id"]
+        vv_resp = self.client.post(f"/simulation-results/{sr_id}/verification-verdict")
+        vv_id = vv_resp.json()["verification_verdict_id"]
+        agr_resp = self.client.post(f"/verification-verdicts/{vv_id}/apply-gate-request")
+        ag_id = agr_resp.json()["apply_gate_id"]
+        ha_resp = self.client.post(f"/apply-gates/{ag_id}/human-authorization-request")
+        ha_id = ha_resp.json()["human_authorization_id"]
+        confs = ha_resp.json()["human_apply_authorization_request"]["required_human_confirmations"]
+        self.client.post(f"/human-authorizations/{ha_id}/approve-intent", json={"reviewer": "test", "confirmations": confs})
+        aeg_resp = self.client.post(f"/human-authorizations/{ha_id}/apply-execution-gate-request")
+        aeg_id = aeg_resp.json()["apply_execution_gate_id"]
+        req_confs = self.client.get(f"/apply-execution-gates/{aeg_id}").json()["apply_execution_gate"]["apply_execution_gate_request"]["required_pre_execution_confirmations"]
+        self.client.post(f"/apply-execution-gates/{aeg_id}/approve-execution-intent", json={"reviewer": "test", "confirmations": req_confs})
+        before = self.client.get(f"/apply-gates/{ag_id}").json()
+        before_status = before["apply_gate"]["status"]
+        self.client.post(f"/apply-execution-gates/{aeg_id}/executor-contract")
+        after = self.client.get(f"/apply-gates/{ag_id}").json()
+        assert after["apply_gate"]["status"] == before_status
+
+    def test_executor_contract_does_not_mutate_verification_verdict_record(self):
+        """Test 59: endpoint does not mutate verification_verdict_record."""
+        sim_id = _mk_sp_chain({"action_type": "status_check", "tool_id": "project.nomut.vv71"})
+        sr_resp = self.client.post(f"/simulation-plans/{sim_id}/simulation-result")
+        sr_id = sr_resp.json()["simulation_result_id"]
+        vv_resp = self.client.post(f"/simulation-results/{sr_id}/verification-verdict")
+        vv_id = vv_resp.json()["verification_verdict_id"]
+        agr_resp = self.client.post(f"/verification-verdicts/{vv_id}/apply-gate-request")
+        ag_id = agr_resp.json()["apply_gate_id"]
+        ha_resp = self.client.post(f"/apply-gates/{ag_id}/human-authorization-request")
+        ha_id = ha_resp.json()["human_authorization_id"]
+        confs = ha_resp.json()["human_apply_authorization_request"]["required_human_confirmations"]
+        self.client.post(f"/human-authorizations/{ha_id}/approve-intent", json={"reviewer": "test", "confirmations": confs})
+        aeg_resp = self.client.post(f"/human-authorizations/{ha_id}/apply-execution-gate-request")
+        aeg_id = aeg_resp.json()["apply_execution_gate_id"]
+        req_confs = self.client.get(f"/apply-execution-gates/{aeg_id}").json()["apply_execution_gate"]["apply_execution_gate_request"]["required_pre_execution_confirmations"]
+        self.client.post(f"/apply-execution-gates/{aeg_id}/approve-execution-intent", json={"reviewer": "test", "confirmations": req_confs})
+        before = self.client.get(f"/verification-verdicts/{vv_id}").json()
+        before_status = before["verification_verdict"]["status"]
+        self.client.post(f"/apply-execution-gates/{aeg_id}/executor-contract")
+        after = self.client.get(f"/verification-verdicts/{vv_id}").json()
+        assert after["verification_verdict"]["status"] == before_status
+
+    def test_executor_contract_does_not_mutate_simulation_result_record(self):
+        """Test 60: endpoint does not mutate simulation_result_record."""
+        sim_id = _mk_sp_chain({"action_type": "status_check", "tool_id": "project.nomut.sr71"})
+        sr_resp = self.client.post(f"/simulation-plans/{sim_id}/simulation-result")
+        sr_id = sr_resp.json()["simulation_result_id"]
+        vv_resp = self.client.post(f"/simulation-results/{sr_id}/verification-verdict")
+        vv_id = vv_resp.json()["verification_verdict_id"]
+        agr_resp = self.client.post(f"/verification-verdicts/{vv_id}/apply-gate-request")
+        ag_id = agr_resp.json()["apply_gate_id"]
+        ha_resp = self.client.post(f"/apply-gates/{ag_id}/human-authorization-request")
+        ha_id = ha_resp.json()["human_authorization_id"]
+        confs = ha_resp.json()["human_apply_authorization_request"]["required_human_confirmations"]
+        self.client.post(f"/human-authorizations/{ha_id}/approve-intent", json={"reviewer": "test", "confirmations": confs})
+        aeg_resp = self.client.post(f"/human-authorizations/{ha_id}/apply-execution-gate-request")
+        aeg_id = aeg_resp.json()["apply_execution_gate_id"]
+        req_confs = self.client.get(f"/apply-execution-gates/{aeg_id}").json()["apply_execution_gate"]["apply_execution_gate_request"]["required_pre_execution_confirmations"]
+        self.client.post(f"/apply-execution-gates/{aeg_id}/approve-execution-intent", json={"reviewer": "test", "confirmations": req_confs})
+        before = self.client.get(f"/simulation-results/{sr_id}").json()
+        before_status = before["simulation_result"]["status"]
+        self.client.post(f"/apply-execution-gates/{aeg_id}/executor-contract")
+        after = self.client.get(f"/simulation-results/{sr_id}").json()
+        assert after["simulation_result"]["status"] == before_status
+
+    def test_legacy_chat_still_works(self):
+        """Test 61: legacy /chat still works."""
+        resp = self.client.post("/chat", json={"message": "legacy msg milestone 71a"})
         data = resp.json()
         assert data["status"] == "completed"
