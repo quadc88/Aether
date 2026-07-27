@@ -2360,6 +2360,52 @@ def approve_contract_intent_executor(apply_executor_contract_id: str, request: A
 
 
 # ===================================================================== #
+# Apply Executor Plan Endpoint (Milestone 73A)
+# ===================================================================== #
+
+from aether.action.apply_executor_plan import (
+    build_apply_executor_plan as _build_aep,
+)
+
+
+@app.post("/apply-executor-contracts/{apply_executor_contract_id}/executor-plan")
+def apply_executor_plan_endpoint(
+    apply_executor_contract_id: str, request: ApplyExecGateDecisionBody | None = None
+):
+    context = None
+    if request and request.reason is not None and hasattr(request, "context"):
+        pass
+    aecr_record = _get_aecr(apply_executor_contract_id)
+    plan = _build_aep(aecr_record, context)
+
+    return {
+        "name": "Aether",
+        "status": runtime.status(),
+        "apply_executor_contract_record": aecr_record,
+        "apply_executor_plan": plan,
+        "plan_required": plan.get("plan_required"),
+        "plan_status": plan.get("plan_status"),
+        "decision": plan.get("decision"),
+        "contract_review_completed": plan.get("contract_review_completed"),
+        "contract_intent_recorded": plan.get("contract_intent_recorded"),
+        "evidence_collected": False,
+        "rollback_plan_attached": False,
+        "apply_authorized": False,
+        "apply_allowed": False,
+        "rollback_allowed": False,
+        "execution_allowed": False,
+        "tool_execution_allowed": False,
+        "dry_run_execution_allowed": False,
+        "simulation_execution_allowed": False,
+        "apply_gate_execution_allowed": False,
+        "human_authorization_execution_allowed": False,
+        "apply_execution_gate_execution_allowed": False,
+        "apply_executor_contract_execution_allowed": False,
+        "apply_executor_plan_execution_allowed": False,
+    }
+
+
+# ===================================================================== #
 # Simulation Plan Record Endpoints (Milestone 60A)
 # ===================================================================== #
 
