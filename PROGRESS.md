@@ -1,8 +1,8 @@
 # Aether Project Progress Ledger
 
-**Last updated:** Milestone 74A — Apply Executor Plan Record Store Core
+**Last updated:** Milestone 75B — Live API Apply Executor Evidence Contract Validation
 **Aether version:** 0.2.0  
-**Pipeline maturity:** Full safety chain built through apply_executor_plan_record (with persist, list/read/cancel/reject/approve-plan-intent)
+**Pipeline maturity:** Declarative Apply Executor Evidence Contract (prepared/blocked, no collection or execution)
 
 ---
 
@@ -140,7 +140,7 @@ Important state:
 | 70A | Apply execution gate record store | 807 tests | Complete |
 | 70B | Live API apply execution gate record validation | 16/16 cases | Complete |
 
-### 71-74: Executor Contract, Plan, and Record Store
+### 71-75: Executor Contract, Plan, Record Store, and Evidence Contract
 | Milestone | Description | Tests | Status |
 |-----------|-------------|-------|--------|
 | 71A | Apply executor contract object | 867 tests | Complete |
@@ -151,6 +151,8 @@ Important state:
 | 73B | Live API apply executor plan validation | 18/18 cases | Complete |
 | 73C | Progress ledger (this file) | 1014 tests | Complete |
 | **74A** | **Apply executor plan record store core** | **1095 tests** | **Complete** |
+| **75A** | **Apply executor evidence contract object** | **1166 tests** | **Complete** |
+| **75B** | **Live API apply executor evidence contract validation** | **1166 tests** | **Complete** |
 
 New in 74A:
 - `aether/action/apply_executor_plan_queue.py` — create/read/list/update records
@@ -173,23 +175,24 @@ Each recent milestone (67-74):
 
 ## 7. Current Test Baseline
 
-As of Milestone 74A:
-- **Pytest:** 1095 passed, 0 failures (was 1014 after 73C, +81 from 74A tests)
-- **Compile:** All 29 modules compiled successfully
+As of Milestone 75B:
+- **Pytest:** 1166 passed, 0 failures (was 1095 after 74A, +60 from 75A tests, +11 from 75B API integration tests)
+- **Compile:** All 30 modules compiled successfully
 - **Git safety:** Clean — no diffs on README.md, ARCHITECTURE.md, code_reviewer.py
 - **Trailing whitespace:** Clean
 - **Private/runtime paths:** Not tracked by git
 - **Test modules:**
+  - `tests/test_apply_executor_evidence_contract.py` — 60 unit tests (Milestone 75A)
   - `tests/test_apply_executor_plan.py` — 56 unit tests
   - `tests/test_apply_executor_contract_queue.py` — 48 unit tests
   - `tests/test_apply_executor_contract.py` — 44 unit tests
   - `tests/test_apply_execution_gate_queue.py` — 41 unit tests
-- `tests/test_apply_execution_gate_request.py` — 35 unit tests
-- `tests/test_apply_executor_plan_queue.py` — 48 unit tests (Milestone 74A)
+  - `tests/test_apply_execution_gate_request.py` — 35 unit tests
+  - `tests/test_apply_executor_plan_queue.py` — 48 unit tests (Milestone 74A)
   - `tests/test_human_authorization_queue.py` — 42 unit tests
   - `tests/test_human_apply_authorization_request.py` — existing
   - `tests/test_human_authorization_queue.py` — existing
-  - `tests/test_chat_api.py` — ~280 API integration tests
+  - `tests/test_chat_api.py` — ~291 API integration tests (+11 for 75B)
   - Plus all modules from milestones 48-66
 
 ---
@@ -254,23 +257,19 @@ These invariants must hold at ALL times:
 
 ## 10. Next Recommended Milestone
 
-**Milestone 75 — Apply Executor Evidence Contract Object**
+**Milestone 76A — Apply Executor Evidence Collector**
 
 Expected chain continuation:
 ```text
-apply_executor_plan_record (persisted, can be approved_plan_intent/rejected/cancelled)
-→ apply_executor_evidence_contract (object to declare evidence requirements)
-→ apply executor evidence contract record
-→ evidence collection (future milestone)
-→ real apply execution (much later)
+apply_executor_evidence_contract (declarative obligations prepared)
+→ apply_executor_evidence_collector (future collector object/record to safely gather evidence)
+→ apply/rollback authorized (much later)
 ```
 
 Clarifications:
-- Milestone 75 should declare exact evidence collection requirements before any execution attempt
-- It must NOT collect evidence yet unless explicitly designed in a later milestone
-- It must NOT execute apply
-- It must NOT authorize execution/apply
-- approved_plan_intent does NOT trigger evidence collection
+- Milestone 76A should design and implement the first actual evidence collection mechanisms and records.
+- It must still NOT execute the actual apply or make modifications to targeted servers unless explicitly within an authorized loop.
+- It must respect all hard safety invariants.
 
 ---
 
@@ -286,6 +285,8 @@ Also:
 ## 12. File Summary (Git Status)
 
 **New files added across milestones:**
+- `aether/action/apply_executor_evidence_contract.py` — evidence contract builder (Milestone 75A)
+- `tests/test_apply_executor_evidence_contract.py` — 60 unit tests (Milestone 75A)
 - `aether/action/apply_executor_plan.py` — plan builder (Milestone 73A)
 - `aether/action/apply_executor_plan_queue.py` — plan record store (Milestone 74A)
 - `aether/action/apply_executor_contract.py` — contract builder (Milestone 71A)
@@ -332,3 +333,23 @@ Also:
 - Legacy /chat endpoint works as expected (validation only, no tool execution).
 
 **PROGRESS.md update:** This entry added for Milestone 74B.
+
+### 75B — Live API Apply Executor Evidence Contract Validation
+
+**Status:** Complete
+**Validation cases:** 11/11 passed
+**Pytest suite:** 1166 passed (with 0 failures)
+**Source files modified:** None (validation and api checks run on local main state)
+
+**Validation summary:**
+- All 11 Live API validation cases (POST `/apply-executor-plans/{apply_executor_plan_id}/evidence-contract`) verified successfully.
+- Correctly evaluates apply_executor_plan_record through all 24 required evidence contract checks.
+- Returns `evidence_contract_ready` and status `prepared` when the plan intent is approved and ready.
+- All safety-critical flags (such as `apply_authorized`, `apply_allowed`, `execution_allowed`, `tool_execution_allowed`, `apply_executed`, `rollback_executed`, `evidence_collected`, `rollback_plan_attached`) remain `False` as mandated.
+- Declarative `required_evidence_items`, requirements groups (pre, during, post, rollback, audit), acceptance criteria, and confirmations are fully populated but remain uncollected (`collected = false` and `collection_allowed_now = false`).
+- Returns `blocked` for pending, rejected, cancelled, and not_ready plans.
+- Returns `not_ready` with unresolved risks if plan payload is missing.
+- Confirmed mutation-free execution of the endpoint; no records are persisted or modified.
+- Legacy `/chat` endpoint and full 1166 tests continue to pass cleanly.
+
+**PROGRESS.md update:** This entry added for Milestone 75B.

@@ -4842,3 +4842,436 @@ class TestApplyExecutorPlanRecordAPIMilestone74A:
         resp = self.client.post("/chat", json={"message": "legacy msg milestone 74a"})
         data = resp.json()
         assert data["status"] == "completed"
+
+
+class TestApplyExecutorEvidenceContractAPIMilestone75A:
+    """Tests for Apply Executor Evidence Contract endpoint (Milestone 75A)."""
+
+    @classmethod
+    def setup_class(cls):
+        """Clean up stale test data before running tests."""
+        for subdir in ["apply_executor_plans", "apply_executor_evidence_contracts"]:
+            pdir = os.path.join(get_private_dir(), subdir)
+            if os.path.isdir(pdir):
+                for f in os.listdir(pdir):
+                    try:
+                        os.remove(os.path.join(pdir, f))
+                    except OSError:
+                        pass
+        cls.client = _get_test_client()
+
+    def _build_chain_to_approved_plan(self):
+        """Build full pipeline through approved_plan_intent AEP. Returns dict of IDs."""
+        from aether.action.approval_queue import create_approval_record as _car75
+        action = {"tool_id": f"proj.aep75.{_uuid4h()}", "action_type": "status_check", "target": "target75"}
+        ar = _car75({"approval_required": True, "risk_level": "medium", "requested_action": dict(action)}, context={"s": "75a"})
+        aid = ar["approval_id"]
+        self.client.post(f"/approvals/{aid}/approve", json={"reviewer": "75B"})
+        dr = self.client.post(f"/approvals/{aid}/dry-run-request", json={"requested_action": action}).json()
+        dry_run_id = dr.get("dry_run_id")
+        assert dry_run_id is not None, f"dry_run_request failed: {dr}"
+        sp_resp = self.client.post(f"/dry-runs/{dry_run_id}/simulation-plan").json()
+        sim_plan_id = sp_resp.get("simulation_plan_id")
+        assert sim_plan_id is not None, f"simulation-plan failed: {sp_resp}"
+        sr_resp = self.client.post(f"/simulation-plans/{sim_plan_id}/simulation-result").json()
+        sim_result_id = sr_resp.get("simulation_result_id")
+        assert sim_result_id is not None, f"simulation-result failed: {sr_resp}"
+        vv_resp = self.client.post(f"/simulation-results/{sim_result_id}/verification-verdict").json()
+        verif_verdict_id = vv_resp.get("verification_verdict_id")
+        assert verif_verdict_id is not None, f"verification-verdict failed: {vv_resp}"
+        agr_resp = self.client.post(f"/verification-verdicts/{verif_verdict_id}/apply-gate-request").json()
+        apply_gate_id = agr_resp.get("apply_gate_id")
+        assert apply_gate_id is not None, f"apply-gate failed: {agr_resp}"
+        ha_resp = self.client.post(f"/apply-gates/{apply_gate_id}/human-authorization-request").json()
+        ha_id = ha_resp.get("human_authorization_id")
+        assert ha_id is not None, f"human-authorization failed: {ha_resp}"
+        confs_ha = ha_resp.get("human_apply_authorization_request", {}).get("required_human_confirmations", [])
+        assert confs_ha, "HA has no confirmations"
+        self.client.post(f"/human-authorizations/{ha_id}/approve-intent", json={
+            "reviewer": "75B_rev", "confirmations": confs_ha
+        })
+        aeg_resp = self.client.post(f"/human-authorizations/{ha_id}/apply-execution-gate-request").json()
+        aeg_id = aeg_resp.get("apply_execution_gate_id")
+        rec_aeg = self.client.get(f"/apply-execution-gates/{aeg_id}").json()
+        nested_req = rec_aeg.get("apply_execution_gate", {}).get("apply_execution_gate_request", {}) or {}
+        req_confs_aeg = nested_req.get("required_pre_execution_confirmations", [])
+        assert req_confs_aeg, "AEG has no required_pre_execution_confirmations!"
+        self.client.post(f"/apply-execution-gates/{aeg_id}/approve-execution-intent", json={
+            "reviewer": "75B_rev", "confirmations": req_confs_aeg
+        })
+        ec_resp = self.client.post(f"/apply-execution-gates/{aeg_id}/executor-contract").json()
+        aecr_id = ec_resp.get("apply_executor_contract_id")
+        rec_ec = self.client.get(f"/apply-executor-contracts/{aecr_id}").json()
+        aecr_full = rec_ec.get("apply_executor_contract", {})
+        assert aecr_full.get("status") == "pending" and aecr_full.get("contract_decision") == "contract_ready", f"AECR not ready: {aecr_full}"
+        # Approve contract intent
+        self.client.post(f"/apply-executor-contracts/{aecr_id}/approve-contract-intent", json={
+            "reviewer": "75B_rev", "reason": "validation", "confirmations": aecr_full.get("required_executor_confirmations", [])
+        })
+        # Create executor plan (which creates apply_executor_plan_record)
+        ep_resp = self.client.post(f"/apply-executor-contracts/{aecr_id}/executor-plan", json={"context": {"source": "75a"}}).json()
+        aep_id = ep_resp.get("apply_executor_plan_id")
+        assert aep_id, f"Executor plan failed: {ep_resp}"
+        # Approve-plan-intent on the record with required confirmations
+        self.client.post(f"/apply-executor-plans/{aep_id}/approve-plan-intent", json={
+            "reviewer": "75B_rev", "reason": "validation", "confirmations": ep_resp.get("apply_executor_plan", {}).get("required_plan_confirmations", [])
+        })
+        return {
+            "aep_id": aep_id,
+            "aecr_id": aecr_id,
+            "aeg_id": aeg_id,
+            "ha_id": ha_id,
+            "apply_gate_id": apply_gate_id,
+            "verif_verdict_id": verif_verdict_id,
+            "sim_result_id": sim_result_id,
+            "sim_plan_id": sim_plan_id,
+            "dry_run_id": dry_run_id,
+            "approval_id": aid,
+        }
+
+    def test_01_missing_record_returns_blocked(self):
+        """Test: POST on missing apply_executor_plan_id returns blocked."""
+        resp = self.client.post("/apply-executor-plans/nonexistent/evidence-contract")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["decision"] == "blocked"
+        assert data["evidence_contract_required"] is False
+        assert data["apply_executor_evidence_contract"]["decision"] == "blocked"
+
+    def test_02_pending_record_returns_blocked(self):
+        """Test: pending record returns blocked."""
+        info = self._build_chain_to_approved_plan()
+        # Create a pending record (not approved_plan_intent)
+        from aether.action.approval_queue import create_approval_record as _car75
+        action = {"tool_id": f"proj.pending75.{_uuid4h()}", "action_type": "status_check", "target": "target75"}
+        ar = _car75({"approval_required": True, "risk_level": "medium", "requested_action": dict(action)}, context={"s": "75a"})
+        aid = ar["approval_id"]
+        self.client.post(f"/approvals/{aid}/approve", json={"reviewer": "75B"})
+        dr = self.client.post(f"/approvals/{aid}/dry-run-request", json={"requested_action": action}).json()
+        dry_run_id = dr.get("dry_run_id")
+        sp_resp = self.client.post(f"/dry-runs/{dry_run_id}/simulation-plan").json()
+        sim_plan_id = sp_resp.get("simulation_plan_id")
+        sr_resp = self.client.post(f"/simulation-plans/{sim_plan_id}/simulation-result").json()
+        sim_result_id = sr_resp.get("simulation_result_id")
+        vv_resp = self.client.post(f"/simulation-results/{sim_result_id}/verification-verdict").json()
+        verif_verdict_id = vv_resp.get("verification_verdict_id")
+        agr_resp = self.client.post(f"/verification-verdicts/{verif_verdict_id}/apply-gate-request").json()
+        apply_gate_id = agr_resp.get("apply_gate_id")
+        ha_resp = self.client.post(f"/apply-gates/{apply_gate_id}/human-authorization-request").json()
+        ha_id = ha_resp.get("human_authorization_id")
+        confs_ha = ha_resp.get("human_apply_authorization_request", {}).get("required_human_confirmations", [])
+        self.client.post(f"/human-authorizations/{ha_id}/approve-intent", json={"reviewer": "75B_rev", "confirmations": confs_ha})
+        aeg_resp = self.client.post(f"/human-authorizations/{ha_id}/apply-execution-gate-request").json()
+        aeg_id = aeg_resp.get("apply_execution_gate_id")
+        req_confs_aeg = aeg_resp.get("apply_execution_gate", {}).get("apply_execution_gate_request", {}).get("required_pre_execution_confirmations", [])
+        self.client.post(f"/apply-execution-gates/{aeg_id}/approve-execution-intent", json={"reviewer": "75B_rev", "confirmations": req_confs_aeg})
+        ec_resp = self.client.post(f"/apply-execution-gates/{aeg_id}/executor-contract").json()
+        aecr_id = ec_resp.get("apply_executor_contract_id")
+        ep_resp = self.client.post(f"/apply-executor-contracts/{aecr_id}/executor-plan", json={"context": {"source": "75a"}}).json()
+        aep_id = ep_resp.get("apply_executor_plan_id")
+        resp = self.client.post(f"/apply-executor-plans/{aep_id}/evidence-contract")
+        data = resp.json()
+        assert data["decision"] == "blocked"
+
+    def test_03_rejected_record_returns_blocked(self):
+        """Test: rejected record returns blocked."""
+        info = self._build_chain_to_approved_plan()
+        self.client.post(f"/apply-executor-plans/{info['aep_id']}/reject", json={"reviewer": "test"})
+        resp = self.client.post(f"/apply-executor-plans/{info['aep_id']}/evidence-contract")
+        data = resp.json()
+        assert data["decision"] == "blocked"
+
+    def test_04_cancelled_record_returns_blocked(self):
+        """Test: cancelled record returns blocked."""
+        info = self._build_chain_to_approved_plan()
+        self.client.post(f"/apply-executor-plans/{info['aep_id']}/cancel", json={"reviewer": "test"})
+        resp = self.client.post(f"/apply-executor-plans/{info['aep_id']}/evidence-contract")
+        data = resp.json()
+        assert data["decision"] == "blocked"
+
+    def test_05_plan_decision_not_plan_ready_returns_blocked(self):
+        """Test: plan_decision not plan_ready returns blocked."""
+        record = _make_record_for_test(status="approved_plan_intent", plan_decision="not_ready",
+                                       plan_intent_recorded=True, plan_review_completed=True)
+        from aether.action.apply_executor_evidence_contract import build_apply_executor_evidence_contract
+        contract = build_apply_executor_evidence_contract(record)
+        assert contract["decision"] == "blocked"
+
+    def test_06_blocked_plan_decision_returns_blocked(self):
+        """Test: blocked plan_decision returns blocked."""
+        record = _make_record_for_test(status="approved_plan_intent", plan_decision="blocked",
+                                       plan_intent_recorded=True, plan_review_completed=True)
+        from aether.action.apply_executor_evidence_contract import build_apply_executor_evidence_contract
+        contract = build_apply_executor_evidence_contract(record)
+        assert contract["decision"] == "blocked"
+
+    def test_07_missing_apply_executor_plan_id_returns_blocked(self):
+        """Test: missing apply_executor_plan_id returns blocked."""
+        resp = self.client.post("/apply-executor-plans/missing_id/evidence-contract")
+        data = resp.json()
+        assert data["decision"] == "blocked"
+        assert data["apply_executor_plan_record"] is None
+
+    def test_08_evidence_contract_endpoint_does_not_mutate_records(self):
+        """Test: evidence-contract endpoint does not mutate any record types."""
+        info = self._build_chain_to_approved_plan()
+        before_plan = self.client.get(f"/apply-executor-plans/{info['aep_id']}").json()
+        resp = self.client.post(f"/apply-executor-plans/{info['aep_id']}/evidence-contract")
+        assert resp.status_code == 200
+        after_plan = self.client.get(f"/apply-executor-plans/{info['aep_id']}").json()
+        assert before_plan["apply_executor_plan"]["status"] == after_plan["apply_executor_plan"]["status"]
+
+    def test_09_evidence_contract_ready_returns_correct_response(self):
+        """Test: evidence_contract_ready for approved_plan_intent ready record."""
+        import json, uuid, os
+        from aether.core.config import get_private_dir
+        record_id = uuid.uuid4().hex
+        record_data = {
+            "apply_executor_plan_id": record_id,
+            "status": "approved_plan_intent",
+            "plan_decision": "plan_ready",
+            "plan_intent_recorded": True,
+            "plan_review_completed": True,
+            "evidence_collected": False,
+            "rollback_plan_attached": False,
+            "apply_authorized": False,
+            "apply_allowed": False,
+            "rollback_allowed": False,
+            "execution_allowed": False,
+            "tool_execution_allowed": False,
+            "dry_run_execution_allowed": False,
+            "simulation_execution_allowed": False,
+            "apply_gate_execution_allowed": False,
+            "human_authorization_execution_allowed": False,
+            "apply_execution_gate_execution_allowed": False,
+            "apply_executor_contract_execution_allowed": False,
+            "apply_executor_plan_execution_allowed": False,
+            "apply_executor_evidence_contract_execution_allowed": False,
+            "apply_executed": False,
+            "rollback_executed": False,
+            "apply_executor_plan": {
+                "decision": "plan_ready",
+                "plan_required": True,
+                "ordered_execution_steps": [{"step": i} for i in range(1, 7)],
+                "evidence_capture_plan": [
+                    {"name": "pre_execution_state_evidence", "collected_now": False, "collection_allowed_now": False},
+                    {"name": "execution_result_evidence", "collected_now": False, "collection_allowed_now": False},
+                    {"name": "post_execution_verification_evidence", "collected_now": False, "collection_allowed_now": False},
+                    {"name": "rollback_evidence", "collected_now": False, "collection_allowed_now": False},
+                    {"name": "audit_log_evidence", "collected_now": False, "collection_allowed_now": False},
+                ],
+                "rollback_plan_requirement": {"rollback_required_before_future_apply": True, "rollback_plan_attached": False},
+                "apply_authorized": False, "apply_allowed": False, "rollback_allowed": False,
+                "execution_allowed": False, "tool_execution_allowed": False, "dry_run_execution_allowed": False, "simulation_execution_allowed": False,
+                "apply_gate_execution_allowed": False, "human_authorization_execution_allowed": False, "apply_execution_gate_execution_allowed": False,
+                "apply_executor_contract_execution_allowed": False, "apply_executor_plan_execution_allowed": False, "apply_executor_evidence_contract_execution_allowed": False,
+                "blocking_reasons": [],
+                "requested_action": {"tool_id": "test.tool", "action_type": "status_check", "target": "test"},
+                "apply_executor_contract_id": "test_ctr", "apply_execution_gate_id": "test_aeg", "human_authorization_id": "test_ha",
+                "apply_gate_id": "test_ag", "verification_verdict_id": "test_vv", "simulation_result_id": "test_sr", "simulation_plan_id": "test_sp", "dry_run_id": "test_dr",
+            },
+            "confirmations_required": ["c1","c2","c3","c4","c5","c6"],
+            "confirmations_received": ["c1","c2","c3","c4","c5","c6"],
+            "apply_executor_plan_persisted": True,
+        }
+        pdir = os.path.join(get_private_dir(), "apply_executor_plans")
+        os.makedirs(pdir, exist_ok=True)
+        filepath = os.path.join(pdir, f"apply_executor_plan_{record_id}.json")
+        with open(filepath, "w") as f:
+            json.dump(record_data, f)
+        resp = self.client.post(f"/apply-executor-plans/{record_id}/evidence-contract")
+        data = resp.json()
+        assert data["decision"] == "evidence_contract_ready"
+        assert data["evidence_contract_required"] is True
+        assert data["plan_review_completed"] is True
+        assert data["plan_intent_recorded"] is True
+        assert data["evidence_collected"] is False
+        assert data["rollback_plan_attached"] is False
+        assert data["apply_authorized"] is False
+        assert data["apply_allowed"] is False
+        assert data["execution_allowed"] is False
+        assert data["apply_executor_evidence_contract_execution_allowed"] is False
+
+    def test_10_evidence_contract_endpoint_calls_builder_correctly(self):
+        """Test: endpoint returns evidence_contract with expected structure."""
+        import json, uuid, os
+        from aether.core.config import get_private_dir
+        record_id = uuid.uuid4().hex
+        record_data = {
+            "apply_executor_plan_id": record_id,
+            "status": "approved_plan_intent",
+            "plan_decision": "plan_ready",
+            "plan_intent_recorded": True,
+            "plan_review_completed": True,
+            "evidence_collected": False,
+            "rollback_plan_attached": False,
+            "apply_authorized": False,
+            "apply_allowed": False,
+            "rollback_allowed": False,
+            "execution_allowed": False,
+            "tool_execution_allowed": False,
+            "dry_run_execution_allowed": False,
+            "simulation_execution_allowed": False,
+            "apply_gate_execution_allowed": False,
+            "human_authorization_execution_allowed": False,
+            "apply_execution_gate_execution_allowed": False,
+            "apply_executor_contract_execution_allowed": False,
+            "apply_executor_plan_execution_allowed": False,
+            "apply_executor_evidence_contract_execution_allowed": False,
+            "apply_executed": False,
+            "rollback_executed": False,
+            "apply_executor_plan": {
+                "decision": "plan_ready",
+                "plan_required": True,
+                "ordered_execution_steps": [{"step": i} for i in range(1, 7)],
+                "evidence_capture_plan": [
+                    {"name": "pre_execution_state_evidence", "collected_now": False, "collection_allowed_now": False},
+                    {"name": "execution_result_evidence", "collected_now": False, "collection_allowed_now": False},
+                    {"name": "post_execution_verification_evidence", "collected_now": False, "collection_allowed_now": False},
+                    {"name": "rollback_evidence", "collected_now": False, "collection_allowed_now": False},
+                    {"name": "audit_log_evidence", "collected_now": False, "collection_allowed_now": False},
+                ],
+                "rollback_plan_requirement": {"rollback_required_before_future_apply": True, "rollback_plan_attached": False},
+                "apply_authorized": False, "apply_allowed": False, "rollback_allowed": False,
+                "execution_allowed": False, "tool_execution_allowed": False, "dry_run_execution_allowed": False, "simulation_execution_allowed": False,
+                "apply_gate_execution_allowed": False, "human_authorization_execution_allowed": False, "apply_execution_gate_execution_allowed": False,
+                "apply_executor_contract_execution_allowed": False, "apply_executor_plan_execution_allowed": False, "apply_executor_evidence_contract_execution_allowed": False,
+                "blocking_reasons": [],
+                "requested_action": {"tool_id": "test.tool", "action_type": "status_check", "target": "test"},
+                "apply_executor_contract_id": "test_ctr", "apply_execution_gate_id": "test_aeg", "human_authorization_id": "test_ha",
+                "apply_gate_id": "test_ag", "verification_verdict_id": "test_vv", "simulation_result_id": "test_sr", "simulation_plan_id": "test_sp", "dry_run_id": "test_dr",
+            },
+            "confirmations_required": ["c1","c2","c3","c4","c5","c6"],
+            "confirmations_received": ["c1","c2","c3","c4","c5","c6"],
+            "apply_executor_plan_persisted": True,
+        }
+        pdir = os.path.join(get_private_dir(), "apply_executor_plans")
+        os.makedirs(pdir, exist_ok=True)
+        filepath = os.path.join(pdir, f"apply_executor_plan_{record_id}.json")
+        with open(filepath, "w") as f:
+            json.dump(record_data, f)
+        resp = self.client.post(f"/apply-executor-plans/{record_id}/evidence-contract")
+        data = resp.json()
+        ec = data["apply_executor_evidence_contract"]
+        assert ec["decision"] == "evidence_contract_ready"
+        assert ec["evidence_contract_required"] is True
+        assert len(ec["evidence_contract_checks"]) == 24
+        assert len(ec["required_evidence_items"]) == 5
+        assert len(ec["pre_execution_evidence_requirements"]) == 4
+        assert len(ec["during_execution_evidence_requirements"]) == 3
+        assert len(ec["post_execution_evidence_requirements"]) == 3
+        assert len(ec["rollback_evidence_requirements"]) == 4
+        assert len(ec["audit_evidence_requirements"]) == 4
+        assert "collection_scope" in ec["evidence_collection_constraints"]
+        assert len(ec["evidence_acceptance_criteria"]) >= 5
+        assert len(ec["required_evidence_confirmations"]) >= 6
+        assert ec["evidence_contract_statement"] is not None
+        assert ec["recommended_next_step"] is not None
+        assert "metadata" in ec
+        assert len(ec["warnings"]) >= 5
+
+    def test_11_legacy_chat_still_works(self):
+        """Test: legacy /chat still works after evidence-contract endpoint added."""
+        resp = self.client.post("/chat", json={"message": "test evidence contract milestone 75a"})
+        data = resp.json()
+        assert data["status"] == "completed"
+
+
+def _make_record_for_test(status, plan_decision, plan_intent_recorded, plan_review_completed):
+    """Helper for test_05 and test_06."""
+    return {
+        "apply_executor_plan_id": "test_id",
+        "status": status,
+        "plan_decision": plan_decision,
+        "plan_intent_recorded": plan_intent_recorded,
+        "plan_review_completed": plan_review_completed,
+        "evidence_collected": False,
+        "rollback_plan_attached": False,
+        "apply_authorized": False,
+        "apply_executed": False,
+        "rollback_executed": False,
+        "apply_executor_plan": {
+            "decision": plan_decision,
+            "ordered_execution_steps": [{"step": i} for i in range(1, 7)],
+            "evidence_capture_plan": [{"name": n, "collected_now": False, "collection_allowed_now": False}
+                                      for n in ["pre_execution_state_evidence", "execution_result_evidence",
+                                                "post_execution_verification_evidence", "rollback_evidence", "audit_log_evidence"]],
+            "rollback_plan_requirement": {"rollback_required_before_future_apply": True, "rollback_plan_attached": False},
+            "apply_authorized": False,
+            "execution_allowed": False,
+            "tool_execution_allowed": False,
+            "dry_run_execution_allowed": False,
+            "simulation_execution_allowed": False,
+            "apply_gate_execution_allowed": False,
+            "human_authorization_execution_allowed": False,
+            "apply_execution_gate_execution_allowed": False,
+            "apply_executor_contract_execution_allowed": False,
+            "apply_executor_plan_execution_allowed": False,
+            "apply_executor_evidence_contract_execution_allowed": False,
+            "blocking_reasons": [],
+            "requested_action": {"tool_id": "test.tool", "action_type": "status_check", "target": "test"},
+        },
+        "confirmations_required": ["c1", "c2"],
+        "confirmations_received": ["c1", "c2"],
+        "apply_executor_plan_persisted": True,
+    }
+
+    def _create_valid_evidence_contract_record(self):
+        """Create a valid apply_executor_plan_record on disk for evidence contract testing."""
+        import json, uuid, os
+        from aether.core.config import get_private_dir
+        record_id = uuid.uuid4().hex
+        record_data = {
+            "apply_executor_plan_id": record_id,
+            "status": "approved_plan_intent",
+            "plan_decision": "plan_ready",
+            "plan_intent_recorded": True,
+            "plan_review_completed": True,
+            "evidence_collected": False,
+            "rollback_plan_attached": False,
+            "apply_authorized": False,
+            "apply_allowed": False,
+            "rollback_allowed": False,
+            "execution_allowed": False,
+            "tool_execution_allowed": False,
+            "dry_run_execution_allowed": False,
+            "simulation_execution_allowed": False,
+            "apply_gate_execution_allowed": False,
+            "human_authorization_execution_allowed": False,
+            "apply_execution_gate_execution_allowed": False,
+            "apply_executor_contract_execution_allowed": False,
+            "apply_executor_plan_execution_allowed": False,
+            "apply_executor_evidence_contract_execution_allowed": False,
+            "apply_executed": False,
+            "rollback_executed": False,
+            "apply_executor_plan": {
+                "decision": "plan_ready",
+                "plan_required": True,
+                "ordered_execution_steps": [{"step": i} for i in range(1, 7)],
+                "evidence_capture_plan": [
+                    {"name": "pre_execution_state_evidence", "collected_now": False, "collection_allowed_now": False},
+                    {"name": "execution_result_evidence", "collected_now": False, "collection_allowed_now": False},
+                    {"name": "post_execution_verification_evidence", "collected_now": False, "collection_allowed_now": False},
+                    {"name": "rollback_evidence", "collected_now": False, "collection_allowed_now": False},
+                    {"name": "audit_log_evidence", "collected_now": False, "collection_allowed_now": False},
+                ],
+                "rollback_plan_requirement": {"rollback_required_before_future_apply": True, "rollback_plan_attached": False},
+                "apply_authorized": False, "apply_allowed": False, "rollback_allowed": False,
+                "execution_allowed": False, "tool_execution_allowed": False, "dry_run_execution_allowed": False, "simulation_execution_allowed": False,
+                "apply_gate_execution_allowed": False, "human_authorization_execution_allowed": False, "apply_execution_gate_execution_allowed": False,
+                "apply_executor_contract_execution_allowed": False, "apply_executor_plan_execution_allowed": False, "apply_executor_evidence_contract_execution_allowed": False,
+                "blocking_reasons": [],
+                "requested_action": {"tool_id": "test.tool", "action_type": "status_check", "target": "test"},
+                "apply_executor_contract_id": "test_ctr", "apply_execution_gate_id": "test_aeg", "human_authorization_id": "test_ha",
+                "apply_gate_id": "test_ag", "verification_verdict_id": "test_vv", "simulation_result_id": "test_sr", "simulation_plan_id": "test_sp", "dry_run_id": "test_dr",
+            },
+            "confirmations_required": ["c1","c2","c3","c4","c5","c6"],
+            "confirmations_received": ["c1","c2","c3","c4","c5","c6"],
+            "apply_executor_plan_persisted": True,
+        }
+        pdir = os.path.join(get_private_dir(), "apply_executor_plans")
+        os.makedirs(pdir, exist_ok=True)
+        filepath = os.path.join(pdir, f"apply_executor_plan_{record_id}.json")
+        with open(filepath, "w") as f:
+            json.dump(record_data, f)
+        return record_id

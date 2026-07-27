@@ -2539,8 +2539,151 @@ def approve_plan_intent_executor(apply_executor_plan_id: str, request: ApplyExec
 
 
 # ===================================================================== #
-# Simulation Plan Record Endpoints (Milestone 60A)
+# Apply Executor Evidence Contract (Milestone 75A)
 # ===================================================================== #
+
+from aether.action.apply_executor_evidence_contract import (
+    build_apply_executor_evidence_contract as _build_aeecc,
+)
+
+
+class EvidenceContractBody(BaseModel):
+    context: dict | None = None
+
+
+@app.post("/apply-executor-plans/{apply_executor_plan_id}/evidence-contract")
+def apply_executor_evidence_contract(
+    apply_executor_plan_id: str, request: EvidenceContractBody | None = None,
+):
+    """Build an apply executor evidence contract from an approved plan record.
+
+    This endpoint creates a structured evidence requirements object without
+    collecting evidence or authorizing execution per Milestone 75A safety.
+    """
+    context = request.context if request and request.context else None
+
+    # Read the apply executor plan record
+    record = _get_aep(apply_executor_plan_id)
+    if record is None:
+        return {
+            "name": "Aether",
+            "status": runtime.status(),
+            "apply_executor_plan_record": None,
+            "apply_executor_evidence_contract": _build_fallback_contract(),
+            "evidence_contract_required": False,
+            "evidence_contract_status": None,
+            "decision": "blocked",
+            "plan_review_completed": False,
+            "plan_intent_recorded": False,
+            "evidence_collected": False,
+            "rollback_plan_attached": False,
+            "apply_authorized": False,
+            "apply_allowed": False,
+            "rollback_allowed": False,
+            "execution_allowed": False,
+            "tool_execution_allowed": False,
+            "dry_run_execution_allowed": False,
+            "simulation_execution_allowed": False,
+            "apply_gate_execution_allowed": False,
+            "human_authorization_execution_allowed": False,
+            "apply_execution_gate_execution_allowed": False,
+            "apply_executor_contract_execution_allowed": False,
+            "apply_executor_plan_execution_allowed": False,
+            "apply_executor_evidence_contract_execution_allowed": False,
+        }
+
+    # Build the evidence contract
+    contract = _build_aeecc(record, context)
+
+    return {
+        "name": "Aether",
+        "status": runtime.status(),
+        "apply_executor_plan_record": record,
+        "apply_executor_evidence_contract": contract,
+        "evidence_contract_required": contract.get("evidence_contract_required"),
+        "evidence_contract_status": contract.get("evidence_contract_status"),
+        "decision": contract.get("decision"),
+        "plan_review_completed": contract.get("plan_review_completed"),
+        "plan_intent_recorded": contract.get("plan_intent_recorded"),
+        "evidence_collected": False,
+        "rollback_plan_attached": False,
+        "apply_authorized": False,
+        "apply_allowed": False,
+        "rollback_allowed": False,
+        "execution_allowed": False,
+        "tool_execution_allowed": False,
+        "dry_run_execution_allowed": False,
+        "simulation_execution_allowed": False,
+        "apply_gate_execution_allowed": False,
+        "human_authorization_execution_allowed": False,
+        "apply_execution_gate_execution_allowed": False,
+        "apply_executor_contract_execution_allowed": False,
+        "apply_executor_plan_execution_allowed": False,
+        "apply_executor_evidence_contract_execution_allowed": False,
+    }
+
+
+def _build_fallback_contract() -> dict:
+    """Create a default blocked evidence contract for missing record cases."""
+    return {
+        "evidence_contract_required": False,
+        "evidence_contract_status": None,
+        "contract_type": "apply_executor_evidence_contract",
+        "decision": "blocked",
+        "reason": "Apply executor plan record not found.",
+        "apply_executor_plan_id": None,
+        "apply_executor_plan_record_status": None,
+        "plan_decision": None,
+        "apply_executor_contract_id": None,
+        "apply_execution_gate_id": None,
+        "human_authorization_id": None,
+        "apply_gate_id": None,
+        "verification_verdict_id": None,
+        "simulation_result_id": None,
+        "simulation_plan_id": None,
+        "dry_run_id": None,
+        "requested_action": None,
+        "apply_executor_plan_snapshot": None,
+        "evidence_contract_checks": [],
+        "required_evidence_items": [],
+        "pre_execution_evidence_requirements": [],
+        "during_execution_evidence_requirements": [],
+        "post_execution_evidence_requirements": [],
+        "rollback_evidence_requirements": [],
+        "audit_evidence_requirements": [],
+        "evidence_collection_constraints": {},
+        "evidence_acceptance_criteria": [],
+        "required_evidence_confirmations": [],
+        "evidence_contract_statement": None,
+        "blocking_reasons": ["Apply executor plan record not found."],
+        "unresolved_risks": [{"name": "missing_apply_executor_plan", "severity": "high", "detail": "Apply executor plan record not found."}],
+        "recommended_next_step": "Create or provide a valid apply executor plan record.",
+        "plan_review_completed": False,
+        "plan_intent_recorded": False,
+        "evidence_collected": False,
+        "rollback_plan_attached": False,
+        "apply_authorized": False,
+        "apply_allowed": False,
+        "rollback_allowed": False,
+        "execution_allowed": False,
+        "tool_execution_allowed": False,
+        "dry_run_execution_allowed": False,
+        "simulation_execution_allowed": False,
+        "apply_gate_execution_allowed": False,
+        "human_authorization_execution_allowed": False,
+        "apply_execution_gate_execution_allowed": False,
+        "apply_executor_contract_execution_allowed": False,
+        "apply_executor_plan_execution_allowed": False,
+        "apply_executor_evidence_contract_execution_allowed": False,
+        "metadata": {"source": "apply_executor_evidence_contract_builder", "schema_version": "1.0"},
+        "warnings": [
+            "Apply executor evidence contract does not authorize execution.",
+            "Apply executor evidence contract does not authorize apply.",
+            "Evidence requirements are declared but not collected.",
+            "Rollback evidence is required but not collected in this milestone.",
+            "A separate future evidence collector is required before apply can occur.",
+        ],
+    }
 
 from aether.action.simulation_plan_queue import (
     get_simulation_plan_record as _get_sp,
