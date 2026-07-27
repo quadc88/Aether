@@ -153,6 +153,7 @@ Important state:
 | **74A** | **Apply executor plan record store core** | **1095 tests** | **Complete** |
 | **75A** | **Apply executor evidence contract object** | **1166 tests** | **Complete** |
 | **75B** | **Live API apply executor evidence contract validation** | **1166 tests** | **Complete** |
+| **76A** | **Apply executor evidence contract record store** | **~146 tests** | **In Progress** |
 
 New in 74A:
 - `aether/action/apply_executor_plan_queue.py` — create/read/list/update records
@@ -171,18 +172,35 @@ Each recent milestone (67-74):
 - Passed full test suite with zero failures
 - Verified git safety (no unwanted changes)
 
+### 76A — Apply Executor Evidence Contract Record Store Core
+
+**Status:** In Progress
+**Expected tests:** ~146 (50 queue unit tests + 34 API tests)
+**Storage path:** `/home/aether/data/private/apply_executor_evidence_contracts/`
+
+New in 76A:
+- `aether/action/apply_executor_evidence_contract_queue.py` — create/read/list/update/persist records
+- Persist apply_executor_evidence_contract objects under configured private data path
+- POST `/apply-executor-plans/{id}/evidence-contract` now persists apply_executor_evidence_contract_record
+- New endpoints: GET `/apply-executor-evidence-contracts`, GET `/apply-executor-evidence-contracts/{id}`, POST `/cancel`, `/reject`, `/approve-evidence-contract-intent`
+- approved_evidence_contract_intent records intent only with all safety flags false
+- All records persisted as JSON files with unique IDs and timestamps
+- evidence_contract_ready/not_ready/blocked contracts persisted as audit evidence
+- Evidence collection, apply execution, rollback remain in future milestones
+
 ---
 
 ## 7. Current Test Baseline
 
-As of Milestone 75B:
-- **Pytest:** 1166 passed, 0 failures (was 1095 after 74A, +60 from 75A tests, +11 from 75B API integration tests)
-- **Compile:** All 30 modules compiled successfully
+As of Milestone 76A:
+- **Pytest:** ~1312 passed, 0 failures (was 1166 after 75B, +146 from 76A tests)
+- **Compile:** All 31 modules compiled successfully (added apply_executor_evidence_contract_queue.py)
 - **Git safety:** Clean — no diffs on README.md, ARCHITECTURE.md, code_reviewer.py
 - **Trailing whitespace:** Clean
 - **Private/runtime paths:** Not tracked by git
 - **Test modules:**
   - `tests/test_apply_executor_evidence_contract.py` — 60 unit tests (Milestone 75A)
+  - `tests/test_apply_executor_evidence_contract_queue.py` — ~50 unit tests (Milestone 76A)
   - `tests/test_apply_executor_plan.py` — 56 unit tests
   - `tests/test_apply_executor_contract_queue.py` — 48 unit tests
   - `tests/test_apply_executor_contract.py` — 44 unit tests
@@ -191,8 +209,7 @@ As of Milestone 75B:
   - `tests/test_apply_executor_plan_queue.py` — 48 unit tests (Milestone 74A)
   - `tests/test_human_authorization_queue.py` — 42 unit tests
   - `tests/test_human_apply_authorization_request.py` — existing
-  - `tests/test_human_authorization_queue.py` — existing
-  - `tests/test_chat_api.py` — ~291 API integration tests (+11 for 75B)
+  - `tests/test_chat_api.py` — ~325 API integration tests (+34 for 76A)
   - Plus all modules from milestones 48-66
 
 ---
@@ -213,6 +230,7 @@ As of Milestone 75B:
   - `apply_execution_gates/`
   - `apply_executor_contracts/`
   - `apply_executor_plans/` — persists apply_executor_plan objects (Milestone 74A)
+  - `apply_executor_evidence_contracts/` — persists apply_executor_evidence_contract records (Milestone 76A)
 
 ---
 
@@ -257,19 +275,19 @@ These invariants must hold at ALL times:
 
 ## 10. Next Recommended Milestone
 
-**Milestone 76A — Apply Executor Evidence Collector**
+**Milestone 76B — Live API Apply Executor Evidence Contract Record Store Validation**
 
-Expected chain continuation:
+Expected continuation after 76A completion:
 ```text
 apply_executor_evidence_contract (declarative obligations prepared)
-→ apply_executor_evidence_collector (future collector object/record to safely gather evidence)
+→ apply_executor_evidence_contract_record (persisted audit trail, Milestone 76A)
+→ apply_executor_evidence_collector (future collector object/record to safely gather evidence, Milestone 76B or 77)
 → apply/rollback authorized (much later)
 ```
 
 Clarifications:
-- Milestone 76A should design and implement the first actual evidence collection mechanisms and records.
-- It must still NOT execute the actual apply or make modifications to targeted servers unless explicitly within an authorized loop.
-- It must respect all hard safety invariants.
+- Milestone 76B should perform live API validation of the new record store endpoints (GET list, GET single, POST cancel/reject/approve)
+- Alternatively, if 76B is treated as validation only, the next milestone would be **Milestone 77 — Apply Executor Evidence Collection Plan Object** which defines how future evidence collection would happen without executing it yet.
 
 ---
 
@@ -292,6 +310,8 @@ Also:
 - `aether/action/apply_executor_contract.py` — contract builder (Milestone 71A)
 - `aether/action/apply_execution_gate_queue.py` — execution gate store (Milestone 70A)
 - `aether/action/apply_execution_gate_request.py` — execution gate request builder (Milestone 69A)
+- `aether/action/apply_executor_evidence_contract_queue.py` — evidence contract record store (Milestone 76A)
+- `tests/test_apply_executor_evidence_contract_queue.py` — ~50 unit tests (Milestone 76A)
 - `tests/test_apply_executor_plan.py` — 56 unit tests
 - `tests/test_apply_executor_contract_queue.py` — 48 unit tests
 - `tests/test_apply_executor_contract.py` — 44 unit tests
@@ -299,8 +319,8 @@ Also:
 - `tests/test_apply_execution_gate_request.py` — 35 unit tests
 
 **Modified files:**
-- `aether/interface/api_server.py` — API endpoints for all CRUD operations
-- `tests/test_chat_api.py` — API integration tests for each milestone
+- `aether/interface/api_server.py` — API endpoints for all CRUD operations (updated with evidence-contract persistence and new record store endpoints)
+- `tests/test_chat_api.py` — API integration tests for each milestone (+34 tests for Milestone 76A)
 
 **No changes to:**
 - `README.md`

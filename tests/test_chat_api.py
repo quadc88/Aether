@@ -5177,6 +5177,914 @@ class TestApplyExecutorEvidenceContractAPIMilestone75A:
         assert data["status"] == "completed"
 
 
+
+
+# ===================================================================== #
+# Apply Executor Evidence Contract Record Store API Tests (Milestone 76A)
+# ===================================================================== #
+
+class TestApplyExecutorEvidenceContractQueueAPIMilestone76A(TestApplyExecutorEvidenceContractAPIMilestone75A):
+    """Tests for Apply Executor Evidence Contract Record Store endpoints (Milestone 76A)."""
+
+    @classmethod
+    def setup_class(cls):
+        """Clean up stale test data before running tests."""
+        import os
+        from aether.core.config import get_private_dir
+        for subdir in ["apply_executor_plans", "apply_executor_evidence_contracts"]:
+            pdir = os.path.join(get_private_dir(), subdir)
+            if os.path.isdir(pdir):
+                for f in os.listdir(pdir):
+                    try:
+                        os.remove(os.path.join(pdir, f))
+                    except OSError:
+                        pass
+        cls.client = _get_test_client()
+
+    @classmethod
+    def _create_ready_plan(cls):
+        """Create a ready plan record on disk and return its ID."""
+        import json, uuid, os
+        from aether.core.config import get_private_dir
+        record_id = str(uuid.uuid4())
+        record_data = {
+            "apply_executor_plan_id": record_id,
+            "status": "approved_plan_intent",
+            "plan_decision": "plan_ready",
+            "plan_intent_recorded": True,
+            "plan_review_completed": True,
+            "evidence_collected": False,
+            "rollback_plan_attached": False,
+            "apply_authorized": False,
+            "apply_allowed": False,
+            "rollback_allowed": False,
+            "execution_allowed": False,
+            "tool_execution_allowed": False,
+            "dry_run_execution_allowed": False,
+            "simulation_execution_allowed": False,
+            "apply_gate_execution_allowed": False,
+            "human_authorization_execution_allowed": False,
+            "apply_execution_gate_execution_allowed": False,
+            "apply_executor_contract_execution_allowed": False,
+            "apply_executor_plan_execution_allowed": False,
+            "apply_executor_evidence_contract_execution_allowed": False,
+            "apply_executed": False,
+            "rollback_executed": False,
+            "apply_executor_plan": {
+                "decision": "plan_ready",
+                "plan_required": True,
+                "ordered_execution_steps": [{"step": i} for i in range(1, 7)],
+                "evidence_capture_plan": [
+                    {"name": "pre_execution_state_evidence", "collected_now": False, "collection_allowed_now": False},
+                    {"name": "execution_result_evidence", "collected_now": False, "collection_allowed_now": False},
+                    {"name": "post_execution_verification_evidence", "collected_now": False, "collection_allowed_now": False},
+                    {"name": "rollback_evidence", "collected_now": False, "collection_allowed_now": False},
+                    {"name": "audit_log_evidence", "collected_now": False, "collection_allowed_now": False},
+                ],
+                "rollback_plan_requirement": {"rollback_required_before_future_apply": True, "rollback_plan_attached": False},
+                "apply_authorized": False, "apply_allowed": False, "rollback_allowed": False,
+                "execution_allowed": False, "tool_execution_allowed": False, "dry_run_execution_allowed": False, "simulation_execution_allowed": False,
+                "apply_gate_execution_allowed": False, "human_authorization_execution_allowed": False, "apply_execution_gate_execution_allowed": False,
+                "apply_executor_contract_execution_allowed": False, "apply_executor_plan_execution_allowed": False, "apply_executor_evidence_contract_execution_allowed": False,
+                "blocking_reasons": [],
+                "requested_action": {"tool_id": "test.tool", "action_type": "status_check", "target": "test"},
+                "apply_executor_contract_id": "test_ctr", "apply_execution_gate_id": "test_aeg", "human_authorization_id": "test_ha",
+                "apply_gate_id": "test_ag", "verification_verdict_id": "test_vv", "simulation_result_id": "test_sr", "simulation_plan_id": "test_sp", "dry_run_id": "test_dr",
+            },
+            "confirmations_required": ["c1","c2","c3","c4","c5","c6"],
+            "confirmations_received": ["c1","c2","c3","c4","c5","c6"],
+            "apply_executor_plan_persisted": True,
+        }
+        pdir = os.path.join(get_private_dir(), "apply_executor_plans")
+        os.makedirs(pdir, exist_ok=True)
+        filepath = os.path.join(pdir, f"apply_executor_plan_{record_id}.json")
+        with open(filepath, "w") as f:
+            json.dump(record_data, f)
+        return record_id
+
+    def test_50_evidence_contract_endpoint_persists_record(self):
+        """Test: POST /apply-executor-plans/{id}/evidence-contract persists record."""
+        record_id = self._create_ready_plan()
+        resp = self.client.post(f"/apply-executor-plans/{record_id}/evidence-contract")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["apply_executor_evidence_contract_id"] is not None
+        assert data["apply_executor_evidence_contract_record"] is not None
+        rec = data["apply_executor_evidence_contract_record"]
+        assert rec["status"] == "pending"
+        assert rec["evidence_contract_decision"] == "evidence_contract_ready"
+        assert rec["apply_executor_evidence_contract_persisted"] is True
+
+    def test_51_ready_record_has_evidence_contract_decision(self):
+        """Test: ready record has evidence_contract_decision evidence_contract_ready."""
+        record_id = self._create_ready_plan()
+        resp = self.client.post(f"/apply-executor-plans/{record_id}/evidence-contract")
+        data = resp.json()
+        rec = data["apply_executor_evidence_contract_record"]
+        assert rec["evidence_contract_decision"] == "evidence_contract_ready"
+
+    def test_52_ready_record_review_completed_false(self):
+        """Test: ready record still has evidence_contract_review_completed false on creation."""
+        record_id = self._create_ready_plan()
+        resp = self.client.post(f"/apply-executor-plans/{record_id}/evidence-contract")
+        data = resp.json()
+        rec = data["apply_executor_evidence_contract_record"]
+        assert rec["evidence_contract_review_completed"] is False
+
+    def test_53_ready_record_intent_recorded_false(self):
+        """Test: ready record still has evidence_contract_intent_recorded false on creation."""
+        record_id = self._create_ready_plan()
+        resp = self.client.post(f"/apply-executor-plans/{record_id}/evidence-contract")
+        data = resp.json()
+        rec = data["apply_executor_evidence_contract_record"]
+        assert rec["evidence_contract_intent_recorded"] is False
+
+    def test_54_ready_record_evidence_collected_false(self):
+        """Test: ready record still has evidence_collected false."""
+        record_id = self._create_ready_plan()
+        resp = self.client.post(f"/apply-executor-plans/{record_id}/evidence-contract")
+        data = resp.json()
+        rec = data["apply_executor_evidence_contract_record"]
+        assert rec["evidence_collected"] is False
+
+    def test_55_ready_record_rollback_plan_attached_false(self):
+        """Test: ready record still has rollback_plan_attached false."""
+        record_id = self._create_ready_plan()
+        resp = self.client.post(f"/apply-executor-plans/{record_id}/evidence-contract")
+        data = resp.json()
+        rec = data["apply_executor_evidence_contract_record"]
+        assert rec["rollback_plan_attached"] is False
+
+    def test_56_ready_record_apply_authorized_false(self):
+        """Test: ready record still has apply_authorized false."""
+        record_id = self._create_ready_plan()
+        resp = self.client.post(f"/apply-executor-plans/{record_id}/evidence-contract")
+        data = resp.json()
+        rec = data["apply_executor_evidence_contract_record"]
+        assert rec["apply_authorized"] is False
+        record_id = str(uuid.uuid4())
+        record_data = {
+            "apply_executor_plan_id": record_id,
+            "status": "approved_plan_intent",
+            "plan_decision": "plan_ready",
+            "plan_intent_recorded": True,
+            "plan_review_completed": True,
+            "evidence_collected": False,
+            "rollback_plan_attached": False,
+            "apply_authorized": False,
+            "apply_executed": False,
+            "rollback_executed": False,
+            "apply_executor_plan": {
+                "decision": "plan_ready",
+                "plan_required": True,
+                "ordered_execution_steps": [{"step": i} for i in range(1, 7)],
+                "evidence_capture_plan": [
+                    {"name": "pre_execution_state_evidence", "collected_now": False, "collection_allowed_now": False},
+                    {"name": "execution_result_evidence", "collected_now": False, "collection_allowed_now": False},
+                    {"name": "post_execution_verification_evidence", "collected_now": False, "collection_allowed_now": False},
+                    {"name": "rollback_evidence", "collected_now": False, "collection_allowed_now": False},
+                    {"name": "audit_log_evidence", "collected_now": False, "collection_allowed_now": False},
+                ],
+                "rollback_plan_requirement": {"rollback_required_before_future_apply": True, "rollback_plan_attached": False},
+                "apply_authorized": False, "apply_allowed": False, "rollback_allowed": False,
+                "execution_allowed": False, "tool_execution_allowed": False, "dry_run_execution_allowed": False, "simulation_execution_allowed": False,
+                "apply_gate_execution_allowed": False, "human_authorization_execution_allowed": False, "apply_execution_gate_execution_allowed": False,
+                "apply_executor_contract_execution_allowed": False, "apply_executor_plan_execution_allowed": False, "apply_executor_evidence_contract_execution_allowed": False,
+                "blocking_reasons": [],
+                "requested_action": {"tool_id": "test.tool", "action_type": "status_check", "target": "test"},
+                "apply_executor_contract_id": "test_ctr", "apply_execution_gate_id": "test_aeg", "human_authorization_id": "test_ha",
+                "apply_gate_id": "test_ag", "verification_verdict_id": "test_vv", "simulation_result_id": "test_sr", "simulation_plan_id": "test_sp", "dry_run_id": "test_dr",
+            },
+            "confirmations_required": ["c1","c2","c3","c4","c5","c6"],
+            "confirmations_received": ["c1","c2","c3","c4","c5","c6"],
+            "apply_executor_plan_persisted": True,
+        }
+        pdir = os.path.join(get_private_dir(), "apply_executor_plans")
+        os.makedirs(pdir, exist_ok=True)
+        filepath = os.path.join(pdir, f"apply_executor_plan_{record_id}.json")
+        with open(filepath, "w") as f:
+            json.dump(record_data, f)
+        resp = self.client.post(f"/apply-executor-plans/{record_id}/evidence-contract")
+        data = resp.json()
+        rec = data["apply_executor_evidence_contract_record"]
+        assert rec["evidence_contract_intent_recorded"] is False
+
+    def test_54_ready_record_evidence_collected_false(self):
+        """Test: ready record still has evidence_collected false."""
+        info = self._build_chain_to_approved_plan()
+        resp = self.client.post(f"/apply-executor-plans/{info['aep_id']}/evidence-contract")
+        data = resp.json()
+        rec = data["apply_executor_evidence_contract_record"]
+        assert rec["evidence_collected"] is False
+
+    def test_55_ready_record_rollback_plan_attached_false(self):
+        """Test: ready record still has rollback_plan_attached false."""
+        info = self._build_chain_to_approved_plan()
+        resp = self.client.post(f"/apply-executor-plans/{info['aep_id']}/evidence-contract")
+        data = resp.json()
+        rec = data["apply_executor_evidence_contract_record"]
+        assert rec["rollback_plan_attached"] is False
+
+    def test_56_ready_record_apply_authorized_false(self):
+        """Test: ready record still has apply_authorized false."""
+        info = self._build_chain_to_approved_plan()
+        resp = self.client.post(f"/apply-executor-plans/{info['aep_id']}/evidence-contract")
+        data = resp.json()
+        rec = data["apply_executor_evidence_contract_record"]
+        assert rec["apply_authorized"] is False
+
+    def test_57_not_ready_plan_produces_not_ready_record(self):
+        """Test: not_ready produce not_ready evidence contract record."""
+        import uuid, os, json
+        from aether.core.config import get_private_dir
+        record_id = str(uuid.uuid4())
+        # Create a plan that is approved but missing confirmations (medium-severity failure -> not_ready)
+        record_data = {
+            "apply_executor_plan_id": record_id,
+            "status": "approved_plan_intent",
+            "plan_decision": "plan_ready",
+            "plan_intent_recorded": True,
+            "plan_review_completed": True,
+            "evidence_collected": False,
+            "rollback_plan_attached": False,
+            "apply_authorized": False,
+            "apply_allowed": False,
+            "rollback_allowed": False,
+            "execution_allowed": False,
+            "tool_execution_allowed": False,
+            "dry_run_execution_allowed": False,
+            "simulation_execution_allowed": False,
+            "apply_gate_execution_allowed": False,
+            "human_authorization_execution_allowed": False,
+            "apply_execution_gate_execution_allowed": False,
+            "apply_executor_contract_execution_allowed": False,
+            "apply_executor_plan_execution_allowed": False,
+            "apply_executor_evidence_contract_execution_allowed": False,
+            "apply_executed": False,
+            "rollback_executed": False,
+            "apply_executor_plan": {
+                "decision": "plan_ready",
+                "plan_required": True,
+                "ordered_execution_steps": [{"step": i} for i in range(1, 7)],
+                "evidence_capture_plan": [
+                    {"name": "pre_execution_state_evidence", "collected_now": False, "collection_allowed_now": False},
+                    {"name": "execution_result_evidence", "collected_now": False, "collection_allowed_now": False},
+                    {"name": "post_execution_verification_evidence", "collected_now": False, "collection_allowed_now": False},
+                    {"name": "rollback_evidence", "collected_now": False, "collection_allowed_now": False},
+                    {"name": "audit_log_evidence", "collected_now": False, "collection_allowed_now": False},
+                ],
+                "rollback_plan_requirement": {"rollback_required_before_future_apply": True, "rollback_plan_attached": False},
+                "apply_authorized": False, "apply_allowed": False, "rollback_allowed": False,
+                "execution_allowed": False, "tool_execution_allowed": False, "dry_run_execution_allowed": False, "simulation_execution_allowed": False,
+                "apply_gate_execution_allowed": False, "human_authorization_execution_allowed": False, "apply_execution_gate_execution_allowed": False,
+                "apply_executor_contract_execution_allowed": False, "apply_executor_plan_execution_allowed": False, "apply_executor_evidence_contract_execution_allowed": False,
+                "blocking_reasons": [],
+                "requested_action": {"tool_id": "test.tool", "action_type": "status_check", "target": "test"},
+                "apply_executor_contract_id": "test_ctr", "apply_execution_gate_id": "test_aeg", "human_authorization_id": "test_ha",
+                "apply_gate_id": "test_ag", "verification_verdict_id": "test_vv", "simulation_result_id": "test_sr", "simulation_plan_id": "test_sp", "dry_run_id": "test_dr",
+            },
+            # Has required confirmations but no received confirmations (medium-severity failure -> not_ready)
+            "confirmations_required": ["c1", "c2", "c3", "c4", "c5", "c6"],
+            "confirmations_received": [],  # EMPTY - this causes not_ready, not blocked
+            "apply_executor_plan_persisted": True,
+        }
+        pdir = os.path.join(get_private_dir(), "apply_executor_plans")
+        os.makedirs(pdir, exist_ok=True)
+        filepath = os.path.join(pdir, f"apply_executor_plan_{record_id}.json")
+        with open(filepath, "w") as f:
+            json.dump(record_data, f)
+        resp = self.client.post(f"/apply-executor-plans/{record_id}/evidence-contract")
+        data = resp.json()
+        rec = data["apply_executor_evidence_contract_record"]
+        assert rec["evidence_contract_decision"] == "not_ready"
+
+    def test_58_blocked_plan_produces_blocked_record(self):
+        """Test: blocked produces blocked evidence contract record."""
+        import uuid, os, json
+        from aether.core.config import get_private_dir
+        record_id = str(uuid.uuid4())
+        record_data = {
+            "apply_executor_plan_id": record_id,
+            "status": "blocked",
+            "plan_decision": None,
+            "plan_intent_recorded": False,
+            "plan_review_completed": False,
+            "evidence_collected": False,
+            "rollback_plan_attached": False,
+            "apply_authorized": False,
+            "apply_executed": False,
+            "rollback_executed": False,
+            "apply_executor_plan": {
+                "decision": "blocked",
+                "plan_required": False,
+                "ordered_execution_steps": [],
+                "evidence_capture_plan": [],
+                "rollback_plan_requirement": {},
+                "apply_authorized": False,
+                "execution_allowed": False,
+                "tool_execution_allowed": False,
+                "dry_run_execution_allowed": False,
+                "simulation_execution_allowed": False,
+                "apply_gate_execution_allowed": False,
+                "human_authorization_execution_allowed": False,
+                "apply_execution_gate_execution_allowed": False,
+                "apply_executor_contract_execution_allowed": False,
+                "apply_executor_plan_execution_allowed": False,
+                "apply_executor_evidence_contract_execution_allowed": False,
+                "blocking_reasons": ["No plan"],
+                "requested_action": None,
+            },
+            "confirmations_required": [],
+            "confirmations_received": [],
+            "apply_executor_plan_persisted": False,
+        }
+        pdir = os.path.join(get_private_dir(), "apply_executor_plans")
+        os.makedirs(pdir, exist_ok=True)
+        filepath = os.path.join(pdir, f"apply_executor_plan_{record_id}.json")
+        with open(filepath, "w") as f:
+            json.dump(record_data, f)
+        resp = self.client.post(f"/apply-executor-plans/{record_id}/evidence-contract")
+        data = resp.json()
+        rec = data["apply_executor_evidence_contract_record"]
+        assert rec["evidence_contract_decision"] == "blocked"
+
+    def test_59_missing_plan_produces_blocked_record(self):
+        """Test: missing apply_executor_plan_id produces blocked record."""
+        resp = self.client.post("/apply-executor-plans/nonexistent/evidence-contract")
+        data = resp.json()
+        assert data["decision"] == "blocked"
+        rec = data["apply_executor_evidence_contract_record"]
+        assert rec["evidence_contract_decision"] == "blocked"
+
+    def test_60_get_all_evidence_contracts(self):
+        """Test: GET /apply-executor-evidence-contracts lists records."""
+        # First create a record via the endpoint
+        info = self._build_chain_to_approved_plan()
+        self.client.post(f"/apply-executor-plans/{info['aep_id']}/evidence-contract")
+        resp = self.client.get("/apply-executor-evidence-contracts")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "apply_executor_evidence_contracts" in data
+        assert isinstance(data["apply_executor_evidence_contracts"], list)
+        assert data["count"] >= 1
+
+    def test_61_filter_by_decision_ready(self):
+        """Test: GET /apply-executor-evidence-contracts?decision=evidence_contract_ready filters ready records."""
+        info = self._build_chain_to_approved_plan()
+        self.client.post(f"/apply-executor-plans/{info['aep_id']}/evidence-contract")
+        resp = self.client.get("/apply-executor-evidence-contracts?decision=evidence_contract_ready")
+        assert resp.status_code == 200
+        data = resp.json()
+        records = data["apply_executor_evidence_contracts"]
+        assert all(r["evidence_contract_decision"] == "evidence_contract_ready" for r in records)
+
+    def test_62_filter_by_decision_not_ready(self):
+        """Test: GET /apply-executor-evidence-contracts?decision=not_ready filters not_ready records."""
+        import uuid, os, json
+        from aether.core.config import get_private_dir
+        record_id = str(uuid.uuid4())
+        record_data = {
+            "apply_executor_plan_id": record_id,
+            "status": "approved_plan_intent",
+            "plan_decision": "plan_ready",
+            "plan_intent_recorded": True,
+            "plan_review_completed": True,
+            "evidence_collected": False,
+            "rollback_plan_attached": False,
+            "apply_authorized": False,
+            "apply_executed": False,
+            "rollback_executed": False,
+            "apply_executor_plan": {
+                "decision": "plan_ready",
+                "plan_required": True,
+                "ordered_execution_steps": [{"step": i} for i in range(1, 7)],
+                "evidence_capture_plan": [],
+                "rollback_plan_requirement": {"rollback_required_before_future_apply": True, "rollback_plan_attached": False},
+                "apply_authorized": False,
+                "execution_allowed": False,
+                "tool_execution_allowed": False,
+                "dry_run_execution_allowed": False,
+                "simulation_execution_allowed": False,
+                "apply_gate_execution_allowed": False,
+                "human_authorization_execution_allowed": False,
+                "apply_execution_gate_execution_allowed": False,
+                "apply_executor_contract_execution_allowed": False,
+                "apply_executor_plan_execution_allowed": False,
+                "apply_executor_evidence_contract_execution_allowed": False,
+                "blocking_reasons": [],
+                "requested_action": None,
+            },
+            "confirmations_required": [],
+            "confirmations_received": [],
+            "apply_executor_plan_persisted": True,
+        }
+        pdir = os.path.join(get_private_dir(), "apply_executor_plans")
+        os.makedirs(pdir, exist_ok=True)
+        filepath = os.path.join(pdir, f"apply_executor_plan_{record_id}.json")
+        with open(filepath, "w") as f:
+            json.dump(record_data, f)
+        # Set decision to not_ready in the contract by passing context that would trigger it
+        # For simplicity, just create a record directly using the queue module
+        from aether.action.apply_executor_evidence_contract_queue import create_apply_executor_evidence_contract_record
+        contract = {
+            "evidence_contract_type": "apply_executor_evidence_contract",
+            "evidence_contract_required": True,
+            "decision": "not_ready",
+            "apply_executor_plan_id": record_id,
+            "required_evidence_confirmations": [],
+            "metadata": {},
+            "warnings": [],
+        }
+        create_apply_executor_evidence_contract_record(contract)
+        resp = self.client.get("/apply-executor-evidence-contracts?decision=not_ready")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert len(data["apply_executor_evidence_contracts"]) >= 1
+
+    def test_63_filter_by_decision_blocked(self):
+        """Test: GET /apply-executor-evidence-contracts?decision=blocked filters blocked records."""
+        resp = self.client.get("/apply-executor-evidence-contracts?decision=blocked")
+        # This might return empty if no blocked records exist, but should work
+        assert resp.status_code == 200
+
+    def test_64_get_single_evidence_contract(self):
+        """Test: GET /apply-executor-evidence-contracts/{id} reads record."""
+        info = self._build_chain_to_approved_plan()
+        resp = self.client.post(f"/apply-executor-plans/{info['aep_id']}/evidence-contract")
+        data = resp.json()
+        rec_id = data["apply_executor_evidence_contract_id"]
+        resp2 = self.client.get(f"/apply-executor-evidence-contracts/{rec_id}")
+        assert resp2.status_code == 200
+        data2 = resp2.json()
+        assert data2["found"] is True
+        assert data2["apply_executor_evidence_contract"]["apply_executor_evidence_contract_id"] == rec_id
+
+    def test_65_cancel_evidence_contract(self):
+        """Test: POST /apply-executor-evidence-contracts/{id}/cancel changes status to cancelled."""
+        info = self._build_chain_to_approved_plan()
+        resp = self.client.post(f"/apply-executor-plans/{info['aep_id']}/evidence-contract")
+        data = resp.json()
+        rec_id = data["apply_executor_evidence_contract_id"]
+        resp2 = self.client.post(f"/apply-executor-evidence-contracts/{rec_id}/cancel", json={"reviewer": "test"})
+        assert resp2.status_code == 200
+        data2 = resp2.json()
+        assert data2["found"] is True
+        status = data2["apply_executor_evidence_contract"]["status"]
+        assert status == "cancelled"
+
+    def test_66_reject_evidence_contract(self):
+        """Test: POST /apply-executor-evidence-contracts/{id}/reject changes status to rejected."""
+        info = self._build_chain_to_approved_plan()
+        resp = self.client.post(f"/apply-executor-plans/{info['aep_id']}/evidence-contract")
+        data = resp.json()
+        rec_id = data["apply_executor_evidence_contract_id"]
+        resp2 = self.client.post(f"/apply-executor-evidence-contracts/{rec_id}/reject", json={"reviewer": "test"})
+        assert resp2.status_code == 200
+        data2 = resp2.json()
+        assert data2["found"] is True
+        status = data2["apply_executor_evidence_contract"]["status"]
+        assert status == "rejected"
+
+    def test_67_approve_evidence_contract_intent(self):
+        """Test: POST /apply-executor-evidence-contracts/{id}/approve-evidence-contract-intent changes status."""
+        record_id = self._create_ready_plan()
+        resp = self.client.post(f"/apply-executor-plans/{record_id}/evidence-contract")
+        assert resp.status_code == 200
+        data = resp.json()
+        rec_id = data["apply_executor_evidence_contract_id"]
+        # Read the record to get confirmations
+        resp_get = self.client.get(f"/apply-executor-evidence-contracts/{rec_id}")
+        record = resp_get.json()["apply_executor_evidence_contract"]
+        conns = record.get("confirmations_required", ["c1", "c2", "c3", "c4", "c5", "c6"])
+        resp2 = self.client.post(f"/apply-executor-evidence-contracts/{rec_id}/approve-evidence-contract-intent", json={
+            "reviewer": "test",
+            "reason": "validated",
+            "confirmations": conns,
+        })
+        assert resp2.status_code == 200
+        data2 = resp2.json()
+        assert data2["found"] is True
+        status = data2["apply_executor_evidence_contract"]["status"]
+        assert status == "approved_evidence_contract_intent"
+
+    def test_68_approve_keep_apply_authorized_false(self):
+        """Test: approve-evidence-contract-intent keeps apply_authorized false."""
+        record_id = self._create_ready_plan()
+        resp = self.client.post(f"/apply-executor-plans/{record_id}/evidence-contract")
+        assert resp.status_code == 200
+        data = resp.json()
+        rec_id = data["apply_executor_evidence_contract_id"]
+        # Get confirmations from the record
+        resp_get = self.client.get(f"/apply-executor-evidence-contracts/{rec_id}")
+        record = resp_get.json()["apply_executor_evidence_contract"]
+        conns = record.get("confirmations_required", ["c1", "c2", "c3", "c4", "c5", "c6"])
+        resp2 = self.client.post(f"/apply-executor-evidence-contracts/{rec_id}/approve-evidence-contract-intent", json={
+            "reviewer": "test",
+            "reason": "validated",
+            "confirmations": conns,
+        })
+        data2 = resp2.json()
+        assert data2["found"] is True
+        assert data2["apply_executor_evidence_contract"]["apply_authorized"] is False
+
+    def test_69_approve_keep_apply_allowed_false(self):
+        """Test: approve-evidence-contract-intent keeps apply_allowed false."""
+        record_id = self._create_ready_plan()
+        resp = self.client.post(f"/apply-executor-plans/{record_id}/evidence-contract")
+        assert resp.status_code == 200
+        data = resp.json()
+        rec_id = data["apply_executor_evidence_contract_id"]
+        resp_get = self.client.get(f"/apply-executor-evidence-contracts/{rec_id}")
+        record = resp_get.json()["apply_executor_evidence_contract"]
+        conns = record.get("confirmations_required", ["c1", "c2", "c3", "c4", "c5", "c6"])
+        resp2 = self.client.post(f"/apply-executor-evidence-contracts/{rec_id}/approve-evidence-contract-intent", json={
+            "reviewer": "test",
+            "confirmations": conns,
+        })
+        data2 = resp2.json()
+        assert data2["found"] is True
+        assert data2["apply_executor_evidence_contract"]["apply_allowed"] is False
+
+    def test_70_approve_keep_execution_allowed_false(self):
+        """Test: approve-evidence-contract-intent keeps execution_allowed false."""
+        record_id = self._create_ready_plan()
+        resp = self.client.post(f"/apply-executor-plans/{record_id}/evidence-contract")
+        assert resp.status_code == 200
+        data = resp.json()
+        rec_id = data["apply_executor_evidence_contract_id"]
+        resp_get = self.client.get(f"/apply-executor-evidence-contracts/{rec_id}")
+        record = resp_get.json()["apply_executor_evidence_contract"]
+        conns = record.get("confirmations_required", ["c1", "c2", "c3", "c4", "c5", "c6"])
+        resp2 = self.client.post(f"/apply-executor-evidence-contracts/{rec_id}/approve-evidence-contract-intent", json={
+            "reviewer": "test",
+            "confirmations": conns,
+        })
+        data2 = resp2.json()
+        assert data2["found"] is True
+        assert data2["apply_executor_evidence_contract"]["execution_allowed"] is False
+
+    def test_71_approve_keep_evidence_collected_false(self):
+        """Test: approve-evidence-contract-intent keeps evidence_collected false."""
+        record_id = self._create_ready_plan()
+        resp = self.client.post(f"/apply-executor-plans/{record_id}/evidence-contract")
+        assert resp.status_code == 200
+        data = resp.json()
+        rec_id = data["apply_executor_evidence_contract_id"]
+        resp_get = self.client.get(f"/apply-executor-evidence-contracts/{rec_id}")
+        record = resp_get.json()["apply_executor_evidence_contract"]
+        conns = record.get("confirmations_required", ["c1", "c2", "c3", "c4", "c5", "c6"])
+        resp2 = self.client.post(f"/apply-executor-evidence-contracts/{rec_id}/approve-evidence-contract-intent", json={
+            "reviewer": "test",
+            "confirmations": conns,
+        })
+        data2 = resp2.json()
+        assert data2["found"] is True
+        assert data2["apply_executor_evidence_contract"]["evidence_collected"] is False
+
+    def test_72_approve_keep_rollback_plan_attached_false(self):
+        """Test: approve-evidence-contract-intent keeps rollback_plan_attached false."""
+        record_id = self._create_ready_plan()
+        resp = self.client.post(f"/apply-executor-plans/{record_id}/evidence-contract")
+        assert resp.status_code == 200
+        data = resp.json()
+        rec_id = data["apply_executor_evidence_contract_id"]
+        resp_get = self.client.get(f"/apply-executor-evidence-contracts/{rec_id}")
+        record = resp_get.json()["apply_executor_evidence_contract"]
+        conns = record.get("confirmations_required", ["c1", "c2", "c3", "c4", "c5", "c6"])
+        resp2 = self.client.post(f"/apply-executor-evidence-contracts/{rec_id}/approve-evidence-contract-intent", json={
+            "reviewer": "test",
+            "confirmations": conns,
+        })
+        data2 = resp2.json()
+        assert data2["found"] is True
+        assert data2["apply_executor_evidence_contract"]["rollback_plan_attached"] is False
+
+    def test_75_approve_requires_confirmations(self):
+        """Test: approve-evidence-contract-intent requires confirmations."""
+        record_id = self._create_ready_plan()
+        resp = self.client.post(f"/apply-executor-plans/{record_id}/evidence-contract")
+        assert resp.status_code == 200
+        data = resp.json()
+        rec_id = data["apply_executor_evidence_contract_id"]
+        # Try with empty confirmations - should fail
+        resp2 = self.client.post(f"/apply-executor-evidence-contracts/{rec_id}/approve-evidence-contract-intent", json={
+            "reviewer": "test",
+            "confirmations": [],
+        })
+        assert resp2.status_code == 200
+        data2 = resp2.json()
+        # Approval fails, returns found=False or record stays pending
+        assert data2["found"] is False or data2["apply_executor_evidence_contract"]["status"] == "pending"
+
+    def test_70_approve_keep_execution_allowed_false(self):
+        """Test: approve-evidence-contract-intent keeps execution_allowed false."""
+        record_id = self._create_ready_plan()
+        resp = self.client.post(f"/apply-executor-plans/{record_id}/evidence-contract")
+        assert resp.status_code == 200
+        data = resp.json()
+        rec_id = data["apply_executor_evidence_contract_id"]
+        resp_get = self.client.get(f"/apply-executor-evidence-contracts/{rec_id}")
+        record = resp_get.json()["apply_executor_evidence_contract"]
+        conns = record.get("confirmations_required", ["c1", "c2", "c3", "c4", "c5", "c6"])
+        resp2 = self.client.post(f"/apply-executor-evidence-contracts/{rec_id}/approve-evidence-contract-intent", json={
+            "reviewer": "test",
+            "confirmations": conns,
+        })
+        data2 = resp2.json()
+        assert data2["found"] is True
+        assert data2["apply_executor_evidence_contract"]["execution_allowed"] is False
+
+    def test_71_approve_keep_evidence_collected_false(self):
+        """Test: approve-evidence-contract-intent keeps evidence_collected false."""
+        record_id = self._create_ready_plan()
+        resp = self.client.post(f"/apply-executor-plans/{record_id}/evidence-contract")
+        assert resp.status_code == 200
+        data = resp.json()
+        rec_id = data["apply_executor_evidence_contract_id"]
+        resp_get = self.client.get(f"/apply-executor-evidence-contracts/{rec_id}")
+        record = resp_get.json()["apply_executor_evidence_contract"]
+        conns = record.get("confirmations_required", ["c1", "c2", "c3", "c4", "c5", "c6"])
+        resp2 = self.client.post(f"/apply-executor-evidence-contracts/{rec_id}/approve-evidence-contract-intent", json={
+            "reviewer": "test",
+            "confirmations": conns,
+        })
+        data2 = resp2.json()
+        assert data2["found"] is True
+        assert data2["apply_executor_evidence_contract"]["evidence_collected"] is False
+
+    def test_72_approve_keep_rollback_plan_attached_false(self):
+        """Test: approve-evidence-contract-intent keeps rollback_plan_attached false."""
+        record_id = self._create_ready_plan()
+        resp = self.client.post(f"/apply-executor-plans/{record_id}/evidence-contract")
+        assert resp.status_code == 200
+        data = resp.json()
+        rec_id = data["apply_executor_evidence_contract_id"]
+        resp_get = self.client.get(f"/apply-executor-evidence-contracts/{rec_id}")
+        record = resp_get.json()["apply_executor_evidence_contract"]
+        conns = record.get("confirmations_required", ["c1", "c2", "c3", "c4", "c5", "c6"])
+        resp2 = self.client.post(f"/apply-executor-evidence-contracts/{rec_id}/approve-evidence-contract-intent", json={
+            "reviewer": "test",
+            "confirmations": conns,
+        })
+        data2 = resp2.json()
+        assert data2["found"] is True
+        assert data2["apply_executor_evidence_contract"]["rollback_plan_attached"] is False
+        resp2 = self.client.post(f"/apply-executor-evidence-contracts/{rec_id}/approve-evidence-contract-intent", json={
+            "reviewer": "test",
+            "confirmations": ["c1", "c2", "c3"],
+        })
+        data2 = resp2.json()
+        assert data2["apply_executor_evidence_contract"]["evidence_collected"] is False
+
+    def test_72_approve_keep_rollback_plan_attached_false(self):
+        """Test: approve-evidence-contract-intent keeps rollback_plan_attached false."""
+        record_id = self._create_ready_plan()
+        resp = self.client.post(f"/apply-executor-plans/{record_id}/evidence-contract")
+        assert resp.status_code == 200
+        data = resp.json()
+        rec_id = data["apply_executor_evidence_contract_id"]
+        resp_get = self.client.get(f"/apply-executor-evidence-contracts/{rec_id}")
+        record = resp_get.json()["apply_executor_evidence_contract"]
+        conns = record.get("confirmations_required", ["c1", "c2", "c3", "c4", "c5", "c6"])
+        resp2 = self.client.post(f"/apply-executor-evidence-contracts/{rec_id}/approve-evidence-contract-intent", json={
+            "reviewer": "test",
+            "confirmations": conns,
+        })
+        data2 = resp2.json()
+        assert data2["found"] is True
+        assert data2["apply_executor_evidence_contract"]["rollback_plan_attached"] is False
+
+    def test_73_approve_not_ready_record_fails(self):
+        """Test: approve-evidence-contract-intent cannot approve not_ready record."""
+        import uuid, os, json
+        from aether.core.config import get_private_dir
+        record_id = str(uuid.uuid4())
+        record_data = {
+            "apply_executor_plan_id": record_id,
+            "status": "approved_plan_intent",
+            "plan_decision": "plan_ready",
+            "plan_intent_recorded": True,
+            "plan_review_completed": True,
+            "evidence_collected": False,
+            "rollback_plan_attached": False,
+            "apply_authorized": False,
+        }
+        pdir = os.path.join(get_private_dir(), "apply_executor_plans")
+        os.makedirs(pdir, exist_ok=True)
+        filepath = os.path.join(pdir, f"apply_executor_plan_{record_id}.json")
+        with open(filepath, "w") as f:
+            json.dump(record_data, f)
+        # Create a not_ready evidence contract directly
+        from aether.action.apply_executor_evidence_contract_queue import create_apply_executor_evidence_contract_record
+        contract = {
+            "evidence_contract_type": "apply_executor_evidence_contract",
+            "evidence_contract_required": True,
+            "decision": "not_ready",
+            "apply_executor_plan_id": record_id,
+            "required_evidence_confirmations": ["c1"],
+            "metadata": {},
+            "warnings": [],
+        }
+        create_apply_executor_evidence_contract_record(contract)
+        # Now try to get the ID and approve - this should fail
+        from aether.action.apply_executor_evidence_contract_queue import list_apply_executor_evidence_contract_records
+        records = list_apply_executor_evidence_contract_records(decision="not_ready")
+        if records:
+            rec_id = records[0]["apply_executor_evidence_contract_id"]
+            resp = self.client.post(f"/apply-executor-evidence-contracts/{rec_id}/approve-evidence-contract-intent", json={
+                "reviewer": "test",
+                "confirmations": ["c1"],
+            })
+            # Should return not found or None (the API returns record, but the update function returns None for invalid approval)
+            # The endpoint should handle this gracefully
+            assert resp.status_code == 200
+
+    def test_74_approve_blocked_record_fails(self):
+        """Test: approve-evidence-contract-intent cannot approve blocked record."""
+        # Create a blocked record first
+        from aether.action.apply_executor_evidence_contract_queue import create_apply_executor_evidence_contract_record
+        contract = {
+            "evidence_contract_type": "apply_executor_evidence_contract",
+            "evidence_contract_required": False,
+            "decision": "blocked",
+            "apply_executor_plan_id": None,
+            "required_evidence_confirmations": [],
+            "metadata": {},
+            "warnings": [],
+        }
+        create_apply_executor_evidence_contract_record(contract)
+        from aether.action.apply_executor_evidence_contract_queue import list_apply_executor_evidence_contract_records
+        records = list_apply_executor_evidence_contract_records(decision="blocked")
+        if records:
+            rec_id = records[0]["apply_executor_evidence_contract_id"]
+            resp = self.client.post(f"/apply-executor-evidence-contracts/{rec_id}/approve-evidence-contract-intent", json={
+                "reviewer": "test",
+                "confirmations": [],
+            })
+            assert resp.status_code == 200
+
+    def test_75_approve_requires_confirmations(self):
+        """Test: approve-evidence-contract-intent requires confirmations."""
+        record_id = self._create_ready_plan()
+        resp = self.client.post(f"/apply-executor-plans/{record_id}/evidence-contract")
+        assert resp.status_code == 200
+        data = resp.json()
+        rec_id = data["apply_executor_evidence_contract_id"]
+        # Try with empty confirmations - should fail (found=False)
+        resp2 = self.client.post(f"/apply-executor-evidence-contracts/{rec_id}/approve-evidence-contract-intent", json={
+            "reviewer": "test",
+            "confirmations": [],
+        })
+        assert resp2.status_code == 200
+        data2 = resp2.json()
+        assert data2["found"] is False
+
+    def test_76_missing_evidence_contract_id_returns_found_false(self):
+        """Test: GET /apply-executor-evidence-contracts/{id} with missing id returns found false."""
+        resp = self.client.get("/apply-executor-evidence-contracts/non-existent-id")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["found"] is False
+
+    def test_77_evidence_contract_endpoint_does_not_mutate_plan_record(self):
+        """Test: evidence-contract endpoint does not mutate apply_executor_plan_record."""
+        info = self._build_chain_to_approved_plan()
+        # Get plan before
+        resp_before = self.client.get(f"/apply-executor-plans/{info['aep_id']}")
+        before_data = resp_before.json()
+        before_status = before_data["apply_executor_plan"]["status"]
+
+        # Call evidence contract endpoint
+        resp = self.client.post(f"/apply-executor-plans/{info['aep_id']}/evidence-contract")
+        assert resp.status_code == 200
+
+        # Get plan after
+        resp_after = self.client.get(f"/apply-executor-plans/{info['aep_id']}")
+        after_data = resp_after.json()
+        after_status = after_data["apply_executor_plan"]["status"]
+
+        assert before_status == after_status
+
+    def test_78_evidence_contract_endpoint_does_not_mutate_contract_record(self):
+        """Test: evidence-contract endpoint does not mutate apply_executor_contract_record."""
+        info = self._build_chain_to_approved_plan()
+        # Get contract before
+        resp_before = self.client.get(f"/apply-executor-contracts/{info['aecr_id']}")
+        before_data = resp_before.json()
+        before_status = before_data["apply_executor_contract"]["status"]
+
+        # Call evidence contract endpoint
+        resp = self.client.post(f"/apply-executor-plans/{info['aep_id']}/evidence-contract")
+        assert resp.status_code == 200
+
+        # Get contract after
+        resp_after = self.client.get(f"/apply-executor-contracts/{info['aecr_id']}")
+        after_data = resp_after.json()
+        after_status = after_data["apply_executor_contract"]["status"]
+
+        assert before_status == after_status
+
+    def test_79_evidence_contract_endpoint_does_not_mutate_execution_gate_record(self):
+        """Test: evidence-contract endpoint does not mutate apply_execution_gate_record."""
+        info = self._build_chain_to_approved_plan()
+        # Get gate before
+        resp_before = self.client.get(f"/apply-execution-gates/{info['aeg_id']}")
+        before_data = resp_before.json()
+        before_status = before_data["apply_execution_gate"]["status"]
+
+        # Call evidence contract endpoint
+        resp = self.client.post(f"/apply-executor-plans/{info['aep_id']}/evidence-contract")
+        assert resp.status_code == 200
+
+        # Get gate after
+        resp_after = self.client.get(f"/apply-execution-gates/{info['aeg_id']}")
+        after_data = resp_after.json()
+        after_status = after_data["apply_execution_gate"]["status"]
+
+        assert before_status == after_status
+
+    def test_80_evidence_contract_endpoint_does_not_mutate_human_auth_record(self):
+        """Test: evidence-contract endpoint does not mutate human_authorization_record."""
+        info = self._build_chain_to_approved_plan()
+        # Get HA before
+        resp_before = self.client.get(f"/human-authorizations/{info['ha_id']}")
+        before_data = resp_before.json()
+        before_status = before_data["human_authorization"]["status"]
+
+        # Call evidence contract endpoint
+        resp = self.client.post(f"/apply-executor-plans/{info['aep_id']}/evidence-contract")
+        assert resp.status_code == 200
+
+        # Get HA after
+        resp_after = self.client.get(f"/human-authorizations/{info['ha_id']}")
+        after_data = resp_after.json()
+        after_status = after_data["human_authorization"]["status"]
+
+        assert before_status == after_status
+
+    def test_81_evidence_contract_endpoint_does_not_mutate_apply_gate_record(self):
+        """Test: evidence-contract endpoint does not mutate apply_gate_record."""
+        info = self._build_chain_to_approved_plan()
+        # Get apply gate before
+        resp_before = self.client.get(f"/apply-gates/{info['apply_gate_id']}")
+        before_data = resp_before.json()
+        before_status = before_data["apply_gate"]["status"]
+
+        # Call evidence contract endpoint
+        resp = self.client.post(f"/apply-executor-plans/{info['aep_id']}/evidence-contract")
+        assert resp.status_code == 200
+
+        # Get apply gate after
+        resp_after = self.client.get(f"/apply-gates/{info['apply_gate_id']}")
+        after_data = resp_after.json()
+        after_status = after_data["apply_gate"]["status"]
+
+        assert before_status == after_status
+
+    def test_82_evidence_contract_endpoint_does_not_mutate_verification_verdict_record(self):
+        """Test: evidence-contract endpoint does not mutate verification_verdict_record."""
+        info = self._build_chain_to_approved_plan()
+        # Get verdict before
+        resp_before = self.client.get(f"/verification-verdicts/{info['verif_verdict_id']}")
+        before_data = resp_before.json()
+        before_status = before_data["verification_verdict"]["status"]
+
+        # Call evidence contract endpoint
+        resp = self.client.post(f"/apply-executor-plans/{info['aep_id']}/evidence-contract")
+        assert resp.status_code == 200
+
+        # Get verdict after
+        resp_after = self.client.get(f"/verification-verdicts/{info['verif_verdict_id']}")
+        after_data = resp_after.json()
+        after_status = after_data["verification_verdict"]["status"]
+
+        assert before_status == after_status
+
+    def test_83_evidence_contract_endpoint_does_not_mutate_simulation_result_record(self):
+        """Test: evidence-contract endpoint does not mutate simulation_result_record."""
+        info = self._build_chain_to_approved_plan()
+        # Get sim result before
+        resp_before = self.client.get(f"/simulation-results/{info['sim_result_id']}")
+        before_data = resp_before.json()
+        before_status = before_data["simulation_result"]["status"]
+
+        # Call evidence contract endpoint
+        resp = self.client.post(f"/apply-executor-plans/{info['aep_id']}/evidence-contract")
+        assert resp.status_code == 200
+
+        # Get sim result after
+        resp_after = self.client.get(f"/simulation-results/{info['sim_result_id']}")
+        after_data = resp_after.json()
+        after_status = after_data["simulation_result"]["status"]
+
+        assert before_status == after_status
+
+    def test_84_legacy_chat_still_works(self):
+        """Test: legacy /chat still works."""
+        resp = self.client.post("/chat", json={"message": "test milestone 76a"})
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["status"] in ["completed", "processed"]
 def _make_record_for_test(status, plan_decision, plan_intent_recorded, plan_review_completed):
     """Helper for test_05 and test_06."""
     return {

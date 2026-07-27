@@ -2545,6 +2545,12 @@ def approve_plan_intent_executor(apply_executor_plan_id: str, request: ApplyExec
 from aether.action.apply_executor_evidence_contract import (
     build_apply_executor_evidence_contract as _build_aeecc,
 )
+from aether.action.apply_executor_evidence_contract_queue import (
+    create_apply_executor_evidence_contract_record as _create_aeecr,
+    get_apply_executor_evidence_contract_record as _get_aeec,
+    list_apply_executor_evidence_contract_records as _list_aeec,
+    update_apply_executor_evidence_contract_record_status as _update_aeec,
+)
 
 
 class EvidenceContractBody(BaseModel):
@@ -2555,21 +2561,26 @@ class EvidenceContractBody(BaseModel):
 def apply_executor_evidence_contract(
     apply_executor_plan_id: str, request: EvidenceContractBody | None = None,
 ):
-    """Build an apply executor evidence contract from an approved plan record.
+    """Build an apply executor evidence contract from an approved plan record and persist it.
 
-    This endpoint creates a structured evidence requirements object without
-    collecting evidence or authorizing execution per Milestone 75A safety.
+    This endpoint creates a structured evidence requirements object, persists it as
+    an apply executor evidence contract record, and returns both per Milestone 76A safety.
     """
     context = request.context if request and request.context else None
 
     # Read the apply executor plan record
-    record = _get_aep(apply_executor_plan_id)
-    if record is None:
+    plan_record = _get_aep(apply_executor_plan_id)
+    if plan_record is None:
+        contract = _build_fallback_contract()
+        # Persist for audit purposes
+        eec_record = _create_aeecr(dict(contract), context)
         return {
             "name": "Aether",
             "status": runtime.status(),
             "apply_executor_plan_record": None,
-            "apply_executor_evidence_contract": _build_fallback_contract(),
+            "apply_executor_evidence_contract": contract,
+            "apply_executor_evidence_contract_record": eec_record,
+            "apply_executor_evidence_contract_id": eec_record.get("apply_executor_evidence_contract_id"),
             "evidence_contract_required": False,
             "evidence_contract_status": None,
             "decision": "blocked",
@@ -2593,13 +2604,18 @@ def apply_executor_evidence_contract(
         }
 
     # Build the evidence contract
-    contract = _build_aeecc(record, context)
+    contract = _build_aeecc(plan_record, context)
+
+    # Persist the evidence contract record
+    eec_record = _create_aeecr(dict(contract), context)
 
     return {
         "name": "Aether",
         "status": runtime.status(),
-        "apply_executor_plan_record": record,
+        "apply_executor_plan_record": plan_record,
         "apply_executor_evidence_contract": contract,
+        "apply_executor_evidence_contract_record": eec_record,
+        "apply_executor_evidence_contract_id": eec_record["apply_executor_evidence_contract_id"],
         "evidence_contract_required": contract.get("evidence_contract_required"),
         "evidence_contract_status": contract.get("evidence_contract_status"),
         "decision": contract.get("decision"),
@@ -2684,6 +2700,147 @@ def _build_fallback_contract() -> dict:
             "A separate future evidence collector is required before apply can occur.",
         ],
     }
+
+
+# ===================================================================== #
+# Apply Executor Evidence Contract Record Store (Milestone 76A)
+# ===================================================================== #
+
+class EvidenceContractDecisionBody(BaseModel):
+    reviewer: str | None = None
+    reason: str | None = None
+
+
+class EvidenceContractApproveBody(BaseModel):
+    reviewer: str
+    reason: str | None = None
+    confirmations: list[str]
+
+
+@app.get("/apply-executor-evidence-contracts")
+def list_apply_executor_evidence_contracts(
+    status: str | None = None,
+    decision: str | None = None,
+    limit: int = 50,
+):
+    records = _list_aeec(status=status, decision=decision, limit=limit)
+    return {
+        "name": "Aether",
+        "status": runtime.status(),
+        "apply_executor_evidence_contracts": records,
+        "count": len(records),
+    }
+
+
+@app.get("/apply-executor-evidence-contracts/{apply_executor_evidence_contract_id}")
+def get_apply_executor_evidence_contract(apply_executor_evidence_contract_id: str):
+    record = _get_aeec(apply_executor_evidence_contract_id)
+    if record is None:
+        return {
+            "name": "Aether",
+            "status": runtime.status(),
+            "apply_executor_evidence_contract": None,
+            "found": False,
+        }
+    return {
+        "name": "Aether",
+        "status": runtime.status(),
+        "apply_executor_evidence_contract": record,
+        "found": True,
+    }
+
+
+@app.post("/apply-executor-evidence-contracts/{apply_executor_evidence_contract_id}/cancel")
+def cancel_apply_executor_evidence_contract(
+    apply_executor_evidence_contract_id: str,
+    request: EvidenceContractDecisionBody | None = None,
+):
+    reviewer = None
+    reason = None
+    if request:
+        reviewer = request.reviewer
+        reason = request.reason
+    record = _update_aeec(
+        apply_executor_evidence_contract_id,
+        decision="cancelled",
+        reviewer=reviewer,
+        reason=reason,
+    )
+    if record is None:
+        return {
+            "name": "Aether",
+            "status": runtime.status(),
+            "apply_executor_evidence_contract": None,
+            "found": False,
+            "warnings": ["Evidence contract record not found."],
+        }
+    return {
+        "name": "Aether",
+        "status": runtime.status(),
+        "apply_executor_evidence_contract": record,
+        "found": True,
+    }
+
+
+@app.post("/apply-executor-evidence-contracts/{apply_executor_evidence_contract_id}/reject")
+def reject_apply_executor_evidence_contract(
+    apply_executor_evidence_contract_id: str,
+    request: EvidenceContractDecisionBody | None = None,
+):
+    reviewer = None
+    reason = None
+    if request:
+        reviewer = request.reviewer
+        reason = request.reason
+    record = _update_aeec(
+        apply_executor_evidence_contract_id,
+        decision="rejected",
+        reviewer=reviewer,
+        reason=reason,
+    )
+    if record is None:
+        return {
+            "name": "Aether",
+            "status": runtime.status(),
+            "apply_executor_evidence_contract": None,
+            "found": False,
+            "warnings": ["Evidence contract record not found."],
+        }
+    return {
+        "name": "Aether",
+        "status": runtime.status(),
+        "apply_executor_evidence_contract": record,
+        "found": True,
+    }
+
+
+@app.post("/apply-executor-evidence-contracts/{apply_executor_evidence_contract_id}/approve-evidence-contract-intent")
+def approve_evidence_contract_intent(
+    apply_executor_evidence_contract_id: str,
+    request: EvidenceContractApproveBody,
+):
+    record = _update_aeec(
+        apply_executor_evidence_contract_id,
+        decision="approved_evidence_contract_intent",
+        reviewer=request.reviewer,
+        reason=request.reason,
+        confirmations=request.confirmations,
+    )
+    if record is None:
+        return {
+            "name": "Aether",
+            "status": runtime.status(),
+            "apply_executor_evidence_contract": None,
+            "found": False,
+            "warnings": ["Evidence contract record not found."],
+        }
+    return {
+        "name": "Aether",
+        "status": runtime.status(),
+        "apply_executor_evidence_contract": record,
+        "found": True,
+    }
+
 
 from aether.action.simulation_plan_queue import (
     get_simulation_plan_record as _get_sp,
