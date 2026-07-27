@@ -1,8 +1,8 @@
 # Aether Project Progress Ledger
 
-**Last updated:** Milestone 73C (documentation only — no code changes)  
+**Last updated:** Milestone 74A — Apply Executor Plan Record Store Core
 **Aether version:** 0.2.0  
-**Pipeline maturity:** Full safety chain built through apply_executor_plan (objects and record stores for all stages)
+**Pipeline maturity:** Full safety chain built through apply_executor_plan_record (with persist, list/read/cancel/reject/approve-plan-intent)
 
 ---
 
@@ -75,13 +75,15 @@ approval_record
                                       → apply_executor_contract_record
                                         → approved_contract_intent
                                           → apply_executor_plan
+      → apply_executor_plan_record (Milestone 74A)
+        → approved_plan_intent / rejected / cancelled
 ```
 
 Important state:
 - All records persist as JSON files under `/home/aether/data/private/<record_type>/`
 - Every record has a unique ID, timestamps, and safety flags
 - `approved_intent`, `approved_execution_intent`, `approved_contract_intent` only **record intent** — they do NOT authorize execution or apply
-- `apply_executor_plan` is an object only — no plan record store exists yet
+- `approved_plan_intent` only records plan review intent — it does NOT authorize execution, apply, evidence collection, or rollback plan attachment
 - No real executor exists yet
 - No real apply exists yet
 - No rollback execution exists yet
@@ -138,7 +140,7 @@ Important state:
 | 70A | Apply execution gate record store | 807 tests | Complete |
 | 70B | Live API apply execution gate record validation | 16/16 cases | Complete |
 
-### 71-73: Executor Contract and Plan
+### 71-74: Executor Contract, Plan, and Record Store
 | Milestone | Description | Tests | Status |
 |-----------|-------------|-------|--------|
 | 71A | Apply executor contract object | 867 tests | Complete |
@@ -148,8 +150,19 @@ Important state:
 | 73A | Apply executor plan object | 1014 tests | Complete |
 | 73B | Live API apply executor plan validation | 18/18 cases | Complete |
 | 73C | Progress ledger (this file) | 1014 tests | Complete |
+| **74A** | **Apply executor plan record store core** | **1095 tests** | **Complete** |
 
-Each recent milestone (67-73):
+New in 74A:
+- `aether/action/apply_executor_plan_queue.py` — create/read/list/update records
+- Persist apply_executor_plan objects under `/home/aether/data/private/apply_executor_plans/`
+- POST executor-plan now persists the generated apply_executor_plan_record
+- GET /apply-executor-plans — list with status/decision filters
+- GET /apply-executor-plans/{id} — read single record
+- POST /apply-executor-plans/{id}/cancel, /reject, /approve-plan-intent
+- approved_plan_intent requires plan_ready + confirmations; keeps all safety flags false
+- Evidence, apply, rollback, execution always remain false
+
+Each recent milestone (67-74):
 - Added one or more objects + optional record stores
 - Added API endpoints for CRUD operations
 - Followed strict safety invariants (all flags always false)
@@ -160,9 +173,9 @@ Each recent milestone (67-73):
 
 ## 7. Current Test Baseline
 
-As of Milestone 73C:
-- **Pytest:** 1014 passed, 0 failures
-- **Compile:** All 25 modules compiled successfully
+As of Milestone 74A:
+- **Pytest:** 1095 passed, 0 failures (was 1014 after 73C, +81 from 74A tests)
+- **Compile:** All 29 modules compiled successfully
 - **Git safety:** Clean — no diffs on README.md, ARCHITECTURE.md, code_reviewer.py
 - **Trailing whitespace:** Clean
 - **Private/runtime paths:** Not tracked by git
@@ -171,7 +184,8 @@ As of Milestone 73C:
   - `tests/test_apply_executor_contract_queue.py` — 48 unit tests
   - `tests/test_apply_executor_contract.py` — 44 unit tests
   - `tests/test_apply_execution_gate_queue.py` — 41 unit tests
-  - `tests/test_apply_execution_gate_request.py` — 35 unit tests
+- `tests/test_apply_execution_gate_request.py` — 35 unit tests
+- `tests/test_apply_executor_plan_queue.py` — 48 unit tests (Milestone 74A)
   - `tests/test_human_authorization_queue.py` — 42 unit tests
   - `tests/test_human_apply_authorization_request.py` — existing
   - `tests/test_human_authorization_queue.py` — existing
@@ -195,7 +209,7 @@ As of Milestone 73C:
   - `human_authorizations/`
   - `apply_execution_gates/`
   - `apply_executor_contracts/`
-  - `apply_executor_plans/` — does NOT exist yet (should not be created until Milestone 74+)
+  - `apply_executor_plans/` — persists apply_executor_plan objects (Milestone 74A)
 
 ---
 
@@ -240,25 +254,23 @@ These invariants must hold at ALL times:
 
 ## 10. Next Recommended Milestone
 
-**Milestone 74 — Apply Executor Plan Record Store**
+**Milestone 75 — Apply Executor Evidence Contract Object**
 
 Expected chain continuation:
 ```text
-apply_executor_plan (object only)
-→ apply_executor_plan_record (persisted JSON files)
-→ apply_executor_plan_id
-→ list/read/cancel/reject/approve-plan-intent endpoints
-→ still NO real apply execution
+apply_executor_plan_record (persisted, can be approved_plan_intent/rejected/cancelled)
+→ apply_executor_evidence_contract (object to declare evidence requirements)
+→ apply executor evidence contract record
+→ evidence collection (future milestone)
+→ real apply execution (much later)
 ```
 
 Clarifications:
-- Milestone 74 should persist plan_ready/not_ready/blocked plans as audit records
-- `approve-plan-intent` only records plan review intent
-- `approve-plan-intent` must NOT authorize execution/apply
-- It must NOT collect evidence
-- It must NOT attach rollback plan
-- It must NOT execute tools
-- All safety flags remain false
+- Milestone 75 should declare exact evidence collection requirements before any execution attempt
+- It must NOT collect evidence yet unless explicitly designed in a later milestone
+- It must NOT execute apply
+- It must NOT authorize execution/apply
+- approved_plan_intent does NOT trigger evidence collection
 
 ---
 
@@ -275,7 +287,7 @@ Also:
 
 **New files added across milestones:**
 - `aether/action/apply_executor_plan.py` — plan builder (Milestone 73A)
-- `aether/action/apply_executor_contract_queue.py` — plan record store (Milestone 72A)
+- `aether/action/apply_executor_plan_queue.py` — plan record store (Milestone 74A)
 - `aether/action/apply_executor_contract.py` — contract builder (Milestone 71A)
 - `aether/action/apply_execution_gate_queue.py` — execution gate store (Milestone 70A)
 - `aether/action/apply_execution_gate_request.py` — execution gate request builder (Milestone 69A)
@@ -296,3 +308,27 @@ Also:
 - `aether/action/code_reviewer.py`
 - Any self-repair chain modules
 - `identity_seed.md`
+
+### 74B — Live API Validation of Apply Executor Plan Record Store
+
+**Status:** Complete
+**Validation cases:** 15/15 passed
+**Pytest suite:** 318 passed (all tests in `tests/test_chat_api.py` for Milestone 74A/B)
+**Source files modified:** None (validation script only, `/tmp/milestone_74b_validation.py`, not under source control)
+
+**Validation summary:**
+- All 15 validation cases (1_plan_ready_record_creation through 15_legacy_chat_works) passed.
+- The approve-plan-intent endpoint correctly transitions record status to `approved_plan_intent` while keeping all safety flags false.
+- The apply_executor_plan_record remains fully safe after approval:
+  - `approved_plan_intent` does **not** authorize apply, execution, or rollback
+  - `evidence_collected = false`
+  - `rollback_plan_attached = false`
+  - `apply_authorized = false`, `apply_allowed = false`
+  - `execution_allowed = false`, `tool_execution_allowed = false`, `dry_run_execution_allowed = false`, `simulation_execution_allowed = false`
+  - `apply_executed = false`, `rollback_executed = false`
+  - No real tool execution, no real simulation, no apply/rollback occurred
+- Storage paths verified: `/home/aether/data/private/apply_executor_plans/` and all related directories exist.
+- Mutation checks: cancel, reject, and re-approve-plan-intent on already-approved record preserve state (no mutation).
+- Legacy /chat endpoint works as expected (validation only, no tool execution).
+
+**PROGRESS.md update:** This entry added for Milestone 74B.

@@ -2360,11 +2360,14 @@ def approve_contract_intent_executor(apply_executor_contract_id: str, request: A
 
 
 # ===================================================================== #
-# Apply Executor Plan Endpoint (Milestone 73A)
+# Apply Executor Plan Endpoint (Milestone 73A, 74A)
 # ===================================================================== #
 
 from aether.action.apply_executor_plan import (
     build_apply_executor_plan as _build_aep,
+)
+from aether.action.apply_executor_plan_queue import (
+    create_apply_executor_plan_record as _create_aepr,
 )
 
 
@@ -2377,19 +2380,24 @@ def apply_executor_plan_endpoint(
         pass
     aecr_record = _get_aecr(apply_executor_contract_id)
     plan = _build_aep(aecr_record, context)
+    persisted = _create_aepr(plan, context)
 
     return {
         "name": "Aether",
         "status": runtime.status(),
         "apply_executor_contract_record": aecr_record,
         "apply_executor_plan": plan,
+        "apply_executor_plan_record": persisted,
+        "apply_executor_plan_id": persisted.get("apply_executor_plan_id"),
         "plan_required": plan.get("plan_required"),
         "plan_status": plan.get("plan_status"),
         "decision": plan.get("decision"),
-        "contract_review_completed": plan.get("contract_review_completed"),
-        "contract_intent_recorded": plan.get("contract_intent_recorded"),
-        "evidence_collected": False,
-        "rollback_plan_attached": False,
+        "contract_review_completed": aecr_record.get("contract_review_completed") if aecr_record else False,
+        "contract_intent_recorded": aecr_record.get("contract_intent_recorded") if aecr_record else False,
+        "plan_review_completed": persisted.get("plan_review_completed", False),
+        "plan_intent_recorded": persisted.get("plan_intent_recorded", False),
+        "evidence_collected": persisted.get("evidence_collected", False),
+        "rollback_plan_attached": persisted.get("rollback_plan_attached", False),
         "apply_authorized": False,
         "apply_allowed": False,
         "rollback_allowed": False,
@@ -2402,6 +2410,131 @@ def apply_executor_plan_endpoint(
         "apply_execution_gate_execution_allowed": False,
         "apply_executor_contract_execution_allowed": False,
         "apply_executor_plan_execution_allowed": False,
+    }
+
+
+# ===================================================================== #
+# Apply Executor Plan Record Store Endpoints (Milestone 74A)
+# ===================================================================== #
+
+from aether.action.apply_executor_plan_queue import (
+    get_apply_executor_plan_record as _get_aep,
+    list_apply_executor_plan_records as _list_aep,
+    update_apply_executor_plan_record_status as _update_aep,
+)
+
+
+@app.get("/apply-executor-plans")
+def list_apply_executor_plans(
+    status: str | None = None,
+    decision: str | None = None,
+    limit: int = 50,
+):
+    records = _list_aep(status=status, decision=decision, limit=limit)
+    return {
+        "name": "Aether",
+        "status": runtime.status(),
+        "apply_executor_plans": records,
+        "count": len(records),
+    }
+
+
+@app.get("/apply-executor-plans/{apply_executor_plan_id}")
+def get_apply_executor_plan(apply_executor_plan_id: str):
+    record = _get_aep(apply_executor_plan_id)
+    if record is None:
+        return {
+            "name": "Aether",
+            "status": runtime.status(),
+            "apply_executor_plan": None,
+            "found": False,
+        }
+    return {
+        "name": "Aether",
+        "status": runtime.status(),
+        "apply_executor_plan": record,
+        "found": True,
+    }
+
+
+@app.post("/apply-executor-plans/{apply_executor_plan_id}/cancel")
+def cancel_apply_executor_plan(apply_executor_plan_id: str, request: ApplyExecGateDecisionBody | None = None):
+    reviewer = None
+    reason = None
+    if request:
+        reviewer = request.reviewer
+        reason = request.reason
+    record = _update_aep(
+        apply_executor_plan_id, decision="cancelled", reviewer=reviewer, reason=reason
+    )
+    if record is None:
+        return {
+            "name": "Aether",
+            "status": runtime.status(),
+            "apply_executor_plan": None,
+            "found": False,
+        }
+    return {
+        "name": "Aether",
+        "status": runtime.status(),
+        "apply_executor_plan": record,
+        "found": True,
+    }
+
+
+@app.post("/apply-executor-plans/{apply_executor_plan_id}/reject")
+def reject_apply_executor_plan(apply_executor_plan_id: str, request: ApplyExecGateDecisionBody | None = None):
+    reviewer = None
+    reason = None
+    if request:
+        reviewer = request.reviewer
+        reason = request.reason
+    record = _update_aep(
+        apply_executor_plan_id, decision="rejected", reviewer=reviewer, reason=reason
+    )
+    if record is None:
+        return {
+            "name": "Aether",
+            "status": runtime.status(),
+            "apply_executor_plan": None,
+            "found": False,
+        }
+    return {
+        "name": "Aether",
+        "status": runtime.status(),
+        "apply_executor_plan": record,
+        "found": True,
+    }
+
+
+@app.post("/apply-executor-plans/{apply_executor_plan_id}/approve-plan-intent")
+def approve_plan_intent_executor(apply_executor_plan_id: str, request: ApplyExecGateDecisionBody | None = None):
+    reviewer = None
+    reason = None
+    confirmations = None
+    if request:
+        reviewer = request.reviewer
+        reason = request.reason
+        confirmations = request.confirmations or []
+    record = _update_aep(
+        apply_executor_plan_id,
+        decision="approved_plan_intent",
+        reviewer=reviewer,
+        reason=reason,
+        confirmations=confirmations,
+    )
+    if record is None:
+        return {
+            "name": "Aether",
+            "status": runtime.status(),
+            "apply_executor_plan": None,
+            "found": False,
+        }
+    return {
+        "name": "Aether",
+        "status": runtime.status(),
+        "apply_executor_plan": record,
+        "found": True,
     }
 
 

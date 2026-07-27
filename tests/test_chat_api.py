@@ -4442,3 +4442,403 @@ class TestApplyExecutorPlanAPIMilestone73A:
         resp = self.client.post("/chat", json={"message": "legacy msg milestone 73a"})
         data = resp.json()
         assert data["status"] == "completed"
+
+
+class TestApplyExecutorPlanRecordAPIMilestone74A:
+    """Tests 49-81: Apply executor plan record CRUD endpoints (Milestone 74A)."""
+
+    @classmethod
+    def setup_class(cls):
+        # Clean up stale private test data to avoid cross-contamination between test classes
+        for subdir in ["apply_executor_gates", "human_authorizations", "apply_gates",
+                        "verification_verdicts", "simulation_results", "simulation_plans",
+                        "dry_runs", "approvals", "apply_executor_contracts", "apply_executor_plans"]:
+            pdir = os.path.join(get_private_dir(), subdir)
+            if os.path.isdir(pdir):
+                for f in os.listdir(pdir):
+                    try:
+                        os.remove(os.path.join(pdir, f))
+                    except OSError:
+                        pass
+        cls.client = _get_test_client()
+
+    def _build_chain_to_approved_plan(self):
+        """Build full pipeline through approved_plan_intent AEP. Returns dict of IDs."""
+        from aether.action.approval_queue import create_approval_record as _car74
+        action = {"tool_id": f"project.aep74.{_uuid4h()}", "action_type": "status_check", "target": "test_target"}
+        ar = _car74({"approval_required": True, "risk_level": "medium", "requested_action": dict(action)}, context={"s": "74a"})
+        aid = ar["approval_id"]
+        self.client.post(f"/approvals/{aid}/approve", json={"reviewer": "74B"})
+        dr = self.client.post(f"/approvals/{aid}/dry-run-request", json={"requested_action": action}).json()
+        dry_run_id = dr.get("dry_run_id")
+        assert dry_run_id is not None, f"dry_run_request failed: {dr}"
+        sp_resp = self.client.post(f"/dry-runs/{dry_run_id}/simulation-plan").json()
+        sim_plan_id = sp_resp.get("simulation_plan_id")
+        assert sim_plan_id is not None, f"simulation-plan failed: {sp_resp}"
+        sr_resp = self.client.post(f"/simulation-plans/{sim_plan_id}/simulation-result").json()
+        sim_result_id = sr_resp.get("simulation_result_id")
+        assert sim_result_id is not None, f"simulation-result failed: {sr_resp}"
+        vv_resp = self.client.post(f"/simulation-results/{sim_result_id}/verification-verdict").json()
+        verif_verdict_id = vv_resp.get("verification_verdict_id")
+        assert verif_verdict_id is not None, f"verification-verdict failed: {vv_resp}"
+        agr_resp = self.client.post(f"/verification-verdicts/{verif_verdict_id}/apply-gate-request").json()
+        apply_gate_id = agr_resp.get("apply_gate_id")
+        assert apply_gate_id is not None, f"apply-gate failed: {agr_resp}"
+        ha_raw = self.client.post(f"/apply-gates/{apply_gate_id}/human-authorization-request")
+        ha_json = ha_raw.json()
+        ha_id = ha_json.get("human_authorization_id")
+        assert ha_id is not None, f"human-auth failed: {ha_json}"
+        confs_ha = ha_json.get("human_apply_authorization_request", {}).get("required_human_confirmations", [])
+        self.client.post(f"/human-authorizations/{ha_id}/approve-intent", json={"reviewer": "test", "confirmations": confs_ha})
+        ha_get = self.client.get(f"/human-authorizations/{ha_id}").json()
+        if ha_get.get("human_authorization", {}).get("status") != "approved_intent":
+            raise AssertionError("HA approval failed")
+        aeg_resp = self.client.post(f"/human-authorizations/{ha_id}/apply-execution-gate-request")
+        aeg_data = aeg_resp.json()
+        aeg_id = aeg_data.get("apply_execution_gate_id")
+        assert aeg_id is not None, f"aegr failed: {aeg_data}"
+        rec_aeg_check = self.client.get(f"/apply-execution-gates/{aeg_id}").json()
+        nested_req = rec_aeg_check.get("apply_execution_gate", {}).get("apply_execution_gate_request", {}) or {}
+        req_confs_aeg = nested_req.get("required_pre_execution_confirmations", [])
+        assert req_confs_aeg, f"AEG has no required_pre_execution_confirmations! Keys: {list(nested_req.keys())[:10]}"
+        self.client.post(f"/apply-execution-gates/{aeg_id}/approve-execution-intent", json={
+            "reviewer": "test", "confirmations": req_confs_aeg
+        })
+        rec_aeg = self.client.get(f"/apply-execution-gates/{aeg_id}").json()
+        if rec_aeg.get("apply_execution_gate", {}).get("status") != "approved_execution_intent":
+            raise AssertionError(f"AEG not approved: {rec_aeg.get('apply_execution_gate', {}).get('status')}")
+        ec_resp = self.client.post(f"/apply-execution-gates/{aeg_id}/executor-contract")
+        ec_data = ec_resp.json()
+        aecr_id = ec_data.get("apply_executor_contract_id")
+        assert aecr_id is not None, f"executor-contract failed: {ec_data}"
+        rec_ec = self.client.get(f"/apply-executor-contracts/{aecr_id}").json()
+        aecr_full = rec_ec.get("apply_executor_contract", {})
+        if aecr_full.get("status") != "pending" or aecr_full.get("contract_decision") != "contract_ready":
+            raise AssertionError(f"AECR not ready: status={aecr_full.get('status')}, decision={aecr_full.get('contract_decision')}")
+        inner_ec = aecr_full.get("apply_executor_contract", {})
+        req_confs_ec = []
+        if isinstance(inner_ec, dict):
+            req_confs_ec = inner_ec.get("required_executor_confirmations", [])
+        assert req_confs_ec, f"No confirmations found in AECR: keys={list(aecr_full.keys())[:5]}"
+        self.client.post(f"/apply-executor-contracts/{aecr_id}/approve-contract-intent", json={
+            "reviewer": "test", "reason": "contract validated", "confirmations": req_confs_ec
+        })
+        final_ec = self.client.get(f"/apply-executor-contracts/{aecr_id}").json()
+        final_aecr = final_ec.get("apply_executor_contract", {})
+        assert final_aecr.get("status") == "approved_contract_intent", f"Contract not approved: {final_aecr.get('status')}"
+        assert final_aecr.get("contract_review_completed") is True
+        assert final_aecr.get("contract_intent_recorded") is True
+        assert final_aecr.get("apply_authorized") is False
+        # Now call executor-plan which creates the persisted AEP record
+        ep_resp = self.client.post(f"/apply-executor-contracts/{aecr_id}/executor-plan")
+        ep_data = ep_resp.json()
+        aep_id = ep_data.get("apply_executor_plan_id")
+        assert aep_id is not None, f"executor-plan failed: {ep_data}"
+        return {
+            "ha_id": ha_id, "aeg_id": aeg_id, "aecr_id": aecr_id, "aep_id": aep_id,
+            "ag_id": apply_gate_id,
+            "vv_id": verif_verdict_id,
+            "sr_id": sim_result_id,
+        }
+
+    def test_executor_plan_returns_record_and_id_for_ready(self):
+        """Test 49: POST executor-plan returns record and id for approved_contract_intent ready AECR."""
+        info = self._build_chain_to_approved_plan()
+        rec = self.client.get(f"/apply-executor-plans/{info['aep_id']}").json()
+        assert rec["found"] is True
+        assert rec["apply_executor_plan"]["plan_decision"] == "plan_ready"
+        assert rec["apply_executor_plan"]["apply_executor_plan_persisted"] is True
+
+    def test_ready_record_has_plan_decision_plan_ready(self):
+        """Test 50: ready record has plan_decision plan_ready."""
+        info = self._build_chain_to_approved_plan()
+        resp = self.client.get(f"/apply-executor-plans/{info['aep_id']}").json()
+        assert resp["apply_executor_plan"]["plan_decision"] == "plan_ready"
+
+    def test_ready_record_plan_review_not_completed_on_creation(self):
+        """Test 51: ready record still has plan_review_completed false on creation."""
+        info = self._build_chain_to_approved_plan()
+        resp = self.client.get(f"/apply-executor-plans/{info['aep_id']}").json()
+        assert resp["apply_executor_plan"]["plan_review_completed"] is False
+
+    def test_ready_record_plan_intent_not_recorded_on_creation(self):
+        """Test 52: ready record still has plan_intent_recorded false on creation."""
+        info = self._build_chain_to_approved_plan()
+        resp = self.client.get(f"/apply-executor-plans/{info['aep_id']}").json()
+        assert resp["apply_executor_plan"]["plan_intent_recorded"] is False
+
+    def test_ready_record_evidence_collected_false(self):
+        """Test 53: ready record still has evidence_collected false."""
+        info = self._build_chain_to_approved_plan()
+        resp = self.client.get(f"/apply-executor-plans/{info['aep_id']}").json()
+        assert resp["apply_executor_plan"]["evidence_collected"] is False
+
+    def test_ready_record_rollback_plan_attached_false(self):
+        """Test 54: ready record still has rollback_plan_attached false."""
+        info = self._build_chain_to_approved_plan()
+        resp = self.client.get(f"/apply-executor-plans/{info['aep_id']}").json()
+        assert resp["apply_executor_plan"]["rollback_plan_attached"] is False
+
+    def test_ready_record_apply_authorized_false(self):
+        """Test 55: ready record still has apply_authorized false."""
+        info = self._build_chain_to_approved_plan()
+        resp = self.client.get(f"/apply-executor-plans/{info['aep_id']}").json()
+        assert resp["apply_executor_plan"]["apply_authorized"] is False
+
+    def test_not_ready_contract_produces_not_ready_plan_record(self):
+        """Test 56: not_ready apply executor contract produces not_ready apply_executor_plan_record."""
+        from aether.action.apply_executor_plan_queue import create_apply_executor_plan_record as _caepr
+        from aether.action.apply_executor_plan import build_apply_executor_plan as _build_aep
+        from aether.action.human_authorization_queue import create_human_authorization_record as _caar
+        nr_haar = {
+            "decision": "not_ready", "human_authorization_required": False,
+            "apply_gate_id": None, "verification_verdict_id": None,
+            "simulation_result_id": None, "simulation_plan_id": None,
+            "dry_run_id": None, "requested_action": None,
+            "required_human_confirmations": [], "blocking_reasons": ["block"],
+            "unresolved_risks": [], "apply_authorized": False, "apply_allowed": False,
+            "rollback_allowed": False, "execution_allowed": False,
+            "metadata": {}, "warnings": [],
+        }
+        rec = _caar(nr_haar)
+        agr = _build_aep(rec)
+        aep_rec = _caepr(agr)
+        aep_loaded = self.client.get(f"/apply-executor-plans/{aep_rec['apply_executor_plan_id']}").json()
+        assert aep_loaded["found"] is True
+        assert aep_loaded["apply_executor_plan"]["plan_decision"] == "blocked"
+
+    def test_blocked_contract_produces_blocked_plan_record(self):
+        """Test 57: blocked apply executor contract produces blocked apply_executor_plan_record."""
+        from aether.action.apply_executor_plan_queue import create_apply_executor_plan_record as _caepr
+        from aether.action.apply_executor_plan import build_apply_executor_plan as _build_aep
+        from aether.action.human_authorization_queue import create_human_authorization_record as _caar
+        blk_haar = {
+            "decision": "blocked", "human_authorization_required": False,
+            "apply_gate_id": None, "verification_verdict_id": None,
+            "simulation_result_id": None, "simulation_plan_id": None,
+            "dry_run_id": None, "requested_action": None,
+            "required_human_confirmations": [], "blocking_reasons": ["blocked"],
+            "unresolved_risks": [], "apply_authorized": False, "apply_allowed": False,
+            "rollback_allowed": False, "execution_allowed": False,
+            "metadata": {}, "warnings": [],
+        }
+        rec = _caar(blk_haar)
+        agr = _build_aep(rec)
+        aep_rec = _caepr(agr)
+        aep_loaded = self.client.get(f"/apply-executor-plans/{aep_rec['apply_executor_plan_id']}").json()
+        assert aep_loaded["found"] is True
+        assert aep_loaded["apply_executor_plan"]["plan_decision"] == "blocked"
+
+    def test_missing_aecr_id_produces_blocked_plan_record(self):
+        """Test 58: missing apply_executor_contract_id produces blocked apply_executor_plan_record."""
+        resp = self.client.post("/apply-executor-contracts/not_existing_aecr_id/executor-plan")
+        data = resp.json()
+        assert data["apply_executor_plan_record"] is not None
+        assert data["apply_executor_plan"].get("decision") == "blocked"
+
+    def test_get_apply_executor_plans_lists_records(self):
+        """Test 59: GET /apply-executor-plans lists records."""
+        resp = self.client.get("/apply-executor-plans?limit=10")
+        data = resp.json()
+        assert "apply_executor_plans" in data
+        assert "count" in data
+        assert data["count"] >= 1
+
+    def test_get_apply_executor_plans_filters_plan_ready(self):
+        """Test 60: GET /apply-executor-plans?decision=plan_ready filters ready records."""
+        info = self._build_chain_to_approved_plan()
+        resp = self.client.get("/apply-executor-plans?decision=plan_ready&limit=10")
+        data = resp.json()
+        found = any(r["apply_executor_plan_id"] == info["aep_id"] for r in data.get("apply_executor_plans", []))
+        assert found is True
+
+    def test_get_apply_executor_plans_filters_not_ready(self):
+        """Test 61: GET /apply-executor-plans?decision=not_ready filters not_ready records."""
+        resp = self.client.get("/apply-executor-plans?decision=not_ready")
+        data = resp.json()
+        assert "apply_executor_plans" in data
+
+    def test_get_apply_executor_plans_filters_blocked(self):
+        """Test 62: GET /apply-executor-plans?decision=blocked filters blocked records."""
+        resp = self.client.get("/apply-executor-plans?decision=blocked")
+        data = resp.json()
+        assert "apply_executor_plans" in data
+
+    def test_get_apply_executor_plan_by_id(self):
+        """Test 63: GET /apply-executor-plans/{id} reads record."""
+        info = self._build_chain_to_approved_plan()
+        get_resp = self.client.get(f"/apply-executor-plans/{info['aep_id']}")
+        get_data = get_resp.json()
+        assert get_data["found"] is True
+        assert get_data["apply_executor_plan"]["apply_executor_plan_id"] == info["aep_id"]
+
+    def test_cancel_apply_executor_plan_changes_status(self):
+        """Test 64: POST /apply-executor-plans/{id}/cancel changes status to cancelled."""
+        info = self._build_chain_to_approved_plan()
+        cancel_resp = self.client.post(f"/apply-executor-plans/{info['aep_id']}/cancel", json={
+            "reviewer": "canceller", "reason": "cancel test"
+        })
+        cdata = cancel_resp.json()
+        assert cdata["apply_executor_plan"]["status"] == "cancelled"
+        assert cdata["apply_executor_plan"]["decision"] == "cancelled"
+
+    def test_reject_apply_executor_plan_changes_status(self):
+        """Test 65: POST /apply-executor-plans/{id}/reject changes status to rejected."""
+        info = self._build_chain_to_approved_plan()
+        reject_resp = self.client.post(f"/apply-executor-plans/{info['aep_id']}/reject", json={
+            "reviewer": "rejector", "reason": "reject test"
+        })
+        rdata = reject_resp.json()
+        assert rdata["apply_executor_plan"]["status"] == "rejected"
+        assert rdata["apply_executor_plan"]["decision"] == "rejected"
+
+    def test_approve_plan_intent_changes_status(self):
+        """Test 66: POST approve-plan-intent changes status to approved_plan_intent for ready record."""
+        info = self._build_chain_to_approved_plan()
+        plan_data = self.client.get(f"/apply-executor-plans/{info['aep_id']}").json()["apply_executor_plan"]
+        nested_plan = plan_data.get("apply_executor_plan", {})
+        req_confs = nested_plan.get("required_plan_confirmations", [])
+        ci_resp = self.client.post(f"/apply-executor-plans/{info['aep_id']}/approve-plan-intent", json={
+            "reviewer": "approver", "reason": "validated", "confirmations": req_confs
+        })
+        ci_data = ci_resp.json()
+        assert ci_data["apply_executor_plan"]["status"] == "approved_plan_intent"
+        assert ci_data["apply_executor_plan"]["decision"] == "approved_plan_intent"
+
+    def test_approve_plan_intent_keeps_apply_authorized_false(self):
+        """Test 67: approve-plan-intent keeps apply_authorized false."""
+        info = self._build_chain_to_approved_plan()
+        plan_data = self.client.get(f"/apply-executor-plans/{info['aep_id']}").json()["apply_executor_plan"]
+        nested_plan = plan_data.get("apply_executor_plan", {})
+        req_confs = nested_plan.get("required_plan_confirmations", [])
+        ci_resp = self.client.post(f"/apply-executor-plans/{info['aep_id']}/approve-plan-intent", json={
+            "reviewer": "approver", "reason": "validated", "confirmations": req_confs
+        })
+        assert ci_resp.json()["apply_executor_plan"]["apply_authorized"] is False
+
+    def test_approve_plan_intent_keeps_apply_allowed_and_execution_allowed_false(self):
+        """Test 68: approve-plan-intent keeps apply_allowed and execution_allowed false."""
+        info = self._build_chain_to_approved_plan()
+        plan_data = self.client.get(f"/apply-executor-plans/{info['aep_id']}").json()["apply_executor_plan"]
+        nested_plan = plan_data.get("apply_executor_plan", {})
+        req_confs = nested_plan.get("required_plan_confirmations", [])
+        ci_resp = self.client.post(f"/apply-executor-plans/{info['aep_id']}/approve-plan-intent", json={
+            "reviewer": "approver", "reason": "validated", "confirmations": req_confs
+        })
+        d = ci_resp.json()["apply_executor_plan"]
+        assert d["apply_allowed"] is False
+        assert d["execution_allowed"] is False
+
+    def test_approve_plan_intent_keeps_evidence_collected_false(self):
+        """Test 69: approve-plan-intent keeps evidence_collected false."""
+        info = self._build_chain_to_approved_plan()
+        plan_data = self.client.get(f"/apply-executor-plans/{info['aep_id']}").json()["apply_executor_plan"]
+        nested_plan = plan_data.get("apply_executor_plan", {})
+        req_confs = nested_plan.get("required_plan_confirmations", [])
+        ci_resp = self.client.post(f"/apply-executor-plans/{info['aep_id']}/approve-plan-intent", json={
+            "reviewer": "approver", "reason": "validated", "confirmations": req_confs
+        })
+        assert ci_resp.json()["apply_executor_plan"]["evidence_collected"] is False
+
+    def test_approve_plan_intent_keeps_rollback_plan_attached_false(self):
+        """Test 70: approve-plan-intent keeps rollback_plan_attached false."""
+        info = self._build_chain_to_approved_plan()
+        plan_data = self.client.get(f"/apply-executor-plans/{info['aep_id']}").json()["apply_executor_plan"]
+        nested_plan = plan_data.get("apply_executor_plan", {})
+        req_confs = nested_plan.get("required_plan_confirmations", [])
+        ci_resp = self.client.post(f"/apply-executor-plans/{info['aep_id']}/approve-plan-intent", json={
+            "reviewer": "approver", "reason": "validated", "confirmations": req_confs
+        })
+        assert ci_resp.json()["apply_executor_plan"]["rollback_plan_attached"] is False
+
+    def test_approve_plan_intent_cannot_approve_not_ready_record(self):
+        """Test 71: approve-plan-intent cannot approve not_ready record."""
+        resp = self.client.post(
+            "/apply-executor-plans/nonexistent-not-ready/approve-plan-intent",
+            json={"reviewer": "approver", "confirmations": []}
+        )
+        assert resp.json()["found"] is False
+
+    def test_approve_plan_intent_cannot_approve_blocked_record(self):
+        """Test 72: approve-plan-intent cannot approve blocked record."""
+        resp = self.client.post(
+            "/apply-executor-plans/nonexistent-blocked/approve-plan-intent",
+            json={"reviewer": "approver", "confirmations": []}
+        )
+        assert resp.json()["found"] is False
+
+    def test_approve_plan_intent_requires_confirmations(self):
+        """Test 73: approve-plan-intent requires confirmations."""
+        info = self._build_chain_to_approved_plan()
+        ci_resp = self.client.post(
+            f"/apply-executor-plans/{info['aep_id']}/approve-plan-intent",
+            json={"reviewer": "approver", "confirmations": []}
+        )
+        assert ci_resp.json()["found"] is False
+
+    def test_missing_apply_executor_plan_id_returns_found_false(self):
+        """Test 74: missing apply_executor_plan_id returns found false."""
+        resp = self.client.get("/apply-executor-plans/nonexistent-aep-id")
+        data = resp.json()
+        assert data["found"] is False
+        assert data["apply_executor_plan"] is None
+
+    def test_executor_plan_endpoint_does_not_mutate_apply_executor_contract_record(self):
+        """Test 75: executor-plan does not mutate apply_executor_contract_record."""
+        info = self._build_chain_to_approved_plan()
+        before = self.client.get(f"/apply-executor-contracts/{info['aecr_id']}").json()
+        before_status = before["apply_executor_contract"]["status"]
+        self.client.post(f"/apply-executor-contracts/{info['aecr_id']}/executor-plan")
+        after = self.client.get(f"/apply-executor-contracts/{info['aecr_id']}").json()
+        assert after["apply_executor_contract"]["status"] == before_status
+
+    def test_executor_plan_endpoint_does_not_mutate_apply_execution_gate_record(self):
+        """Test 76: endpoint does not mutate apply_execution_gate_record."""
+        info = self._build_chain_to_approved_plan()
+        before = self.client.get(f"/apply-execution-gates/{info['aeg_id']}").json()
+        before_status = before["apply_execution_gate"]["status"]
+        self.client.post(f"/apply-executor-contracts/{info['aecr_id']}/executor-plan")
+        after = self.client.get(f"/apply-execution-gates/{info['aeg_id']}").json()
+        assert after["apply_execution_gate"]["status"] == before_status
+
+    def test_executor_plan_endpoint_does_not_mutate_human_authorization_record(self):
+        """Test 77: endpoint does not mutate human_authorization_record."""
+        info = self._build_chain_to_approved_plan()
+        before = self.client.get(f"/human-authorizations/{info['ha_id']}").json()
+        before_status = before["human_authorization"]["status"]
+        self.client.post(f"/apply-executor-contracts/{info['aecr_id']}/executor-plan")
+        after = self.client.get(f"/human-authorizations/{info['ha_id']}").json()
+        assert after["human_authorization"]["status"] == before_status
+
+    def test_executor_plan_endpoint_does_not_mutate_apply_gate_record(self):
+        """Test 78: endpoint does not mutate apply_gate_record."""
+        info = self._build_chain_to_approved_plan()
+        before = self.client.get(f"/apply-gates/{info['ag_id']}").json()
+        before_status = before["apply_gate"]["status"]
+        self.client.post(f"/apply-executor-contracts/{info['aecr_id']}/executor-plan")
+        after = self.client.get(f"/apply-gates/{info['ag_id']}").json()
+        assert after["apply_gate"]["status"] == before_status
+
+    def test_executor_plan_endpoint_does_not_mutate_verification_verdict_record(self):
+        """Test 79: endpoint does not mutate verification_verdict_record."""
+        info = self._build_chain_to_approved_plan()
+        before = self.client.get(f"/verification-verdicts/{info['vv_id']}").json()
+        before_status = before["verification_verdict"]["status"]
+        self.client.post(f"/apply-executor-contracts/{info['aecr_id']}/executor-plan")
+        after = self.client.get(f"/verification-verdicts/{info['vv_id']}").json()
+        assert after["verification_verdict"]["status"] == before_status
+
+    def test_executor_plan_endpoint_does_not_mutate_simulation_result_record(self):
+        """Test 80: endpoint does not mutate simulation_result_record."""
+        info = self._build_chain_to_approved_plan()
+        before = self.client.get(f"/simulation-results/{info['sr_id']}").json()
+        before_status = before["simulation_result"]["status"]
+        self.client.post(f"/apply-executor-contracts/{info['aecr_id']}/executor-plan")
+        after = self.client.get(f"/simulation-results/{info['sr_id']}").json()
+        assert after["simulation_result"]["status"] == before_status
+
+    def test_legacy_chat_still_works(self):
+        """Test 81: legacy /chat still works."""
+        resp = self.client.post("/chat", json={"message": "legacy msg milestone 74a"})
+        data = resp.json()
+        assert data["status"] == "completed"
