@@ -373,3 +373,70 @@ Also:
 - Legacy `/chat` endpoint and full 1166 tests continue to pass cleanly.
 
 **PROGRESS.md update:** This entry added for Milestone 75B.
+
+### 79A — Apply Executor Evidence Collector Contract Object 
+
+**Status:** Complete
+**Implementation:** Created builder and endpoint, validated via live API
+**Files:**
+- `aether/action/apply_executor_evidence_collector_contract.py` — builder
+- `aether/interface/api_server.py` — added POST `/apply-executor-evidence-collection-plans/{id}/collector-contract` endpoint
+- `tests/test_apply_executor_evidence_collector_contract.py` — unit tests (35/35 passed)
+- `tests/test_chat_api.py` — added API tests (9/9 passed for Milestone 79A class)
+ 
+Pipeline update:
+```
+... → approved_evidence_contract_intent
+   → apply_executor_evidence_collection_plan (Milestone 77A)
+   → apply_executor_evidence_collection_plan_record (Milestone 78A)
+   → apply_executor_evidence_collector_contract (Milestone 79A) ✓
+```
+ 
+The collector contract is purely declarative — does NOT collect evidence, execute tools, authorize apply, or modify state. All safety flags remain false. All unit and API tests pass.
+
+**PROGRESS.md update:** Milestone 79A marked complete.
+
+
+### 79B — Live API Apply Executor Evidence Collector Contract Validation 
+
+**Status:** Complete
+**Validation cases:** All 18 validation cases passed
+**Test results:** 
+- Unit tests: 35/35 passed
+- API tests: 9/9 passed
+- Full pytest: 1347/1347 passed, 0 failures, 0 errors
+
+**API mode used:** FastAPI TestClient calling live endpoints
+
+**Validation summary:**
+All 18 validation cases verified successfully:
+1. Case 01: Approved collection plan intent returns `collector_contract_ready` with all expected fields correct.
+2. Case 02: All `collector_contract_checks` present and passed (25 checks).
+3. Case 03: `collector_boundary` safe with all fields as expected.
+4. Case 04: `collector_permission_model` safe with all permissions false and future authorization required.
+5. Case 05: `collector_input_requirements` and `collector_output_requirements` present with correct items.
+6. Case 06: `collector_forbidden_actions` include all prohibited methods.
+7. Case 07: `collector_allowed_future_actions` are descriptive only.
+8. Case 08: Pending collection plan record returns blocked.
+9. Case 09: Rejected collection plan record returns blocked.
+10. Case 10: Cancelled collection plan record returns blocked.
+11. Case 11: Not ready source plan decision returns blocked.
+12. Case 12: Blocked source plan decision returns blocked.
+13. Case 13: Missing ID returns blocked.
+14. Case 14: Each unsafe flag blocks as expected.
+15. Case 15: Endpoint does not mutate collection plan record.
+16. Case 16: Endpoint does not mutate upstream records.
+17. Case 17: Collector contract is not persisted.
+18. Case 18: Legacy /chat endpoint works normally.
+
+**Compile results:** All modules compiled successfully.
+
+**Git safety results:** Clean git diff, no whitespace errors, no commits made.
+
+**Note about future api_server.py thinning:** The api_server.py file has grown large. A future milestone should move orchestration logic from the interface layer into core/action modules to thin the interface layer. This is not part of Milestone 79B.
+
+**79B has NOT progressed to next milestone.**
+
+**Changes have NOT been committed.**
+
+**Safety invariants maintained throughout:** No evidence collection performed; no apply or rollback executed; no tool execution invoked; no execution or apply authorization granted; no prohibited actions occurred.

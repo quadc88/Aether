@@ -6865,3 +6865,225 @@ class TestApplyExecutorEvidenceCollectionPlanRecordStoreAPIMilestone78A:
         assert resp.status_code == 200
         data = resp.json()
         assert data["status"] in ["completed", "processed"]
+
+
+class TestApplyExecutorEvidenceCollectorContractAPIMilestone79A:
+    """Tests for Apply Executor Evidence Collector Contract API (Milestone 79A)."""
+
+    @classmethod
+    def setup_class(cls):
+        """Create a fresh TestClient."""
+        from importlib import reload
+        import aether.interface.api_server as ap_mod
+        reload(ap_mod)
+        from fastapi.testclient import TestClient
+        cls.client = TestClient(ap_mod.app)
+    def test_01_collector_contract_endpoint_returns_ready(self, aeepl_store, monkeypatch, tmp_path):
+        """Returns collector contract for approved_collection_plan_intent record."""
+        from aether.action.apply_executor_evidence_collection_plan_queue import (
+            create_apply_executor_evidence_collection_plan_record as _create_aecp,
+            update_apply_executor_evidence_collection_plan_record_status as _update_aecp,
+            get_apply_executor_evidence_collection_plan_record as _get_aecp,
+        )
+        store_dir = tmp_path / "apply_executor_evidence_collection_plans"
+        store_dir.mkdir(parents=True, exist_ok=True)
+        import aether.action.apply_executor_evidence_collection_plan_queue as aepq_mod
+        def mock_ensure(): return store_dir
+        def mock_get(): return store_dir.parent
+        monkeypatch.setattr(aepq_mod, "_ensure_collection_plan_dir", mock_ensure)
+        monkeypatch.setattr(aepq_mod, "get_private_dir", mock_get)
+
+        plan = {
+            "evidence_collection_plan_type": "apply_executor_evidence_collection_plan",
+            "evidence_collection_plan_required": True,
+            "evidence_collection_plan_status": "prepared",
+            "decision": "evidence_collection_plan_ready",
+            "apply_executor_evidence_contract_id": "ec1",
+            "apply_executor_evidence_contract_record_status": None,
+            "evidence_contract_decision": "evidence_contract_ready",
+            "apply_executor_plan_id": "ap1", "apply_executor_contract_id": "ac1",
+            "apply_execution_gate_id": "aeg1", "human_authorization_id": "ha1",
+            "apply_gate_id": "ag1", "verification_verdict_id": "vv1",
+            "simulation_result_id": "sr1", "simulation_plan_id": "sp1", "dry_run_id": "dr1",
+            "required_collection_plan_confirmations": ["c1", "c2"],
+            "planned_collection_steps": [{"name": f"s{i}"} for i in range(6)],
+            "planned_evidence_items": [{"name": f"i{i}"} for i in range(5)],
+            "pre_execution_collection_plan": [{"name": f"pre{i}"} for i in range(4)],
+            "during_execution_collection_plan": [{"name": f"dur{i}"} for i in range(3)],
+            "post_execution_collection_plan": [{"name": f"post{i}"} for i in range(3)],
+            "rollback_collection_plan": [{"name": f"rb{i}"} for i in range(4)],
+            "audit_collection_plan": [{"name": f"au{i}"} for i in range(5)],
+            "collection_execution_constraints": {"contract_scope": "contract_only_no_collection", "collection_allowed_now": False},
+            "collector_boundary": {"collector_exists": False},
+            "collection_acceptance_plan": [{"criterion": f"c{i}", "required": True, "satisfied_now": False} for i in range(5)],
+            "requested_action": {"tool_id": "test.tool", "action_type": "status_check", "target": "test"},
+            "blocking_reasons": [],
+            "apply_authorized": False, "apply_allowed": False, "rollback_allowed": False,
+            "execution_allowed": False, "tool_execution_allowed": False,
+            "dry_run_execution_allowed": False, "simulation_execution_allowed": False,
+            "apply_gate_execution_allowed": False, "human_authorization_execution_allowed": False,
+            "apply_execution_gate_execution_allowed": False, "apply_executor_contract_execution_allowed": False,
+            "apply_executor_plan_execution_allowed": False, "apply_executor_evidence_contract_execution_allowed": False,
+            "apply_executor_evidence_collection_plan_execution_allowed": False,
+            "apply_executor_evidence_collection_plan_record_execution_allowed": False,
+            "apply_executor_evidence_collector_contract_execution_allowed": False,
+        }
+        rec = _create_aecp(plan)
+        plan_id = rec["apply_executor_evidence_collection_plan_id"]
+        _update_aecp(plan_id, "approved_collection_plan_intent", reviewer="test", confirmations=["c1", "c2"])
+        resp = self.client.post(f"/apply-executor-evidence-collection-plans/{plan_id}/collector-contract")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["decision"] == "collector_contract_ready"
+        assert data["collector_contract_required"] is True
+        for flag in ["evidence_collected", "rollback_plan_attached", "apply_authorized", "apply_allowed",
+                     "execution_allowed", "tool_execution_allowed", "apply_executed", "rollback_executed"]:
+            assert data.get(flag) is False, f"Flag {flag} should be false"
+        assert data.get("apply_executor_evidence_collector_contract_execution_allowed") is False
+    def test_02_pending_plan_returns_blocked(self, aeepl_store, monkeypatch, tmp_path):
+        from aether.action.apply_executor_evidence_collection_plan_queue import create_apply_executor_evidence_collection_plan_record as _create_aecp
+        store_dir = tmp_path / "apply_executor_evidence_collection_plans"
+        store_dir.mkdir(parents=True, exist_ok=True)
+        import aether.action.apply_executor_evidence_collection_plan_queue as aepq_mod
+        def mock_ensure(): return store_dir
+        def mock_get(): return store_dir.parent
+        monkeypatch.setattr(aepq_mod, "_ensure_collection_plan_dir", mock_ensure)
+        monkeypatch.setattr(aepq_mod, "get_private_dir", mock_get)
+
+        plan = {
+            "status": "pending", "decision": "not_ready",
+            "apply_executor_evidence_collection_plan": {"decision": "not_ready"},
+        }
+        rec = _create_aecp(plan)
+        plan_id = rec["apply_executor_evidence_collection_plan_id"]
+        self.client.post(f"/apply-executor-evidence-collection-plans/{plan_id}/approve-collection-plan-intent",
+                 json={"reviewer": "test", "confirmations": ["c1", "c2"]})
+        resp = self.client.post(f"/apply-executor-evidence-collection-plans/{plan_id}/collector-contract")
+        assert resp.json()["decision"] == "blocked"
+
+    def test_03_rejected_plan_returns_blocked(self, aeepl_store, monkeypatch, tmp_path):
+        from aether.action.apply_executor_evidence_collection_plan_queue import create_apply_executor_evidence_collection_plan_record as _create_aecp
+        store_dir = tmp_path / "apply_executor_evidence_collection_plans"
+        store_dir.mkdir(parents=True, exist_ok=True)
+        import aether.action.apply_executor_evidence_collection_plan_queue as aepq_mod
+        def mock_ensure(): return store_dir
+        def mock_get(): return store_dir.parent
+        monkeypatch.setattr(aepq_mod, "_ensure_collection_plan_dir", mock_ensure)
+        monkeypatch.setattr(aepq_mod, "get_private_dir", mock_get)
+
+        plan = {
+            "status": "rejected", "decision": "rejected",
+            "apply_executor_evidence_collection_plan": {"decision": "rejected"},
+        }
+        rec = _create_aecp(plan)
+        plan_id = rec["apply_executor_evidence_collection_plan_id"]
+        self.client.post(f"/apply-executor-evidence-collection-plans/{plan_id}/approve-collection-plan-intent",
+                 json={"reviewer": "test", "confirmations": ["c1", "c2"]})
+        resp = self.client.post(f"/apply-executor-evidence-collection-plans/{plan_id}/collector-contract")
+        assert resp.json()["decision"] == "blocked"
+
+    def test_04_cancelled_plan_returns_blocked(self, aeepl_store, monkeypatch, tmp_path):
+        from aether.action.apply_executor_evidence_collection_plan_queue import create_apply_executor_evidence_collection_plan_record as _create_aecp
+        store_dir = tmp_path / "apply_executor_evidence_collection_plans"
+        store_dir.mkdir(parents=True, exist_ok=True)
+        import aether.action.apply_executor_evidence_collection_plan_queue as aepq_mod
+        def mock_ensure(): return store_dir
+        def mock_get(): return store_dir.parent
+        monkeypatch.setattr(aepq_mod, "_ensure_collection_plan_dir", mock_ensure)
+        monkeypatch.setattr(aepq_mod, "get_private_dir", mock_get)
+
+        plan = {
+            "status": "cancelled", "decision": "cancelled",
+            "apply_executor_evidence_collection_plan": {"decision": "cancelled"},
+        }
+        rec = _create_aecp(plan)
+        plan_id = rec["apply_executor_evidence_collection_plan_id"]
+        self.client.post(f"/apply-executor-evidence-collection-plans/{plan_id}/approve-collection-plan-intent",
+                 json={"reviewer": "test", "confirmations": ["c1", "c2"]})
+        resp = self.client.post(f"/apply-executor-evidence-collection-plans/{plan_id}/collector-contract")
+        assert resp.json()["decision"] == "blocked"
+
+    def test_05_not_ready_decision_returns_blocked(self, aeepl_store, monkeypatch, tmp_path):
+        from aether.action.apply_executor_evidence_collection_plan_queue import create_apply_executor_evidence_collection_plan_record as _create_aecp
+        store_dir = tmp_path / "apply_executor_evidence_collection_plans"
+        store_dir.mkdir(parents=True, exist_ok=True)
+        import aether.action.apply_executor_evidence_collection_plan_queue as aepq_mod
+        def mock_ensure(): return store_dir
+        def mock_get(): return store_dir.parent
+        monkeypatch.setattr(aepq_mod, "_ensure_collection_plan_dir", mock_ensure)
+        monkeypatch.setattr(aepq_mod, "get_private_dir", mock_get)
+
+        plan = {
+            "status": "approved_collection_plan_intent", "decision": "evidence_collection_plan_ready",
+            "evidence_collection_plan_intent_recorded": True, "evidence_collection_plan_review_completed": True,
+            "apply_executor_evidence_collection_plan_persisted": True,
+            "apply_executor_evidence_collection_plan": {"decision": "not_ready"},
+        }
+        rec = _create_aecp(plan)
+        plan_id = rec["apply_executor_evidence_collection_plan_id"]
+        self.client.post(f"/apply-executor-evidence-collection-plans/{plan_id}/approve-collection-plan-intent",
+                 json={"reviewer": "test", "confirmations": ["c1", "c2"]})
+        resp = self.client.post(f"/apply-executor-evidence-collection-plans/{plan_id}/collector-contract")
+        assert resp.json()["decision"] == "blocked"
+
+    def test_06_blocked_decision_returns_blocked(self, aeepl_store, monkeypatch, tmp_path):
+        from aether.action.apply_executor_evidence_collection_plan_queue import create_apply_executor_evidence_collection_plan_record as _create_aecp
+        store_dir = tmp_path / "apply_executor_evidence_collection_plans"
+        store_dir.mkdir(parents=True, exist_ok=True)
+        import aether.action.apply_executor_evidence_collection_plan_queue as aepq_mod
+        def mock_ensure(): return store_dir
+        def mock_get(): return store_dir.parent
+        monkeypatch.setattr(aepq_mod, "_ensure_collection_plan_dir", mock_ensure)
+        monkeypatch.setattr(aepq_mod, "get_private_dir", mock_get)
+
+        plan = {
+            "status": "approved_collection_plan_intent", "decision": "evidence_collection_plan_ready",
+            "evidence_collection_plan_intent_recorded": True, "evidence_collection_plan_review_completed": True,
+            "apply_executor_evidence_collection_plan_persisted": True,
+            "apply_executor_evidence_collection_plan": {"decision": "blocked"},
+        }
+        rec = _create_aecp(plan)
+        plan_id = rec["apply_executor_evidence_collection_plan_id"]
+        self.client.post(f"/apply-executor-evidence-collection-plans/{plan_id}/approve-collection-plan-intent",
+                 json={"reviewer": "test", "confirmations": ["c1", "c2"]})
+        resp = self.client.post(f"/apply-executor-evidence-collection-plans/{plan_id}/collector-contract")
+        assert resp.json()["decision"] == "blocked"
+
+    def test_07_missing_id_returns_blocked(self, aeepl_store, monkeypatch, tmp_path):
+        resp = self.client.post("/apply-executor-evidence-collection-plans/nonexistent-id/collector-contract")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["decision"] == "blocked"
+        assert data["apply_executor_evidence_collection_plan_record"] is None
+
+    def test_08_endpoint_does_not_mutate_collection_plan_record(self, aeepl_store, monkeypatch, tmp_path):
+        from aether.action.apply_executor_evidence_collection_plan_queue import get_apply_executor_evidence_collection_plan_record as _get_aecp
+        from aether.action.apply_executor_evidence_collection_plan_queue import create_apply_executor_evidence_collection_plan_record as _create_aecp
+        store_dir = tmp_path / "apply_executor_evidence_collection_plans"
+        store_dir.mkdir(parents=True, exist_ok=True)
+        import aether.action.apply_executor_evidence_collection_plan_queue as aepq_mod
+        def mock_ensure(): return store_dir
+        def mock_get(): return store_dir.parent
+        monkeypatch.setattr(aepq_mod, "_ensure_collection_plan_dir", mock_ensure)
+        monkeypatch.setattr(aepq_mod, "get_private_dir", mock_get)
+
+        plan = {
+            "status": "approved_collection_plan_intent", "decision": "evidence_collection_plan_ready",
+            "evidence_collection_plan_intent_recorded": True, "evidence_collection_plan_review_completed": True,
+            "apply_executor_evidence_collection_plan_persisted": True,
+            "apply_executor_evidence_collection_plan": {"decision": "evidence_collection_plan_ready"},
+        }
+        rec = _create_aecp(plan)
+        plan_id = rec["apply_executor_evidence_collection_plan_id"]
+        self.client.post(f"/apply-executor-evidence-collection-plans/{plan_id}/approve-collection-plan-intent",
+                 json={"reviewer": "test", "confirmations": ["c1", "c2"]})
+        before_status = _get_aecp(plan_id)["status"]
+        self.client.post(f"/apply-executor-evidence-collection-plans/{plan_id}/collector-contract")
+        after_status = _get_aecp(plan_id)["status"]
+        assert after_status == before_status
+
+    def test_09_legacy_chat_still_works(self, aeepl_store, monkeypatch, tmp_path):
+        resp = self.client.post("/chat", json={"message": "test milestone 79a legacy chat"})
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["status"] in ["completed", "processed"]

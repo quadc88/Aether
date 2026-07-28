@@ -2547,6 +2547,9 @@ from aether.action.apply_executor_evidence_contract import (
 from aether.action.apply_executor_evidence_collection_plan import (
     build_apply_executor_evidence_collection_plan as _build_aeecp,
 )
+from aether.action.apply_executor_evidence_collector_contract import (
+    build_apply_executor_evidence_collector_contract as _build_aeecp_collector,
+)
 from aether.action.apply_executor_evidence_contract_queue import (
     create_apply_executor_evidence_contract_record as _create_aeecr,
     get_apply_executor_evidence_contract_record as _get_aeec,
@@ -2938,7 +2941,90 @@ def evidence_collection_plan(
     }
 
 
+@app.post("/apply-executor-evidence-collection-plans/{id}/collector-contract")
+def collector_contract(id: str, request: dict | None = None):
+    """Build an apply executor evidence collector contract from a collection plan record.
+
+    This endpoint returns a structured collector contract without collecting evidence,
+    authorizing execution, or modifying state per Milestone 79A safety.
+    """
+    context = request.get("context") if request and request.get("context") else None
+
+    # Read the collection plan record
+    record = _get_aeecp(id)
+    if record is None:
+        # Build a blocked contract for missing record
+        contract = _build_aeecp_collector(None, context)
+        return {
+            "name": "Aether",
+            "status": runtime.status(),
+            "apply_executor_evidence_collection_plan_record": None,
+            "apply_executor_evidence_collector_contract": contract,
+            "collector_contract_required": contract.get("collector_contract_required"),
+            "collector_contract_status": contract.get("collector_contract_status"),
+            "decision": contract.get("decision"),
+            "evidence_collection_plan_review_completed": record.get("evidence_collection_plan_review_completed") if record else False,
+            "evidence_collection_plan_intent_recorded": record.get("evidence_collection_plan_intent_recorded") if record else False,
+            "evidence_collected": False,
+            "rollback_plan_attached": False,
+            "apply_authorized": False,
+            "apply_allowed": False,
+            "rollback_allowed": False,
+            "execution_allowed": False,
+            "tool_execution_allowed": False,
+            "dry_run_execution_allowed": False,
+            "simulation_execution_allowed": False,
+            "apply_gate_execution_allowed": False,
+            "human_authorization_execution_allowed": False,
+            "apply_execution_gate_execution_allowed": False,
+            "apply_executor_contract_execution_allowed": False,
+            "apply_executor_plan_execution_allowed": False,
+            "apply_executor_evidence_contract_execution_allowed": False,
+            "apply_executor_evidence_collection_plan_execution_allowed": False,
+            "apply_executor_evidence_collection_plan_record_execution_allowed": False,
+            "apply_executor_evidence_collector_contract_execution_allowed": False,
+            "apply_executed": False,
+            "rollback_executed": False,
+        }
+
+    # Build the collector contract
+    contract = _build_aeecp_collector(record, context)
+
+    return {
+        "name": "Aether",
+        "status": runtime.status(),
+        "apply_executor_evidence_collection_plan_record": record,
+        "apply_executor_evidence_collector_contract": contract,
+        "collector_contract_required": contract.get("collector_contract_required"),
+        "collector_contract_status": contract.get("collector_contract_status"),
+        "decision": contract.get("decision"),
+        "evidence_collection_plan_review_completed": record.get("evidence_collection_plan_review_completed", False),
+        "evidence_collection_plan_intent_recorded": record.get("evidence_collection_plan_intent_recorded", False),
+        "evidence_collected": False,
+        "rollback_plan_attached": False,
+        "apply_authorized": False,
+        "apply_allowed": False,
+        "rollback_allowed": False,
+        "execution_allowed": False,
+        "tool_execution_allowed": False,
+        "dry_run_execution_allowed": False,
+        "simulation_execution_allowed": False,
+        "apply_gate_execution_allowed": False,
+        "human_authorization_execution_allowed": False,
+        "apply_execution_gate_execution_allowed": False,
+        "apply_executor_contract_execution_allowed": False,
+        "apply_executor_plan_execution_allowed": False,
+        "apply_executor_evidence_contract_execution_allowed": False,
+        "apply_executor_evidence_collection_plan_execution_allowed": False,
+        "apply_executor_evidence_collection_plan_record_execution_allowed": False,
+        "apply_executor_evidence_collector_contract_execution_allowed": False,
+        "apply_executed": False,
+        "rollback_executed": False,
+    }
+
+
 # New endpoints for evidence collection plan (Milestone 78A)
+
 
 
 class PlanDecisionBody(BaseModel):

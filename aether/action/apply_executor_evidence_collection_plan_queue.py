@@ -60,6 +60,7 @@ def create_apply_executor_evidence_collection_plan_record(
         "status": "pending",
         "apply_executor_evidence_collection_plan": dict(apply_executor_evidence_collection_plan),
         "decision": decision if decision else None,
+        "evidence_collection_plan_decision": decision if decision else None,
         "apply_executor_evidence_contract_id": apply_executor_evidence_collection_plan.get("apply_executor_evidence_contract_id"),
         "apply_executor_evidence_contract_record_status": None,
         "evidence_contract_decision": apply_executor_evidence_collection_plan.get("evidence_contract_decision"),
