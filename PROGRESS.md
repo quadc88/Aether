@@ -1,6 +1,6 @@
 # Aether Project Progress Ledger
 
-**Last updated:** Milestone 80B — Thin Interface Refactor Phase 1
+**Last updated:** Milestone 80C — Thin Interface Refactor Phase 2
 **Aether version:** 0.2.0  
 **Pipeline maturity:** Declarative Apply Executor Evidence Contract (prepared/blocked, no collection or execution)
 
@@ -192,7 +192,7 @@ New in 76A:
 
 ## 7. Current Test Baseline
 
-As of Milestone 80B:
+As of Milestone 80C:
 - **Pytest:** 1347/1347 passed, 0 failures
 - **Compile:** All modules compiled successfully
 - **Git safety:** Clean — no diffs on README.md, ARCHITECTURE.md, code_reviewer.py
@@ -527,3 +527,85 @@ Moved Milestone 77-79 orchestration from `aether/interface/api_server.py` into `
 Milestone 80C — Thin Interface Refactor Phase 2 (move executor_plan + evidence_contract service extraction)
 
 **80C has NOT been started. No commit made.**
+
+
+### 80C — Thin Interface Refactor Phase 2
+
+**Status:** Complete
+
+**Description:**
+Moved Milestone 73-76 orchestration from `aether/interface/api_server.py` into `aether/action/services/executor_plan_service.py` and `aether/action/services/evidence_contract_service.py`. This is a behavior-preserving structural refactor — no endpoint paths, response shapes, or safety logic changed.
+
+**Scope moved:**
+
+Executor Plan (Milestones 73-74):
+- `POST /apply-executor-contracts/{id}/executor-plan` — executor plan creation
+- `GET /apply-executor-plans` — list executor plan records
+- `GET /apply-executor-plans/{id}` — get single executor plan record
+- `POST /apply-executor-plans/{id}/cancel` — cancel
+- `POST /apply-executor-plans/{id}/reject` — reject
+- `POST /apply-executor-plans/{id}/approve-plan-intent` — approve
+
+Evidence Contract (Milestones 75-76):
+- `POST /apply-executor-plans/{id}/evidence-contract` — evidence contract creation
+- `GET /apply-executor-evidence-contracts` — list evidence contract records
+- `GET /apply-executor-evidence-contracts/{id}` — get single evidence contract record
+- `POST /apply-executor-evidence-contracts/{id}/cancel` — cancel
+- `POST /apply-executor-evidence-contracts/{id}/reject` — reject
+- `POST /apply-executor-evidence-contracts/{id}/approve-evidence-contract-intent` — approve
+
+**Files created:**
+- `aether/action/services/executor_plan_service.py` — 6 service functions
+- `aether/action/services/evidence_contract_service.py` — 6 service functions + `_build_fallback_contract` helper
+
+**Files modified:**
+- `aether/interface/api_server.py` — thinned 12 endpoints to single service calls; removed unused builder/queue imports; removed `_build_fallback_contract` helper; kept `collection_plan_service` import and request model classes
+
+**Service functions created:**
+
+`executor_plan_service.py`:
+1. `handle_executor_plan_create(contract_id, context)` — build + persist + response
+2. `handle_list_executor_plans(status, decision, limit)` — list records
+3. `handle_get_executor_plan(plan_id)` — get single record
+4. `handle_cancel_executor_plan(plan_id, reviewer, reason)` — cancel
+5. `handle_reject_executor_plan(plan_id, reviewer, reason)` — reject
+6. `handle_approve_executor_plan_intent(plan_id, reviewer, reason, confirmations)` — approve
+
+`evidence_contract_service.py`:
+1. `handle_evidence_contract_create(plan_id, context)` — build + persist + response
+2. `handle_list_evidence_contracts(status, decision, limit)` — list records
+3. `handle_get_evidence_contract(contract_id)` — get single record
+4. `handle_cancel_evidence_contract(contract_id, reviewer, reason)` — cancel
+5. `handle_reject_evidence_contract(contract_id, reviewer, reason)` — reject
+6. `handle_approve_evidence_contract_intent(contract_id, reviewer, reason, confirmations)` — approve
+
+**Verification:**
+- Focused tests: 56/56, 48/48, 60/60, 22/22 all passed
+- 80C API integration tests: 106/106 passed
+- 80B regression tests: 16/16, 22/22, 35/35 all passed
+- 80B API integration tests: 40/40 passed
+- Full pytest: 1347/1347 passed, 0 failures, 0 errors
+- All 9 modules compiled successfully
+- Git diff clean (no whitespace errors)
+- No runtime/private data modified
+
+**Safety invariants maintained:**
+- No evidence collection performed
+- No apply or rollback executed
+- No tool execution invoked
+- No execution or apply authorization granted
+- No prohibited actions
+
+**Not changed:**
+- No builder modules modified
+- No queue modules modified
+- No test files modified
+- No endpoint paths changed
+- No response shapes changed
+- No safety logic changed
+- 80B `collection_plan_service.py` untouched
+
+**Next recommended milestone:**
+Milestone 80D — Thin Interface Refactor Phase 3 (executor_contract + apply_execution_gate service extraction)
+
+**80D has NOT been started. No commit made.**
