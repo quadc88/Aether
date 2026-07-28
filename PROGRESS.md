@@ -1,6 +1,6 @@
 # Aether Project Progress Ledger
 
-**Last updated:** Milestone 80A — Thin Interface Refactor Plan
+**Last updated:** Milestone 80B — Thin Interface Refactor Phase 1
 **Aether version:** 0.2.0  
 **Pipeline maturity:** Declarative Apply Executor Evidence Contract (prepared/blocked, no collection or execution)
 
@@ -192,8 +192,8 @@ New in 76A:
 
 ## 7. Current Test Baseline
 
-As of Milestone 80A:
-- **Pytest:** 1347/1347 passed, 0 failures (from Milestone 79B)
+As of Milestone 80B:
+- **Pytest:** 1347/1347 passed, 0 failures
 - **Compile:** All modules compiled successfully
 - **Git safety:** Clean — no diffs on README.md, ARCHITECTURE.md, code_reviewer.py
 - **Trailing whitespace:** Clean
@@ -467,3 +467,63 @@ Created a structured refactor plan to thin `aether/interface/api_server.py` acco
 **Next milestone:** 80B — Thin Interface Refactor Phase 1
 
 **80B has NOT been started.**
+
+
+### 80B — Thin Interface Refactor Phase 1
+
+**Status:** Complete
+
+**Description:**
+Moved Milestone 77-79 orchestration from `aether/interface/api_server.py` into `aether/action/services/collection_plan_service.py`. This is a behavior-preserving structural refactor — no endpoint paths, response shapes, or safety logic changed.
+
+**Scope moved:**
+- `POST /apply-executor-evidence-contracts/{id}/evidence-collection-plan` — evidence collection plan creation
+- `GET /apply-executor-evidence-collection-plans` — list collection plan records
+- `GET /apply-executor-evidence-collection-plans/{id}` — get single collection plan record
+- `POST /apply-executor-evidence-collection-plans/{id}/reject` — reject
+- `POST /apply-executor-evidence-collection-plans/{id}/cancel` — cancel
+- `POST /apply-executor-evidence-collection-plans/{id}/approve-collection-plan-intent` — approve
+- `POST /apply-executor-evidence-collection-plans/{id}/collector-contract` — collector contract creation
+
+**Files created:**
+- `aether/action/services/__init__.py` — package init
+- `aether/action/services/collection_plan_service.py` — 7 service functions
+
+**Files modified:**
+- `aether/interface/api_server.py` — thinned 7 endpoints to single service calls; removed unused builder/queue imports
+
+**Service functions created:**
+1. `handle_evidence_collection_plan_create(evidence_contract_id, context)` — build + persist + response
+2. `handle_list_collection_plans(status, decision, limit)` — list records
+3. `handle_get_collection_plan(plan_id)` — get single record
+4. `handle_reject_collection_plan(plan_id, reviewer, reason)` — reject
+5. `handle_cancel_collection_plan(plan_id, reviewer, reason)` — cancel
+6. `handle_approve_collection_plan_intent(plan_id, reviewer, reason, confirmations)` — approve
+7. `handle_collector_contract_create(plan_id, context)` — build + response (no persist)
+
+**Verification:**
+- Focused tests: 16/16, 22/22, 35/35, 40/40 all passed
+- Full pytest: 1347/1347 passed, 0 failures, 0 errors
+- All modules compiled successfully
+- Git diff clean (no whitespace errors)
+- No runtime/private data modified
+
+**Safety invariants maintained:**
+- No evidence collection performed
+- No apply or rollback executed
+- No tool execution invoked
+- No execution or apply authorization granted
+- No prohibited actions
+
+**Not changed:**
+- No builder modules modified
+- No queue modules modified
+- No test files modified
+- No endpoint paths changed
+- No response shapes changed
+- No safety logic changed
+
+**Next recommended milestone:**
+Milestone 80C — Thin Interface Refactor Phase 2 (move executor_plan + evidence_contract service extraction)
+
+**80C has NOT been started. No commit made.**

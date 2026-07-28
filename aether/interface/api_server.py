@@ -2544,29 +2544,21 @@ def approve_plan_intent_executor(apply_executor_plan_id: str, request: ApplyExec
 from aether.action.apply_executor_evidence_contract import (
     build_apply_executor_evidence_contract as _build_aeecc,
 )
-from aether.action.apply_executor_evidence_collection_plan import (
-    build_apply_executor_evidence_collection_plan as _build_aeecp,
-)
-from aether.action.apply_executor_evidence_collector_contract import (
-    build_apply_executor_evidence_collector_contract as _build_aeecp_collector,
-)
 from aether.action.apply_executor_evidence_contract_queue import (
     create_apply_executor_evidence_contract_record as _create_aeecr,
     get_apply_executor_evidence_contract_record as _get_aeec,
     list_apply_executor_evidence_contract_records as _list_aeec,
     update_apply_executor_evidence_contract_record_status as _update_aeec,
 )
-from aether.action.apply_executor_evidence_contract_queue import (
-    create_apply_executor_evidence_contract_record as _create_aeecr,
-    get_apply_executor_evidence_contract_record as _get_aeec,
-    list_apply_executor_evidence_contract_records as _list_aeec,
-    update_apply_executor_evidence_contract_record_status as _update_aeec,
-)
-from aether.action.apply_executor_evidence_collection_plan_queue import (
-    create_apply_executor_evidence_collection_plan_record as _create_aeecp,
-    get_apply_executor_evidence_collection_plan_record as _get_aeecp,
-    list_apply_executor_evidence_collection_plan_records as _list_aeecp,
-    update_apply_executor_evidence_collection_plan_record_status as _update_aeecp,
+
+from aether.action.services.collection_plan_service import (
+    handle_evidence_collection_plan_create,
+    handle_list_collection_plans,
+    handle_get_collection_plan,
+    handle_reject_collection_plan,
+    handle_cancel_collection_plan,
+    handle_approve_collection_plan_intent,
+    handle_collector_contract_create,
 )
 
 
@@ -2870,75 +2862,7 @@ def evidence_collection_plan(
     collecting evidence or authorizing execution per Milestone 77A safety.
     """
     context = request.context if request and request.context else None
-
-    # Read the evidence contract record
-    record = _get_aeec(apply_executor_evidence_contract_id)
-    if record is None:
-        # Build a blocked plan for missing record
-        plan = _build_aeecp(None, context)
-        return {
-            "name": "Aether",
-            "status": runtime.status(),
-            "apply_executor_evidence_contract_record": None,
-            "apply_executor_evidence_collection_plan": plan,
-            "evidence_collection_plan_required": plan.get("evidence_collection_plan_required"),
-            "evidence_collection_plan_status": plan.get("evidence_collection_plan_status"),
-            "decision": plan.get("decision"),
-            "evidence_contract_review_completed": record.get("evidence_contract_review_completed") if record else False,
-            "evidence_contract_intent_recorded": record.get("evidence_contract_intent_recorded") if record else False,
-            "evidence_collected": False,
-            "rollback_plan_attached": False,
-            "apply_authorized": False,
-            "apply_allowed": False,
-            "rollback_allowed": False,
-            "execution_allowed": False,
-            "tool_execution_allowed": False,
-            "dry_run_execution_allowed": False,
-            "simulation_execution_allowed": False,
-            "apply_gate_execution_allowed": False,
-            "human_authorization_execution_allowed": False,
-            "apply_execution_gate_execution_allowed": False,
-            "apply_executor_contract_execution_allowed": False,
-            "apply_executor_plan_execution_allowed": False,
-            "apply_executor_evidence_contract_execution_allowed": False,
-            "apply_executor_evidence_collection_plan_execution_allowed": False,
-        }
-
-    # Build the evidence collection plan
-    plan = _build_aeecp(record, context)
-
-    # Persist the plan record
-    rec = _create_aeecp(plan, context)
-
-    return {
-        "name": "Aether",
-        "status": runtime.status(),
-        "apply_executor_evidence_contract_record": record,
-        "apply_executor_evidence_collection_plan": plan,
-        "apply_executor_evidence_collection_plan_record": rec,
-        "apply_executor_evidence_collection_plan_id": rec["apply_executor_evidence_collection_plan_id"],
-        "evidence_collection_plan_required": plan.get("evidence_collection_plan_required"),
-        "evidence_collection_plan_status": plan.get("evidence_collection_plan_status"),
-        "decision": plan.get("decision"),
-        "evidence_contract_review_completed": record.get("evidence_contract_review_completed", False),
-        "evidence_contract_intent_recorded": record.get("evidence_contract_intent_recorded", False),
-        "evidence_collected": False,
-        "rollback_plan_attached": False,
-        "apply_authorized": False,
-        "apply_allowed": False,
-        "rollback_allowed": False,
-        "execution_allowed": False,
-        "tool_execution_allowed": False,
-        "dry_run_execution_allowed": False,
-        "simulation_execution_allowed": False,
-        "apply_gate_execution_allowed": False,
-        "human_authorization_execution_allowed": False,
-        "apply_execution_gate_execution_allowed": False,
-        "apply_executor_contract_execution_allowed": False,
-        "apply_executor_plan_execution_allowed": False,
-        "apply_executor_evidence_contract_execution_allowed": False,
-        "apply_executor_evidence_collection_plan_execution_allowed": False,
-    }
+    return handle_evidence_collection_plan_create(apply_executor_evidence_contract_id, context)
 
 
 @app.post("/apply-executor-evidence-collection-plans/{id}/collector-contract")
@@ -2949,78 +2873,7 @@ def collector_contract(id: str, request: dict | None = None):
     authorizing execution, or modifying state per Milestone 79A safety.
     """
     context = request.get("context") if request and request.get("context") else None
-
-    # Read the collection plan record
-    record = _get_aeecp(id)
-    if record is None:
-        # Build a blocked contract for missing record
-        contract = _build_aeecp_collector(None, context)
-        return {
-            "name": "Aether",
-            "status": runtime.status(),
-            "apply_executor_evidence_collection_plan_record": None,
-            "apply_executor_evidence_collector_contract": contract,
-            "collector_contract_required": contract.get("collector_contract_required"),
-            "collector_contract_status": contract.get("collector_contract_status"),
-            "decision": contract.get("decision"),
-            "evidence_collection_plan_review_completed": record.get("evidence_collection_plan_review_completed") if record else False,
-            "evidence_collection_plan_intent_recorded": record.get("evidence_collection_plan_intent_recorded") if record else False,
-            "evidence_collected": False,
-            "rollback_plan_attached": False,
-            "apply_authorized": False,
-            "apply_allowed": False,
-            "rollback_allowed": False,
-            "execution_allowed": False,
-            "tool_execution_allowed": False,
-            "dry_run_execution_allowed": False,
-            "simulation_execution_allowed": False,
-            "apply_gate_execution_allowed": False,
-            "human_authorization_execution_allowed": False,
-            "apply_execution_gate_execution_allowed": False,
-            "apply_executor_contract_execution_allowed": False,
-            "apply_executor_plan_execution_allowed": False,
-            "apply_executor_evidence_contract_execution_allowed": False,
-            "apply_executor_evidence_collection_plan_execution_allowed": False,
-            "apply_executor_evidence_collection_plan_record_execution_allowed": False,
-            "apply_executor_evidence_collector_contract_execution_allowed": False,
-            "apply_executed": False,
-            "rollback_executed": False,
-        }
-
-    # Build the collector contract
-    contract = _build_aeecp_collector(record, context)
-
-    return {
-        "name": "Aether",
-        "status": runtime.status(),
-        "apply_executor_evidence_collection_plan_record": record,
-        "apply_executor_evidence_collector_contract": contract,
-        "collector_contract_required": contract.get("collector_contract_required"),
-        "collector_contract_status": contract.get("collector_contract_status"),
-        "decision": contract.get("decision"),
-        "evidence_collection_plan_review_completed": record.get("evidence_collection_plan_review_completed", False),
-        "evidence_collection_plan_intent_recorded": record.get("evidence_collection_plan_intent_recorded", False),
-        "evidence_collected": False,
-        "rollback_plan_attached": False,
-        "apply_authorized": False,
-        "apply_allowed": False,
-        "rollback_allowed": False,
-        "execution_allowed": False,
-        "tool_execution_allowed": False,
-        "dry_run_execution_allowed": False,
-        "simulation_execution_allowed": False,
-        "apply_gate_execution_allowed": False,
-        "human_authorization_execution_allowed": False,
-        "apply_execution_gate_execution_allowed": False,
-        "apply_executor_contract_execution_allowed": False,
-        "apply_executor_plan_execution_allowed": False,
-        "apply_executor_evidence_contract_execution_allowed": False,
-        "apply_executor_evidence_collection_plan_execution_allowed": False,
-        "apply_executor_evidence_collection_plan_record_execution_allowed": False,
-        "apply_executor_evidence_collector_contract_execution_allowed": False,
-        "apply_executed": False,
-        "rollback_executed": False,
-    }
+    return handle_collector_contract_create(id, context)
 
 
 # New endpoints for evidence collection plan (Milestone 78A)
@@ -3044,66 +2897,26 @@ def list_evidence_collection_plans(
     decision: str | None = None,
     limit: int = 50,
 ):
-    records = _list_aeecp(status=status, decision=decision, limit=limit)
-    return {
-        "name": "Aether",
-        "status": runtime.status(),
-        "apply_executor_evidence_collection_plans": records,
-        "count": len(records),
-    }
+    return handle_list_collection_plans(status, decision, limit)
 
 
 @app.get("/apply-executor-evidence-collection-plans/{id}")
 def get_evidence_collection_plan(id: str):
-    record = _get_aeecp(id)
-    return {
-        "name": "Aether",
-        "status": runtime.status(),
-        "apply_executor_evidence_collection_plan": record,
-        "found": record is not None,
-    }
+    return handle_get_collection_plan(id)
 
 
 @app.post("/apply-executor-evidence-collection-plans/{id}/reject")
 def reject_evidence_collection_plan(id: str, request: PlanDecisionBody | None = None):
     reviewer = request.reviewer if request else None
     reason = request.reason if request else None
-    record = _update_aeecp(id, "rejected", reviewer=reviewer, reason=reason)
-    if record is None:
-        return {
-            "name": "Aether",
-            "status": runtime.status(),
-            "apply_executor_evidence_collection_plan": None,
-            "found": False,
-            "warnings": ["Apply executor evidence collection plan not found."],
-        }
-    return {
-        "name": "Aether",
-        "status": runtime.status(),
-        "apply_executor_evidence_collection_plan": record,
-        "found": True,
-    }
+    return handle_reject_collection_plan(id, reviewer, reason)
 
 
 @app.post("/apply-executor-evidence-collection-plans/{id}/cancel")
 def cancel_evidence_collection_plan(id: str, request: PlanDecisionBody | None = None):
     reviewer = request.reviewer if request else None
     reason = request.reason if request else None
-    record = _update_aeecp(id, "cancelled", reviewer=reviewer, reason=reason)
-    if record is None:
-        return {
-            "name": "Aether",
-            "status": runtime.status(),
-            "apply_executor_evidence_collection_plan": None,
-            "found": False,
-            "warnings": ["Apply executor evidence collection plan not found."],
-        }
-    return {
-        "name": "Aether",
-        "status": runtime.status(),
-        "apply_executor_evidence_collection_plan": record,
-        "found": True,
-    }
+    return handle_cancel_collection_plan(id, reviewer, reason)
 
 
 @app.post("/apply-executor-evidence-collection-plans/{id}/approve-collection-plan-intent")
@@ -3111,21 +2924,7 @@ def approve_evidence_collection_plan_intent(id: str, request: ApprovalIntentBody
     reviewer = request.reviewer if request else None
     reason = request.reason if request else None
     confirmations = request.confirmations if request else None
-    record = _update_aeecp(id, "approved_collection_plan_intent", reviewer=reviewer, reason=reason, confirmations=confirmations)
-    if record is None:
-        return {
-            "name": "Aether",
-            "status": runtime.status(),
-            "apply_executor_evidence_collection_plan": None,
-            "found": False,
-            "warnings": ["Apply executor evidence collection plan not found or approval not possible."],
-        }
-    return {
-        "name": "Aether",
-        "status": runtime.status(),
-        "apply_executor_evidence_collection_plan": record,
-        "found": True,
-    }
+    return handle_approve_collection_plan_intent(id, reviewer, reason, confirmations)
 
 
 from aether.action.simulation_plan_queue import (
