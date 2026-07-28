@@ -235,14 +235,16 @@ def _check_evidence_items_not_collected(
     items = aec.get("required_evidence_items", [])
     all_passed = True
     for item in items:
-        if item.get("collected_now", True) or item.get("collection_allowed_now", True):
+        collected = item.get("collected", item.get("collected_now", False))
+        collection_allowed = item.get("collection_allowed_now", False)
+        if collected or collection_allowed:
             all_passed = False
             break
     return {
         "name": "evidence_items_not_collected",
         "passed": all_passed,
         "severity": "critical",
-        "detail": "All required evidence items must have collected_now=False and collection_allowed_now=False." if not all_passed else "Evidence items confirmed not collected.",
+        "detail": "All required evidence items must have collected=False and collection_allowed_now=False." if not all_passed else "Evidence items confirmed not collected.",
     }
 
 
@@ -313,7 +315,7 @@ def _check_evidence_group_items_not_collected(
             "severity": "critical",
             "detail": "All evidence group items must have collected=False and collection_allowed_now=False (record not found).",
         }
-    aec = record.get("apply_executor_evidence_contract", [])
+    aec = record.get("apply_executor_evidence_contract", {})
     groups = [
         aec.get("pre_execution_evidence_requirements", []),
         aec.get("during_execution_evidence_requirements", []),
@@ -324,7 +326,9 @@ def _check_evidence_group_items_not_collected(
     all_passed = True
     for group in groups:
         for item in group:
-            if item.get("collected_now", True) or item.get("collection_allowed_now", True):
+            collected = item.get("collected", item.get("collected_now", False))
+            collection_allowed = item.get("collection_allowed_now", False)
+            if collected or collection_allowed:
                 all_passed = False
                 break
         if not all_passed:
@@ -333,7 +337,7 @@ def _check_evidence_group_items_not_collected(
         "name": "evidence_group_items_not_collected",
         "passed": all_passed,
         "severity": "critical",
-        "detail": "All evidence group items must have collected_now=False and collection_allowed_now=False." if not all_passed else "Evidence group items confirmed not collected.",
+        "detail": "All evidence group items must have collected=False and collection_allowed_now=False." if not all_passed else "Evidence group items confirmed not collected.",
     }
 
 

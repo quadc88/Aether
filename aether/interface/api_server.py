@@ -2553,6 +2553,18 @@ from aether.action.apply_executor_evidence_contract_queue import (
     list_apply_executor_evidence_contract_records as _list_aeec,
     update_apply_executor_evidence_contract_record_status as _update_aeec,
 )
+from aether.action.apply_executor_evidence_contract_queue import (
+    create_apply_executor_evidence_contract_record as _create_aeecr,
+    get_apply_executor_evidence_contract_record as _get_aeec,
+    list_apply_executor_evidence_contract_records as _list_aeec,
+    update_apply_executor_evidence_contract_record_status as _update_aeec,
+)
+from aether.action.apply_executor_evidence_collection_plan_queue import (
+    create_apply_executor_evidence_collection_plan_record as _create_aeecp,
+    get_apply_executor_evidence_collection_plan_record as _get_aeecp,
+    list_apply_executor_evidence_collection_plan_records as _list_aeecp,
+    update_apply_executor_evidence_collection_plan_record_status as _update_aeecp,
+)
 
 
 class EvidenceContractBody(BaseModel):
@@ -2892,11 +2904,16 @@ def evidence_collection_plan(
     # Build the evidence collection plan
     plan = _build_aeecp(record, context)
 
+    # Persist the plan record
+    rec = _create_aeecp(plan, context)
+
     return {
         "name": "Aether",
         "status": runtime.status(),
         "apply_executor_evidence_contract_record": record,
         "apply_executor_evidence_collection_plan": plan,
+        "apply_executor_evidence_collection_plan_record": rec,
+        "apply_executor_evidence_collection_plan_id": rec["apply_executor_evidence_collection_plan_id"],
         "evidence_collection_plan_required": plan.get("evidence_collection_plan_required"),
         "evidence_collection_plan_status": plan.get("evidence_collection_plan_status"),
         "decision": plan.get("decision"),
@@ -2918,6 +2935,110 @@ def evidence_collection_plan(
         "apply_executor_plan_execution_allowed": False,
         "apply_executor_evidence_contract_execution_allowed": False,
         "apply_executor_evidence_collection_plan_execution_allowed": False,
+    }
+
+
+# New endpoints for evidence collection plan (Milestone 78A)
+
+
+class PlanDecisionBody(BaseModel):
+    reviewer: str | None = None
+    reason: str | None = None
+
+
+class ApprovalIntentBody(BaseModel):
+    reviewer: str | None = None
+    reason: str | None = None
+    confirmations: list[str] | None = None
+
+
+@app.get("/apply-executor-evidence-collection-plans")
+def list_evidence_collection_plans(
+    status: str | None = None,
+    decision: str | None = None,
+    limit: int = 50,
+):
+    records = _list_aeecp(status=status, decision=decision, limit=limit)
+    return {
+        "name": "Aether",
+        "status": runtime.status(),
+        "apply_executor_evidence_collection_plans": records,
+        "count": len(records),
+    }
+
+
+@app.get("/apply-executor-evidence-collection-plans/{id}")
+def get_evidence_collection_plan(id: str):
+    record = _get_aeecp(id)
+    return {
+        "name": "Aether",
+        "status": runtime.status(),
+        "apply_executor_evidence_collection_plan": record,
+        "found": record is not None,
+    }
+
+
+@app.post("/apply-executor-evidence-collection-plans/{id}/reject")
+def reject_evidence_collection_plan(id: str, request: PlanDecisionBody | None = None):
+    reviewer = request.reviewer if request else None
+    reason = request.reason if request else None
+    record = _update_aeecp(id, "rejected", reviewer=reviewer, reason=reason)
+    if record is None:
+        return {
+            "name": "Aether",
+            "status": runtime.status(),
+            "apply_executor_evidence_collection_plan": None,
+            "found": False,
+            "warnings": ["Apply executor evidence collection plan not found."],
+        }
+    return {
+        "name": "Aether",
+        "status": runtime.status(),
+        "apply_executor_evidence_collection_plan": record,
+        "found": True,
+    }
+
+
+@app.post("/apply-executor-evidence-collection-plans/{id}/cancel")
+def cancel_evidence_collection_plan(id: str, request: PlanDecisionBody | None = None):
+    reviewer = request.reviewer if request else None
+    reason = request.reason if request else None
+    record = _update_aeecp(id, "cancelled", reviewer=reviewer, reason=reason)
+    if record is None:
+        return {
+            "name": "Aether",
+            "status": runtime.status(),
+            "apply_executor_evidence_collection_plan": None,
+            "found": False,
+            "warnings": ["Apply executor evidence collection plan not found."],
+        }
+    return {
+        "name": "Aether",
+        "status": runtime.status(),
+        "apply_executor_evidence_collection_plan": record,
+        "found": True,
+    }
+
+
+@app.post("/apply-executor-evidence-collection-plans/{id}/approve-collection-plan-intent")
+def approve_evidence_collection_plan_intent(id: str, request: ApprovalIntentBody | None = None):
+    reviewer = request.reviewer if request else None
+    reason = request.reason if request else None
+    confirmations = request.confirmations if request else None
+    record = _update_aeecp(id, "approved_collection_plan_intent", reviewer=reviewer, reason=reason, confirmations=confirmations)
+    if record is None:
+        return {
+            "name": "Aether",
+            "status": runtime.status(),
+            "apply_executor_evidence_collection_plan": None,
+            "found": False,
+            "warnings": ["Apply executor evidence collection plan not found or approval not possible."],
+        }
+    return {
+        "name": "Aether",
+        "status": runtime.status(),
+        "apply_executor_evidence_collection_plan": record,
+        "found": True,
     }
 
 

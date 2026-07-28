@@ -6183,3 +6183,685 @@ def _make_record_for_test(status, plan_decision, plan_intent_recorded, plan_revi
         with open(filepath, "w") as f:
             json.dump(record_data, f)
         return record_id
+
+
+# ===================================================================== #
+# Apply Executor Evidence Collection Plan Record Store API Tests (Milestone 78A)
+# ===================================================================== #
+
+import pytest
+import json
+import uuid
+from pathlib import Path
+
+
+@pytest.fixture
+def aeepl_store(monkeypatch, tmp_path):
+    """Redirect apply executor evidence collection plan store to a temp directory."""
+    store_dir = tmp_path / "apply_executor_evidence_collection_plans"
+    store_dir.mkdir(parents=True, exist_ok=True)
+    import aether.action.apply_executor_evidence_collection_plan_queue as aeplq
+    original_ensure = aeplq._ensure_collection_plan_dir
+    original_get = aeplq.get_private_dir
+    def mock_ensure():
+        return store_dir
+    def mock_get():
+        return store_dir.parent
+    monkeypatch.setattr(aeplq, "_ensure_collection_plan_dir", mock_ensure)
+    monkeypatch.setattr(aeplq, "get_private_dir", mock_get)
+    yield store_dir
+    aeplq._ensure_collection_plan_dir = original_ensure
+    aeplq.get_private_dir = original_get
+
+
+def _make_valid_evidence_contract(monkeypatch, tmp_path):
+    """Helper to create a validated evidence contract record (approved) and return its ID."""
+    import aether.action.apply_executor_evidence_contract_queue as aeeq
+    # Set up store for evidence contracts
+    store_dir = tmp_path / "apply_executor_evidence_contracts"
+    store_dir.mkdir(parents=True, exist_ok=True)
+    original_ensure = aeeq._ensure_evidence_contract_dir
+    original_get = aeeq.get_private_dir
+    def mock_ensure_e():
+        return store_dir
+    def mock_get_e():
+        return store_dir.parent
+    monkeypatch.setattr(aeeq, "_ensure_evidence_contract_dir", mock_ensure_e)
+    monkeypatch.setattr(aeeq, "get_private_dir", mock_get_e)
+
+    # Build a fully compliant apply_executor_evidence_contract dict with all required nested structures
+    evidence_contract = {
+        "contract_type": "apply_executor_evidence_contract",
+        "decision": "evidence_contract_ready",
+        "evidence_contract_required": True,
+        "reason": "All checks passed.",
+        "apply_executor_plan_id": "test-plan-id",
+        "apply_executor_plan_record_status": "pending",
+        "plan_decision": "approved_plan_intent",
+        "apply_executor_contract_id": "test-ctr",
+        "apply_execution_gate_id": "test-aeg",
+        "human_authorization_id": "test-ha",
+        "apply_gate_id": "test-ag",
+        "verification_verdict_id": "test-vv",
+        "simulation_result_id": "test-sr",
+        "simulation_plan_id": "test-sp",
+        "dry_run_id": "test-dr",
+        "requested_action": {
+            "tool_id": "project.guided_proposal_decision_launcher.status",
+            "action_type": "status_check",
+            "name": "Guided Proposal Decision Launcher Status",
+            "parameters": {"scope": "read_only"},
+            "target": "proposal_decision_launcher",
+        },
+        "apply_executor_plan_snapshot": {},
+        "required_evidence_items": [
+            {"name": "pre_execution_state_evidence", "required": True, "collected": False, "collection_allowed_now": False},
+            {"name": "execution_result_evidence", "required": True, "collected": False, "collection_allowed_now": False},
+            {"name": "post_execution_verification_evidence", "required": True, "collected": False, "collection_allowed_now": False},
+            {"name": "rollback_evidence", "required": True, "collected": False, "collection_allowed_now": False},
+            {"name": "audit_log_evidence", "required": True, "collected": False, "collection_allowed_now": False},
+        ],
+        "pre_execution_evidence_requirements": [
+            {"name": "pre1", "required": True, "collected": False, "collection_allowed_now": False},
+            {"name": "pre2", "required": True, "collected": False, "collection_allowed_now": False},
+            {"name": "pre3", "required": True, "collected": False, "collection_allowed_now": False},
+            {"name": "pre4", "required": True, "collected": False, "collection_allowed_now": False},
+        ],
+        "during_execution_evidence_requirements": [
+            {"name": "dur1", "required": True, "collected": False, "collection_allowed_now": False},
+            {"name": "dur2", "required": True, "collected": False, "collection_allowed_now": False},
+            {"name": "dur3", "required": True, "collected": False, "collection_allowed_now": False},
+        ],
+        "post_execution_evidence_requirements": [
+            {"name": "post1", "required": True, "collected": False, "collection_allowed_now": False},
+            {"name": "post2", "required": True, "collected": False, "collection_allowed_now": False},
+            {"name": "post3", "required": True, "collected": False, "collection_allowed_now": False},
+        ],
+        "rollback_evidence_requirements": [
+            {"name": "rb1", "required": True, "collected": False, "collection_allowed_now": False},
+            {"name": "rb2", "required": True, "collected": False, "collection_allowed_now": False},
+            {"name": "rb3", "required": True, "collected": False, "collection_allowed_now": False},
+            {"name": "rb4", "required": True, "collected": False, "collection_allowed_now": False},
+        ],
+        "audit_evidence_requirements": [
+            {"name": "au1", "required": True, "collected": False, "collection_allowed_now": False},
+            {"name": "au2", "required": True, "collected": False, "collection_allowed_now": False},
+            {"name": "au3", "required": True, "collected": False, "collection_allowed_now": False},
+            {"name": "au4", "required": True, "collected": False, "collection_allowed_now": False},
+        ],
+        "evidence_collection_constraints": {
+            "collection_scope": "contract_only_no_collection",
+            "collection_allowed_now": False,
+            "filesystem_inspection_allowed": False,
+            "network_inspection_allowed": False,
+            "database_inspection_allowed": False,
+            "external_api_call_allowed": False,
+        },
+        "evidence_acceptance_criteria": [
+            {"criterion": "criterion1", "required": True, "satisfied_now": False},
+            {"criterion": "criterion2", "required": True, "satisfied_now": False},
+            {"criterion": "criterion3", "required": True, "satisfied_now": False},
+            {"criterion": "criterion4", "required": True, "satisfied_now": False},
+            {"criterion": "criterion5", "required": True, "satisfied_now": False},
+        ],
+        "pre_execution_evidence_statement": "Pre-execution evidence.",
+        "during_execution_evidence_statement": "During execution evidence.",
+        "post_execution_evidence_statement": "Post-execution evidence.",
+        "rollback_evidence_statement": "Rollback evidence.",
+        "audit_evidence_statement": "Audit evidence.",
+        "collection_execution_statement": "Collection execution constraints.",
+        "collector_boundary": "Collector boundary defined.",
+        "required_collection_plan_confirmations": ["c1", "c2", "c3"],
+        "evidence_collection_plan_statement": "Plan prepared.",
+        "blocking_reasons": [],
+        "unresolved_risks": [],
+        "recommended_next_step": "Persist this plan.",
+        "evidence_contract_review_completed": True,
+        "evidence_contract_intent_recorded": True,
+        "evidence_collected": False,
+        "rollback_plan_attached": False,
+        "apply_authorized": False,
+        "apply_allowed": False,
+        "rollback_allowed": False,
+        "execution_allowed": False,
+        "tool_execution_allowed": False,
+        "dry_run_execution_allowed": False,
+        "simulation_execution_allowed": False,
+        "apply_gate_execution_allowed": False,
+        "human_authorization_execution_allowed": False,
+        "apply_execution_gate_execution_allowed": False,
+        "apply_executor_contract_execution_allowed": False,
+        "apply_executor_plan_execution_allowed": False,
+        "apply_executor_evidence_contract_execution_allowed": False,
+        "apply_executed": False,
+        "rollback_executed": False,
+        "required_evidence_confirmations": ["c1", "c2", "c3"],
+        "metadata": {},
+        "warnings": [],
+    }
+
+    contract = evidence_contract
+    from aether.action.apply_executor_evidence_contract_queue import create_apply_executor_evidence_contract_record as _create_aeec, update_apply_executor_evidence_contract_record_status as _update_aeec
+    rec = _create_aeec(contract)
+    _update_aeec(rec["apply_executor_evidence_contract_id"], "approved_evidence_contract_intent",
+                 reviewer="test", confirmations=["c1", "c2", "c3"])
+    return rec["apply_executor_evidence_contract_id"]
+
+
+class TestApplyExecutorEvidenceCollectionPlanRecordStoreAPIMilestone78A:
+    """Tests for Apply Executor Evidence Collection Plan Record Store API (Milestone 78A)."""
+
+    @classmethod
+    def setup_class(cls):
+        """Create a fresh TestClient."""
+        from importlib import reload
+        import aether.interface.api_server as ap_mod
+        reload(ap_mod)
+        from fastapi.testclient import TestClient
+        cls.client = TestClient(ap_mod.app)
+
+    def test_01_evidence_collection_plan_endpoint_persists_record(self, aeepl_store, monkeypatch, tmp_path):
+        contract_id = _make_valid_evidence_contract(monkeypatch, tmp_path)
+        resp = self.client.post(f"/apply-executor-evidence-contracts/{contract_id}/evidence-collection-plan")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["apply_executor_evidence_collection_plan_record"] is not None
+        rec = data["apply_executor_evidence_collection_plan_record"]
+        assert rec["apply_executor_evidence_collection_plan_persisted"] is True
+
+    def test_02_response_includes_collection_plan_id(self, aeepl_store, monkeypatch, tmp_path):
+        contract_id = _make_valid_evidence_contract(monkeypatch, tmp_path)
+        resp = self.client.post(f"/apply-executor-evidence-contracts/{contract_id}/evidence-collection-plan")
+        data = resp.json()
+        assert "apply_executor_evidence_collection_plan_id" in data
+        assert data["apply_executor_evidence_collection_plan_record"]["apply_executor_evidence_collection_plan_id"] == data["apply_executor_evidence_collection_plan_id"]
+
+    def test_03_record_status_pending(self, aeepl_store, monkeypatch, tmp_path):
+        contract_id = _make_valid_evidence_contract(monkeypatch, tmp_path)
+        resp = self.client.post(f"/apply-executor-evidence-contracts/{contract_id}/evidence-collection-plan")
+        rec = resp.json()["apply_executor_evidence_collection_plan_record"]
+        assert rec["status"] == "pending"
+
+    def test_04_record_decision_ready(self, aeepl_store, monkeypatch, tmp_path):
+        contract_id = _make_valid_evidence_contract(monkeypatch, tmp_path)
+        resp = self.client.post(f"/apply-executor-evidence-contracts/{contract_id}/evidence-collection-plan")
+        rec = resp.json()["apply_executor_evidence_collection_plan_record"]
+        assert rec["decision"] == "evidence_collection_plan_ready"
+
+    def test_05_record_required_true(self, aeepl_store, monkeypatch, tmp_path):
+        contract_id = _make_valid_evidence_contract(monkeypatch, tmp_path)
+        resp = self.client.post(f"/apply-executor-evidence-contracts/{contract_id}/evidence-collection-plan")
+        rec = resp.json()["apply_executor_evidence_collection_plan_record"]
+        assert rec["evidence_collection_plan_required"] is True
+
+    def test_06_record_persisted_true(self, aeepl_store, monkeypatch, tmp_path):
+        contract_id = _make_valid_evidence_contract(monkeypatch, tmp_path)
+        resp = self.client.post(f"/apply-executor-evidence-contracts/{contract_id}/evidence-collection-plan")
+        rec = resp.json()["apply_executor_evidence_collection_plan_record"]
+        assert rec["apply_executor_evidence_collection_plan_persisted"] is True
+
+    def test_07_all_safety_flags_false(self, aeepl_store, monkeypatch, tmp_path):
+        contract_id = _make_valid_evidence_contract(monkeypatch, tmp_path)
+        resp = self.client.post(f"/apply-executor-evidence-contracts/{contract_id}/evidence-collection-plan")
+        rec = resp.json()["apply_executor_evidence_collection_plan_record"]
+        flags = ["evidence_collected", "rollback_plan_attached", "apply_authorized", "apply_allowed", "rollback_allowed",
+                 "execution_allowed", "tool_execution_allowed", "dry_run_execution_allowed", "simulation_execution_allowed",
+                 "apply_gate_execution_allowed", "human_authorization_execution_allowed", "apply_execution_gate_execution_allowed",
+                 "apply_executor_contract_execution_allowed", "apply_executor_plan_execution_allowed", "apply_executor_evidence_contract_execution_allowed",
+                 "apply_executor_evidence_collection_plan_execution_allowed", "apply_executed", "rollback_executed"]
+        for f in flags:
+            assert rec.get(f) is False, f"Flag {f} should be false"
+
+    def test_08_list_endpoint_returns_pending_ready_record(self, aeepl_store, monkeypatch, tmp_path):
+        contract_id = _make_valid_evidence_contract(monkeypatch, tmp_path)
+        self.client.post(f"/apply-executor-evidence-contracts/{contract_id}/evidence-collection-plan")
+        resp = self.client.get("/apply-executor-evidence-collection-plans")
+        data = resp.json()
+        records = data["apply_executor_evidence_collection_plans"]
+        assert len(records) == 1
+        assert records[0]["status"] == "pending"
+
+    def test_09_get_by_id_reads_record(self, aeepl_store, monkeypatch, tmp_path):
+        contract_id = _make_valid_evidence_contract(monkeypatch, tmp_path)
+        plan_resp = self.client.post(f"/apply-executor-evidence-contracts/{contract_id}/evidence-collection-plan")
+        rec_id = plan_resp.json()["apply_executor_evidence_collection_plan_id"]
+        resp = self.client.get(f"/apply-executor-evidence-collection-plans/{rec_id}")
+        data = resp.json()
+        assert data["found"] is True
+        assert data["apply_executor_evidence_collection_plan"]["apply_executor_evidence_collection_plan_id"] == rec_id
+
+    def test_10_approve_collection_plan_intent_works(self, aeepl_store, monkeypatch, tmp_path):
+        contract_id = _make_valid_evidence_contract(monkeypatch, tmp_path)
+        plan_resp = self.client.post(f"/apply-executor-evidence-contracts/{contract_id}/evidence-collection-plan")
+        rec_id = plan_resp.json()["apply_executor_evidence_collection_plan_id"]
+        resp = self.client.post(f"/apply-executor-evidence-collection-plans/{rec_id}/approve-collection-plan-intent",
+                                 json={"reviewer": "test", "confirmations": [
+            "I confirm the evidence contract intent was recorded.",
+            "I confirm this collection plan does not collect evidence.",
+            "I confirm this collection plan does not authorize apply.",
+            "I confirm this collection plan does not authorize execution.",
+            "I confirm this collection plan requires a future evidence collector.",
+            "I understand a separate future evidence collection plan record is required.",
+        ]})
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["apply_executor_evidence_collection_plan"]["status"] == "approved_collection_plan_intent"
+
+    def test_11_approved_intent_records_intent_only(self, aeepl_store, monkeypatch, tmp_path):
+        contract_id = _make_valid_evidence_contract(monkeypatch, tmp_path)
+        plan_resp = self.client.post(f"/apply-executor-evidence-contracts/{contract_id}/evidence-collection-plan")
+        rec_id = plan_resp.json()["apply_executor_evidence_collection_plan_id"]
+        self.client.post(f"/apply-executor-evidence-collection-plans/{rec_id}/approve-collection-plan-intent",
+                         json={"reviewer": "test", "confirmations": [
+            "I confirm the evidence contract intent was recorded.",
+            "I confirm this collection plan does not collect evidence.",
+            "I confirm this collection plan does not authorize apply.",
+            "I confirm this collection plan does not authorize execution.",
+            "I confirm this collection plan requires a future evidence collector.",
+            "I understand a separate future evidence collection plan record is required.",
+        ]})
+        get_resp = self.client.get(f"/apply-executor-evidence-collection-plans/{rec_id}")
+        rec = get_resp.json()["apply_executor_evidence_collection_plan"]
+        assert rec["evidence_collection_plan_intent_recorded"] is True
+        assert rec["evidence_collected"] is False
+
+    def test_12_approved_intent_keeps_evidence_collected_false(self, aeepl_store, monkeypatch, tmp_path):
+        contract_id = _make_valid_evidence_contract(monkeypatch, tmp_path)
+        plan_resp = self.client.post(f"/apply-executor-evidence-contracts/{contract_id}/evidence-collection-plan")
+        rec_id = plan_resp.json()["apply_executor_evidence_collection_plan_id"]
+        self.client.post(f"/apply-executor-evidence-collection-plans/{rec_id}/approve-collection-plan-intent",
+                         json={"reviewer": "test", "confirmations": [
+            "I confirm the evidence contract intent was recorded.",
+            "I confirm this collection plan does not collect evidence.",
+            "I confirm this collection plan does not authorize apply.",
+            "I confirm this collection plan does not authorize execution.",
+            "I confirm this collection plan requires a future evidence collector.",
+            "I understand a separate future evidence collection plan record is required.",
+        ]})
+        get_resp = self.client.get(f"/apply-executor-evidence-collection-plans/{rec_id}")
+        assert get_resp.json()["apply_executor_evidence_collection_plan"]["evidence_collected"] is False
+
+    def test_13_approved_intent_keeps_apply_authorized_false(self, aeepl_store, monkeypatch, tmp_path):
+        contract_id = _make_valid_evidence_contract(monkeypatch, tmp_path)
+        plan_resp = self.client.post(f"/apply-executor-evidence-contracts/{contract_id}/evidence-collection-plan")
+        rec_id = plan_resp.json()["apply_executor_evidence_collection_plan_id"]
+        self.client.post(f"/apply-executor-evidence-collection-plans/{rec_id}/approve-collection-plan-intent",
+                         json={"reviewer": "test", "confirmations": [
+            "I confirm the evidence contract intent was recorded.",
+            "I confirm this collection plan does not collect evidence.",
+            "I confirm this collection plan does not authorize apply.",
+            "I confirm this collection plan does not authorize execution.",
+            "I confirm this collection plan requires a future evidence collector.",
+            "I understand a separate future evidence collection plan record is required.",
+        ]})
+        get_resp = self.client.get(f"/apply-executor-evidence-collection-plans/{rec_id}")
+        assert get_resp.json()["apply_executor_evidence_collection_plan"]["apply_authorized"] is False
+
+    def test_14_approved_intent_keeps_execution_allowed_false(self, aeepl_store, monkeypatch, tmp_path):
+        contract_id = _make_valid_evidence_contract(monkeypatch, tmp_path)
+        plan_resp = self.client.post(f"/apply-executor-evidence-contracts/{contract_id}/evidence-collection-plan")
+        rec_id = plan_resp.json()["apply_executor_evidence_collection_plan_id"]
+        self.client.post(f"/apply-executor-evidence-collection-plans/{rec_id}/approve-collection-plan-intent",
+                         json={"reviewer": "test", "confirmations": [
+            "I confirm the evidence contract intent was recorded.",
+            "I confirm this collection plan does not collect evidence.",
+            "I confirm this collection plan does not authorize apply.",
+            "I confirm this collection plan does not authorize execution.",
+            "I confirm this collection plan requires a future evidence collector.",
+            "I understand a separate future evidence collection plan record is required.",
+        ]})
+        get_resp = self.client.get(f"/apply-executor-evidence-collection-plans/{rec_id}")
+        assert get_resp.json()["apply_executor_evidence_collection_plan"]["execution_allowed"] is False
+
+    def test_15_approved_intent_keeps_rollback_plan_attached_false(self, aeepl_store, monkeypatch, tmp_path):
+        contract_id = _make_valid_evidence_contract(monkeypatch, tmp_path)
+        plan_resp = self.client.post(f"/apply-executor-evidence-contracts/{contract_id}/evidence-collection-plan")
+        rec_id = plan_resp.json()["apply_executor_evidence_collection_plan_id"]
+        self.client.post(f"/apply-executor-evidence-collection-plans/{rec_id}/approve-collection-plan-intent",
+                         json={"reviewer": "test", "confirmations": [
+            "I confirm the evidence contract intent was recorded.",
+            "I confirm this collection plan does not collect evidence.",
+            "I confirm this collection plan does not authorize apply.",
+            "I confirm this collection plan does not authorize execution.",
+            "I confirm this collection plan requires a future evidence collector.",
+            "I understand a separate future evidence collection plan record is required.",
+        ]})
+        get_resp = self.client.get(f"/apply-executor-evidence-collection-plans/{rec_id}")
+        assert get_resp.json()["apply_executor_evidence_collection_plan"]["rollback_plan_attached"] is False
+
+    def test_16_final_approved_record_cannot_change(self, aeepl_store, monkeypatch, tmp_path):
+        contract_id = _make_valid_evidence_contract(monkeypatch, tmp_path)
+        plan_resp = self.client.post(f"/apply-executor-evidence-contracts/{contract_id}/evidence-collection-plan")
+        rec_id = plan_resp.json()["apply_executor_evidence_collection_plan_id"]
+        self.client.post(f"/apply-executor-evidence-collection-plans/{rec_id}/approve-collection-plan-intent",
+                         json={"reviewer": "test", "confirmations": [
+            "I confirm the evidence contract intent was recorded.",
+            "I confirm this collection plan does not collect evidence.",
+            "I confirm this collection plan does not authorize apply.",
+            "I confirm this collection plan does not authorize execution.",
+            "I confirm this collection plan requires a future evidence collector.",
+            "I understand a separate future evidence collection plan record is required.",
+        ]})
+        self.client.post(f"/apply-executor-evidence-collection-plans/{rec_id}/approve-collection-plan-intent",
+                         json={"reviewer": "test2", "confirmations": [
+            "I confirm the evidence contract intent was recorded.",
+            "I confirm this collection plan does not collect evidence.",
+            "I confirm this collection plan does not authorize apply.",
+            "I confirm this collection plan does not authorize execution.",
+            "I confirm this collection plan requires a future evidence collector.",
+            "I understand a separate future evidence collection plan record is required.",
+        ]})
+        get_resp = self.client.get(f"/apply-executor-evidence-collection-plans/{rec_id}")
+        rec = get_resp.json()["apply_executor_evidence_collection_plan"]
+        assert rec["status"] == "approved_collection_plan_intent"
+
+    def test_17_reject_pending_record(self, aeepl_store, monkeypatch, tmp_path):
+        contract_id = _make_valid_evidence_contract(monkeypatch, tmp_path)
+        plan_resp = self.client.post(f"/apply-executor-evidence-contracts/{contract_id}/evidence-collection-plan")
+        rec_id = plan_resp.json()["apply_executor_evidence_collection_plan_id"]
+        resp = self.client.post(f"/apply-executor-evidence-collection-plans/{rec_id}/reject", json={"reviewer": "test"})
+        assert resp.status_code == 200
+        get_resp = self.client.get(f"/apply-executor-evidence-collection-plans/{rec_id}")
+        rec = get_resp.json()["apply_executor_evidence_collection_plan"]
+        assert rec["status"] == "rejected"
+
+    def test_18_cancel_pending_record(self, aeepl_store, monkeypatch, tmp_path):
+        contract_id = _make_valid_evidence_contract(monkeypatch, tmp_path)
+        plan_resp = self.client.post(f"/apply-executor-evidence-contracts/{contract_id}/evidence-collection-plan")
+        rec_id = plan_resp.json()["apply_executor_evidence_collection_plan_id"]
+        resp = self.client.post(f"/apply-executor-evidence-collection-plans/{rec_id}/cancel", json={"reviewer": "test"})
+        assert resp.status_code == 200
+        get_resp = self.client.get(f"/apply-executor-evidence-collection-plans/{rec_id}")
+        rec = get_resp.json()["apply_executor_evidence_collection_plan"]
+        assert rec["status"] == "cancelled"
+
+    def test_19_not_ready_record_cannot_approve(self, aeepl_store, monkeypatch, tmp_path):
+        from aether.action.apply_executor_evidence_collection_plan_queue import create_apply_executor_evidence_collection_plan_record as _create, get_apply_executor_evidence_collection_plan_record as _get
+        plan = {
+            "evidence_collection_plan_type": "apply_executor_evidence_collection_plan",
+            "evidence_collection_plan_required": False,
+            "evidence_collection_plan_status": "prepared",
+            "decision": "not_ready",
+            "reason": "Not ready",
+            "apply_executor_evidence_contract_id": "fake-id",
+            "evidence_contract_decision": "not_ready",
+            "apply_executor_plan_id": "test-plan",
+            "apply_executor_contract_id": "test-ctr",
+            "apply_execution_gate_id": "test-aeg",
+            "human_authorization_id": "test-ha",
+            "apply_gate_id": "test-ag",
+            "verification_verdict_id": "test-vv",
+            "simulation_result_id": "test-sr",
+            "simulation_plan_id": "test-sp",
+            "dry_run_id": "test-dr",
+            "requested_action": {"tool_id": "test", "action_type": "status_check", "target": "tgt"},
+            "required_collection_plan_confirmations": ["c1", "c2", "c3"],
+            "evidence_collection_plan_statement": "Plan not ready.",
+            "blocking_reasons": [],
+            "unresolved_risks": [],
+            "recommended_next_step": "Resolve issues.",
+            "evidence_contract_review_completed": True,
+            "evidence_contract_intent_recorded": True,
+            "evidence_collected": False,
+            "rollback_plan_attached": False,
+            "apply_authorized": False,
+            "apply_allowed": False,
+            "rollback_allowed": False,
+            "execution_allowed": False,
+            "tool_execution_allowed": False,
+            "dry_run_execution_allowed": False,
+            "simulation_execution_allowed": False,
+            "apply_gate_execution_allowed": False,
+            "human_authorization_execution_allowed": False,
+            "apply_execution_gate_execution_allowed": False,
+            "apply_executor_contract_execution_allowed": False,
+            "apply_executor_plan_execution_allowed": False,
+            "apply_executor_evidence_contract_execution_allowed": False,
+            "apply_executor_evidence_collection_plan_execution_allowed": False,
+            "apply_executed": False,
+            "rollback_executed": False,
+            "metadata": {"source": "test"},
+            "warnings": [],
+        }
+        rec = _create(plan)
+        resp = self.client.post(f"/apply-executor-evidence-collection-plans/{rec['apply_executor_evidence_collection_plan_id']}/approve-collection-plan-intent",
+                                json={"reviewer": "test", "confirmations": ["c1", "c2", "c3"]})
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["found"] is False or any("approval not possible" in str(w).lower() for w in data.get("warnings", []))
+
+    def test_20_blocked_record_cannot_approve(self, aeepl_store, monkeypatch, tmp_path):
+        from aether.action.apply_executor_evidence_collection_plan_queue import create_apply_executor_evidence_collection_plan_record as _create
+        plan = {
+            "evidence_collection_plan_type": "apply_executor_evidence_collection_plan",
+            "evidence_collection_plan_required": False,
+            "evidence_collection_plan_status": "prepared",
+            "decision": "blocked",
+            "reason": "Blocked",
+            "apply_executor_evidence_contract_id": "fake",
+            "evidence_contract_decision": "blocked",
+            "apply_executor_plan_id": "test",
+            "apply_executor_contract_id": "test",
+            "apply_execution_gate_id": "test",
+            "human_authorization_id": "test",
+            "apply_gate_id": "test",
+            "verification_verdict_id": "test",
+            "simulation_result_id": "test",
+            "simulation_plan_id": "test",
+            "dry_run_id": "test",
+            "requested_action": None,
+            "required_collection_plan_confirmations": [],
+            "evidence_collection_plan_statement": None,
+            "blocking_reasons": ["blocked"],
+            "unresolved_risks": [],
+            "recommended_next_step": "Resolve blocks.",
+            "evidence_contract_review_completed": False,
+            "evidence_contract_intent_recorded": False,
+            "evidence_collected": False,
+            "rollback_plan_attached": False,
+            "apply_authorized": False,
+            "apply_allowed": False,
+            "rollback_allowed": False,
+            "execution_allowed": False,
+            "tool_execution_allowed": False,
+            "dry_run_execution_allowed": False,
+            "simulation_execution_allowed": False,
+            "apply_gate_execution_allowed": False,
+            "human_authorization_execution_allowed": False,
+            "apply_execution_gate_execution_allowed": False,
+            "apply_executor_contract_execution_allowed": False,
+            "apply_executor_plan_execution_allowed": False,
+            "apply_executor_evidence_contract_execution_allowed": False,
+            "apply_executor_evidence_collection_plan_execution_allowed": False,
+            "apply_executed": False,
+            "rollback_executed": False,
+            "metadata": {},
+            "warnings": [],
+        }
+        rec = _create(plan)
+        resp = self.client.post(f"/apply-executor-evidence-collection-plans/{rec['apply_executor_evidence_collection_plan_id']}/approve-collection-plan-intent",
+                                json={"reviewer": "test"})
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["found"] is False
+
+    def test_21_missing_confirmations_cannot_approve(self, aeepl_store, monkeypatch, tmp_path):
+        contract_id = _make_valid_evidence_contract(monkeypatch, tmp_path)
+        plan_resp = self.client.post(f"/apply-executor-evidence-contracts/{contract_id}/evidence-collection-plan")
+        rec_id = plan_resp.json()["apply_executor_evidence_collection_plan_id"]
+        resp = self.client.post(f"/apply-executor-evidence-collection-plans/{rec_id}/approve-collection-plan-intent",
+                                json={"reviewer": "test"})
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["found"] is False or any("confirmation" in str(w).lower() for w in data.get("warnings", []))
+
+    def test_22_decision_filter_ready(self, aeepl_store, monkeypatch, tmp_path):
+        contract_id = _make_valid_evidence_contract(monkeypatch, tmp_path)
+        self.client.post(f"/apply-executor-evidence-contracts/{contract_id}/evidence-collection-plan")
+        resp = self.client.get("/apply-executor-evidence-collection-plans?decision=evidence_collection_plan_ready")
+        data = resp.json()
+        assert len(data["apply_executor_evidence_collection_plans"]) >= 1
+
+    def test_23_decision_filter_not_ready(self, aeepl_store, monkeypatch, tmp_path):
+        from aether.action.apply_executor_evidence_collection_plan_queue import create_apply_executor_evidence_collection_plan_record as _create
+        plan = {
+            "evidence_collection_plan_type": "apply_executor_evidence_collection_plan",
+            "evidence_collection_plan_required": False,
+            "evidence_collection_plan_status": "prepared",
+            "decision": "not_ready",
+            "reason": "Not ready",
+            "apply_executor_evidence_contract_id": "fake",
+            "evidence_contract_decision": "not_ready",
+            "apply_executor_plan_id": "test",
+            "apply_executor_contract_id": "test",
+            "apply_execution_gate_id": "test",
+            "human_authorization_id": "test",
+            "apply_gate_id": "test",
+            "verification_verdict_id": "test",
+            "simulation_result_id": "test",
+            "simulation_plan_id": "test",
+            "dry_run_id": "test",
+            "requested_action": {"tool_id": "t", "action_type": "status_check", "target": "tg"},
+            "required_collection_plan_confirmations": ["c1","c2","c3"],
+            "evidence_collection_plan_statement": "Test",
+            "blocking_reasons": [],
+            "unresolved_risks": [],
+            "recommended_next_step": "Fix",
+            "evidence_contract_review_completed": True,
+            "evidence_contract_intent_recorded": True,
+            "evidence_collected": False,
+            "rollback_plan_attached": False,
+            "apply_authorized": False,
+            "apply_allowed": False,
+            "rollback_allowed": False,
+            "execution_allowed": False,
+            "tool_execution_allowed": False,
+            "dry_run_execution_allowed": False,
+            "simulation_execution_allowed": False,
+            "apply_gate_execution_allowed": False,
+            "human_authorization_execution_allowed": False,
+            "apply_execution_gate_execution_allowed": False,
+            "apply_executor_contract_execution_allowed": False,
+            "apply_executor_plan_execution_allowed": False,
+            "apply_executor_evidence_contract_execution_allowed": False,
+            "apply_executor_evidence_collection_plan_execution_allowed": False,
+            "apply_executed": False,
+            "rollback_executed": False,
+            "metadata": {},
+            "warnings": [],
+        }
+        _create(plan)
+        resp = self.client.get("/apply-executor-evidence-collection-plans?decision=not_ready")
+        data = resp.json()
+        assert len(data["apply_executor_evidence_collection_plans"]) >= 1
+
+    def test_24_decision_filter_blocked(self, aeepl_store, monkeypatch, tmp_path):
+        from aether.action.apply_executor_evidence_collection_plan_queue import create_apply_executor_evidence_collection_plan_record as _create
+        plan = {
+            "evidence_collection_plan_type": "apply_executor_evidence_collection_plan",
+            "evidence_collection_plan_required": False,
+            "evidence_collection_plan_status": "prepared",
+            "decision": "blocked",
+            "reason": "Blocked",
+            "apply_executor_evidence_contract_id": "fake",
+            "evidence_contract_decision": "blocked",
+            "apply_executor_plan_id": "test",
+            "apply_executor_contract_id": "test",
+            "apply_execution_gate_id": "test",
+            "human_authorization_id": "test",
+            "apply_gate_id": "test",
+            "verification_verdict_id": "test",
+            "simulation_result_id": "test",
+            "simulation_plan_id": "test",
+            "dry_run_id": "test",
+            "requested_action": None,
+            "required_collection_plan_confirmations": [],
+            "evidence_collection_plan_statement": None,
+            "blocking_reasons": ["blocked"],
+            "unresolved_risks": [],
+            "recommended_next_step": "Resolve",
+            "evidence_contract_review_completed": False,
+            "evidence_contract_intent_recorded": False,
+            "evidence_collected": False,
+            "rollback_plan_attached": False,
+            "apply_authorized": False,
+            "apply_allowed": False,
+            "rollback_allowed": False,
+            "execution_allowed": False,
+            "tool_execution_allowed": False,
+            "dry_run_execution_allowed": False,
+            "simulation_execution_allowed": False,
+            "apply_gate_execution_allowed": False,
+            "human_authorization_execution_allowed": False,
+            "apply_execution_gate_execution_allowed": False,
+            "apply_executor_contract_execution_allowed": False,
+            "apply_executor_plan_execution_allowed": False,
+            "apply_executor_evidence_contract_execution_allowed": False,
+            "apply_executor_evidence_collection_plan_execution_allowed": False,
+            "apply_executed": False,
+            "rollback_executed": False,
+            "metadata": {},
+            "warnings": [],
+        }
+        _create(plan)
+        resp = self.client.get("/apply-executor-evidence-collection-plans?decision=blocked")
+        data = resp.json()
+        assert len(data["apply_executor_evidence_collection_plans"]) >= 1
+
+    def test_25_missing_id_read_returns_found_false(self, aeepl_store, monkeypatch, tmp_path):
+        resp = self.client.get("/apply-executor-evidence-collection-plans/nonexistent-id")
+        data = resp.json()
+        assert data["found"] is False
+        assert data["apply_executor_evidence_collection_plan"] is None
+
+    def test_26_missing_id_mutations_safe_not_found(self, aeepl_store, monkeypatch, tmp_path):
+        resp = self.client.post("/apply-executor-evidence-collection-plans/nonexistent-id/reject", json={"reviewer": "test"})
+        data = resp.json()
+        assert data["found"] is False
+        resp2 = self.client.post("/apply-executor-evidence-collection-plans/nonexistent-id/cancel", json={"reviewer": "test"})
+        data2 = resp2.json()
+        assert data2["found"] is False
+        resp3 = self.client.post("/apply-executor-evidence-collection-plans/nonexistent-id/approve-collection-plan-intent", json={"reviewer": "test"})
+        data3 = resp3.json()
+        assert data3["found"] is False
+
+    def test_27_endpoint_does_not_mutate_evidence_contract_record(self, aeepl_store, monkeypatch, tmp_path):
+        contract_id = _make_valid_evidence_contract(monkeypatch, tmp_path)
+        from aether.action.apply_executor_evidence_contract_queue import get_apply_executor_evidence_contract_record as _get_aeec
+        before = _get_aeec(contract_id)
+        before_status = before["status"]
+        self.client.post(f"/apply-executor-evidence-contracts/{contract_id}/evidence-collection-plan")
+        after = _get_aeec(contract_id)
+        assert after["status"] == before_status
+
+    def test_28_endpoint_does_not_mutate_upstream_records(self, aeepl_store, monkeypatch, tmp_path):
+        # Redundant with test_27; just ensure contract unchanged.
+        contract_id = _make_valid_evidence_contract(monkeypatch, tmp_path)
+        from aether.action.apply_executor_evidence_contract_queue import get_apply_executor_evidence_contract_record as _get_aeec
+        before = _get_aeec(contract_id)
+        before_apply_authorized = before.get("apply_authorized", False)
+        self.client.post(f"/apply-executor-evidence-contracts/{contract_id}/evidence-collection-plan")
+        after = _get_aeec(contract_id)
+        assert after.get("apply_authorized", False) == before_apply_authorized
+
+    def test_29_records_stored_under_private_collection_plans_path(self, aeepl_store, monkeypatch, tmp_path):
+        contract_id = _make_valid_evidence_contract(monkeypatch, tmp_path)
+        resp = self.client.post(f"/apply-executor-evidence-contracts/{contract_id}/evidence-collection-plan")
+        rec_id = resp.json()["apply_executor_evidence_collection_plan_id"]
+        from aether.action.apply_executor_evidence_collection_plan_queue import get_apply_executor_evidence_collection_plan_record as _get
+        fetched = _get(rec_id)
+        assert fetched is not None
+
+    def test_30_no_evidence_collection_apply_rollback_or_tool_execution(self, aeepl_store, monkeypatch, tmp_path):
+        contract_id = _make_valid_evidence_contract(monkeypatch, tmp_path)
+        resp = self.client.post(f"/apply-executor-evidence-contracts/{contract_id}/evidence-collection-plan")
+        rec = resp.json()["apply_executor_evidence_collection_plan_record"]
+        assert rec["evidence_collected"] is False
+        assert rec["apply_authorized"] is False
+        assert rec["execution_allowed"] is False
+
+    def test_31_legacy_chat_still_works(self, aeepl_store, monkeypatch, tmp_path):
+        resp = self.client.post("/chat", json={"message": "test milestone 78a legacy"})
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["status"] in ["completed", "processed"]
