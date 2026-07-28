@@ -1,6 +1,6 @@
 # Aether Project Progress Ledger
 
-**Last updated:** Milestone 80D — Thin Interface Refactor Phase 3
+**Last updated:** Milestone 80E — Thin Interface Refactor Phase 4
 **Aether version:** 0.2.0  
 **Pipeline maturity:** Declarative Apply Executor Evidence Contract (prepared/blocked, no collection or execution)
 
@@ -691,6 +691,106 @@ Executor Contract (Milestones 71-72):
 - 80C `executor_plan_service.py` and `evidence_contract_service.py` untouched
 
 **Next recommended milestone:**
-Milestone 80E — Thin Interface Refactor Phase 4 (human_authorization + apply_gate + verification_verdict service extraction)
+Milestone 80F — Thin Interface Refactor Phase 5 (simulation_result + simulation_plan + dry_run service extraction)
 
-**80E has NOT been started. No commit made.**
+**80E done — see section below. No commit made.**
+
+
+### 80E — Thin Interface Refactor Phase 4
+
+**Status:** Complete
+
+**Description:**
+Moved Milestone 63-68 orchestration from `aether/interface/api_server.py` into three new service modules. Behavior-preserving refactor — no endpoint paths, response shapes, safety logic, or queue semantics changed.
+
+**Correction note:** An earlier iteration added 4 out-of-scope new endpoints (reject/approve-intent for verification verdicts and apply gates) and extended queue semantics. These were reverted. 80E is a strict 14-endpoint refactor only.
+
+**Scope moved (14 endpoints):**
+
+Verification Verdict (Milestones 63-64):
+- `POST /simulation-results/{id}/verification-verdict` — verification verdict creation
+- `GET /verification-verdicts` — list verification verdict records
+- `GET /verification-verdicts/{id}` — get single verification verdict record
+- `POST /verification-verdicts/{id}/cancel` — cancel
+
+Apply Gate (Milestones 65-66):
+- `POST /verification-verdicts/{id}/apply-gate-request` — apply gate request creation
+- `GET /apply-gates` — list apply gate records
+- `GET /apply-gates/{id}` — get single apply gate record
+- `POST /apply-gates/{id}/cancel` — cancel
+
+Human Authorization (Milestones 67-68):
+- `POST /apply-gates/{id}/human-authorization-request` — human authorization request creation
+- `GET /human-authorizations` — list human authorization records
+- `GET /human-authorizations/{id}` — get single human authorization record
+- `POST /human-authorizations/{id}/cancel` — cancel
+- `POST /human-authorizations/{id}/reject` — reject
+- `POST /human-authorizations/{id}/approve-intent` — approve intent
+
+**Files created:**
+- `aether/action/services/verification_verdict_service.py` — 4 service functions
+- `aether/action/services/apply_gate_service.py` — 4 service functions
+- `aether/action/services/human_authorization_service.py` — 6 service functions
+
+**Files modified:**
+- `aether/interface/api_server.py` — thinned 14 endpoints to single service calls; removed unused builder/queue imports; kept all request model classes
+
+**Files specifically NOT modified (queue semantics unchanged):**
+- `aether/action/simulation_verdict_queue.py` — reverted, no changes
+- `aether/action/apply_gate_queue.py` — reverted, no changes
+
+**Service functions created:**
+
+`verification_verdict_service.py`:
+1. `handle_verification_verdict_create(sr_id, context)` — build + persist + response
+2. `handle_list_verification_verdicts(status, decision, limit)` — list records
+3. `handle_get_verification_verdict(vv_id)` — get single record
+4. `handle_cancel_verification_verdict(vv_id, reviewer, reason)` — cancel
+
+`apply_gate_service.py`:
+1. `handle_apply_gate_create(vv_id, context)` — build + persist + response
+2. `handle_list_apply_gates(status, decision, limit)` — list records
+3. `handle_get_apply_gate(ag_id)` — get single record
+4. `handle_cancel_apply_gate(ag_id, reviewer, reason)` — cancel
+
+`human_authorization_service.py`:
+1. `handle_human_authorization_create(ag_id, context)` — build + persist + response
+2. `handle_list_human_authorizations(status, decision, limit)` — list records
+3. `handle_get_human_authorization(ha_id)` — get single record
+4. `handle_cancel_human_authorization(ha_id, reviewer, reason)` — cancel
+5. `handle_reject_human_authorization(ha_id, reviewer, reason)` — reject
+6. `handle_approve_intent_human_authorization(ha_id, reviewer, reason, confirmations)` — approve intent
+
+**Verification:**
+- Focused builder/queue tests: 30/30, 40/40, 33/33, 29/29, 30/30, 27/27 all passed
+- 80E API integration tests: 81/81 passed
+- 80D regression: 82/82 passed
+- 80C regression: 106/106 passed
+- 80B regression: 40/40 passed
+- Full pytest: 1347/1347 passed, 0 failures, 0 errors
+- All 6 modules compiled successfully (3 new services + api_server.py + 3 existing)
+- Git diff clean: api_server.py -311 lines; no whitespace errors
+- No runtime/private data modified
+
+**Safety invariants maintained:**
+- No evidence collection performed
+- No apply or rollback executed
+- No tool execution invoked
+- No execution or apply authorization granted
+- No prohibited actions
+
+**Not changed:**
+- No builder modules modified
+- No queue modules modified
+- No test files modified
+- No endpoint paths changed
+- No response shapes changed
+- No safety logic changed
+- 80B `collection_plan_service.py` untouched
+- 80C `executor_plan_service.py` and `evidence_contract_service.py` untouched
+- 80D `apply_execution_gate_service.py` and `executor_contract_service.py` untouched
+
+**Next recommended milestone:**
+Milestone 80F — Thin Interface Refactor Phase 5 (simulation_result + simulation_plan + dry_run service extraction)
+
+**80F has NOT been started. No commit made.**

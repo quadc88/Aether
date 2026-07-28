@@ -1597,14 +1597,14 @@ def cancel_simulation_result(simulation_result_id: str, request: SimResultDecisi
 
 
 # ===================================================================== #
-# Simulation Verification Verdict Endpoint (Milestone 63A)
+# Simulation Verification Verdict Endpoint (Milestone 63A, 64A)
 # ===================================================================== #
 
-from aether.action.simulation_verdict import (
-    build_simulation_verification_verdict as _build_verdict,
-)
-from aether.action.simulation_verdict_queue import (
-    create_verification_verdict_record as _create_vv_record,
+from aether.action.services.verification_verdict_service import (
+    handle_verification_verdict_create,
+    handle_list_verification_verdicts,
+    handle_get_verification_verdict,
+    handle_cancel_verification_verdict,
 )
 
 
@@ -1614,49 +1614,8 @@ class VerdictContextBody(BaseModel):
 
 @app.post("/simulation-results/{simulation_result_id}/verification-verdict")
 def simulation_verification_verdict_endpoint(simulation_result_id: str, request: VerdictContextBody | None = None):
-    record = _get_srr(simulation_result_id)
-    context = None
-    if request:
-        context = request.context
-    verdict = _build_verdict(record, context)
-
-    # Persist the verification verdict record when a verdict exists
-    vv_rec = None
-    vv_id = None
-    if verdict is not None:
-        vv_rec = _create_vv_record(verification_verdict=verdict, context=context)
-        vv_id = vv_rec["verification_verdict_id"]
-
-    return {
-        "name": "Aether",
-        "status": runtime.status(),
-        "simulation_result_record": record,
-        "verification_verdict": verdict,
-        "verification_verdict_record": vv_rec,
-        "verification_verdict_id": vv_id,
-        "verification_verdict_required": verdict.get("verification_verdict_required"),
-        "verification_verdict_status": vv_rec.get("status") if vv_rec else verdict.get("verification_verdict_status"),
-        "decision": verdict.get("decision"),
-        "execution_allowed": False,
-        "tool_execution_allowed": False,
-        "dry_run_execution_allowed": False,
-        "simulation_execution_allowed": False,
-        "apply_allowed": False,
-        "rollback_allowed": False,
-        "verdict_apply_allowed": False,
-        "apply_authorized": False,
-    }
-
-
-# ===================================================================== #
-# Verification Verdict Record Endpoints (Milestone 64A)
-# ===================================================================== #
-
-from aether.action.simulation_verdict_queue import (
-    get_verification_verdict_record as _get_vv,
-    list_verification_verdict_records as _list_vv,
-    update_verification_verdict_record_status as _update_vv,
-)
+    context = request.context if request else None
+    return handle_verification_verdict_create(simulation_result_id, context)
 
 
 class VerdictDecisionBody(BaseModel):
@@ -1666,61 +1625,30 @@ class VerdictDecisionBody(BaseModel):
 
 @app.get("/verification-verdicts")
 def list_verification_verdicts(status: str | None = None, decision: str | None = None, limit: int = 50):
-    records = _list_vv(status=status, decision=decision, limit=limit)
-    return {
-        "name": "Aether",
-        "status": runtime.status(),
-        "verification_verdicts": records,
-        "count": len(records),
-    }
+    return handle_list_verification_verdicts(status, decision, limit)
 
 
 @app.get("/verification-verdicts/{verification_verdict_id}")
 def get_verification_verdict(verification_verdict_id: str):
-    record = _get_vv(verification_verdict_id)
-    return {
-        "name": "Aether",
-        "status": runtime.status(),
-        "verification_verdict": record,
-        "found": record is not None,
-    }
+    return handle_get_verification_verdict(verification_verdict_id)
 
 
 @app.post("/verification-verdicts/{verification_verdict_id}/cancel")
 def cancel_verification_verdict(verification_verdict_id: str, request: VerdictDecisionBody | None = None):
-    reviewer = None
-    reason = None
-    if request:
-        reviewer = request.reviewer
-        reason = request.reason
-    record = _update_vv(
-        verification_verdict_id, decision="cancelled", reviewer=reviewer, reason=reason
-    )
-    if record is None:
-        return {
-            "name": "Aether",
-            "status": runtime.status(),
-            "verification_verdict": None,
-            "found": False,
-            "warnings": ["Verification verdict record not found."],
-        }
-    return {
-        "name": "Aether",
-        "status": runtime.status(),
-        "verification_verdict": record,
-        "found": True,
-    }
+    reviewer = request.reviewer if request else None
+    reason = request.reason if request else None
+    return handle_cancel_verification_verdict(verification_verdict_id, reviewer, reason)
 
 
 # ===================================================================== #
-# Apply Gate Request Endpoint (Milestone 65A)
+# Apply Gate Request Endpoint (Milestone 65A, 66A)
 # ===================================================================== #
 
-from aether.action.apply_gate_request import (
-    build_apply_gate_request as _build_agr,
-)
-from aether.action.apply_gate_queue import (
-    create_apply_gate_record as _create_agr_rec,
+from aether.action.services.apply_gate_service import (
+    handle_apply_gate_create,
+    handle_list_apply_gates,
+    handle_get_apply_gate,
+    handle_cancel_apply_gate,
 )
 
 
@@ -1730,49 +1658,8 @@ class ApplyGateContextBody(BaseModel):
 
 @app.post("/verification-verdicts/{verification_verdict_id}/apply-gate-request")
 def verification_verdict_apply_gate_request_endpoint(verification_verdict_id: str, request: ApplyGateContextBody | None = None):
-    record = _get_vv(verification_verdict_id)
-    context = None
-    if request:
-        context = request.context
-    agr = _build_agr(record, context)
-
-    # Persist the apply gate record when an apply gate request exists
-    ag_rec = None
-    ag_id = None
-    if agr is not None:
-        ag_rec = _create_agr_rec(apply_gate_request=agr, context=context)
-        ag_id = ag_rec["apply_gate_id"]
-
-    return {
-        "name": "Aether",
-        "status": runtime.status(),
-        "verification_verdict_record": record,
-        "apply_gate_request": agr,
-        "apply_gate_record": ag_rec,
-        "apply_gate_id": ag_id,
-        "apply_gate_required": agr.get("apply_gate_required"),
-        "apply_gate_status": ag_rec.get("status") if ag_rec else agr.get("apply_gate_status"),
-        "decision": agr.get("decision"),
-        "execution_allowed": False,
-        "tool_execution_allowed": False,
-        "dry_run_execution_allowed": False,
-        "simulation_execution_allowed": False,
-        "apply_allowed": False,
-        "rollback_allowed": False,
-        "apply_gate_execution_allowed": False,
-        "apply_authorized": False,
-    }
-
-
-# ===================================================================== #
-# Apply Gate Record Endpoints (Milestone 66A)
-# ===================================================================== #
-
-from aether.action.apply_gate_queue import (
-    get_apply_gate_record as _get_agr,
-    list_apply_gate_records as _list_agr,
-    update_apply_gate_record_status as _update_agr,
-)
+    context = request.context if request else None
+    return handle_apply_gate_create(verification_verdict_id, context)
 
 
 class ApplyGateDecisionBody(BaseModel):
@@ -1782,116 +1669,37 @@ class ApplyGateDecisionBody(BaseModel):
 
 @app.get("/apply-gates")
 def list_apply_gates(status: str | None = None, decision: str | None = None, limit: int = 50):
-    records = _list_agr(status=status, decision=decision, limit=limit)
-    return {
-        "name": "Aether",
-        "status": runtime.status(),
-        "apply_gates": records,
-        "count": len(records),
-    }
+    return handle_list_apply_gates(status, decision, limit)
 
 
 @app.get("/apply-gates/{apply_gate_id}")
 def get_apply_gate(apply_gate_id: str):
-    record = _get_agr(apply_gate_id)
-    return {
-        "name": "Aether",
-        "status": runtime.status(),
-        "apply_gate": record,
-        "found": record is not None,
-    }
+    return handle_get_apply_gate(apply_gate_id)
 
 
 @app.post("/apply-gates/{apply_gate_id}/cancel")
 def cancel_apply_gate(apply_gate_id: str, request: ApplyGateDecisionBody | None = None):
-    reviewer = None
-    reason = None
-    if request:
-        reviewer = request.reviewer
-        reason = request.reason
-    record = _update_agr(
-        apply_gate_id, decision="cancelled", reviewer=reviewer, reason=reason
-    )
-    if record is None:
-        return {
-            "name": "Aether",
-            "status": runtime.status(),
-            "apply_gate": None,
-            "found": False,
-            "warnings": ["Apply gate record not found."],
-        }
-    return {
-        "name": "Aether",
-        "status": runtime.status(),
-        "apply_gate": record,
-        "found": True,
-    }
+    reviewer = request.reviewer if request else None
+    reason = request.reason if request else None
+    return handle_cancel_apply_gate(apply_gate_id, reviewer, reason)
 
 
 # ===================================================================== #
-# Human Apply Authorization Request Endpoint (Milestone 67A)
+# Human Apply Authorization Request Endpoint (Milestone 67A, 68A)
 # ===================================================================== #
 
-from aether.action.human_apply_authorization_request import (
-    build_human_apply_authorization_request as _build_haar,
-)
-from aether.action.human_authorization_queue import (
-    create_human_authorization_record as _create_ha_rec,
+from aether.action.services.human_authorization_service import (
+    handle_human_authorization_create,
+    handle_list_human_authorizations,
+    handle_get_human_authorization,
+    handle_cancel_human_authorization,
+    handle_reject_human_authorization,
+    handle_approve_intent_human_authorization,
 )
 
 
 class HumanAuthContextBody(BaseModel):
     context: dict | None = None
-
-
-@app.post("/apply-gates/{apply_gate_id}/human-authorization-request")
-def apply_gate_human_authorization_request_endpoint(apply_gate_id: str, request: HumanAuthContextBody | None = None):
-    record = _get_agr(apply_gate_id)
-    context = None
-    if request:
-        context = request.context
-    haar = _build_haar(record, context)
-
-    # Persist the human authorization record when a human authorization request exists
-    ha_rec = None
-    ha_id = None
-    if haar is not None:
-        ha_rec = _create_ha_rec(human_apply_authorization_request=haar, context=context)
-        ha_id = ha_rec["human_authorization_id"]
-
-    return {
-        "name": "Aether",
-        "status": runtime.status(),
-        "apply_gate_record": record,
-        "human_apply_authorization_request": haar,
-        "human_authorization_record": ha_rec,
-        "human_authorization_id": ha_id,
-        "human_authorization_required": haar.get("human_authorization_required"),
-        "human_authorization_status": ha_rec.get("status") if ha_rec else haar.get("human_authorization_status"),
-        "decision": haar.get("decision"),
-        "human_review_completed": False,
-        "human_intent_recorded": False,
-        "execution_allowed": False,
-        "tool_execution_allowed": False,
-        "dry_run_execution_allowed": False,
-        "simulation_execution_allowed": False,
-        "apply_allowed": False,
-        "rollback_allowed": False,
-        "apply_gate_execution_allowed": False,
-        "human_authorization_execution_allowed": False,
-        "apply_authorized": False,
-    }
-
-
-# ===================================================================== #
-# Human Authorization Record Endpoints (Milestone 68A)
-# ===================================================================== #
-
-from aether.action.human_authorization_queue import (
-    get_human_authorization_record as _get_ha_rec,
-    list_human_authorization_records as _list_ha_rec,
-    update_human_authorization_record_status as _update_ha_rec,
-)
 
 
 class HumanAuthDecisionBody(BaseModel):
@@ -1900,106 +1708,42 @@ class HumanAuthDecisionBody(BaseModel):
     confirmations: list[str] | None = None
 
 
+@app.post("/apply-gates/{apply_gate_id}/human-authorization-request")
+def apply_gate_human_authorization_request_endpoint(apply_gate_id: str, request: HumanAuthContextBody | None = None):
+    context = request.context if request else None
+    return handle_human_authorization_create(apply_gate_id, context)
+
+
 @app.get("/human-authorizations")
 def list_human_authorizations(status: str | None = None, decision: str | None = None, limit: int = 50):
-    records = _list_ha_rec(status=status, decision=decision, limit=limit)
-    return {
-        "name": "Aether",
-        "status": runtime.status(),
-        "human_authorizations": records,
-        "count": len(records),
-    }
+    return handle_list_human_authorizations(status, decision, limit)
 
 
 @app.get("/human-authorizations/{human_authorization_id}")
 def get_human_authorization(human_authorization_id: str):
-    record = _get_ha_rec(human_authorization_id)
-    return {
-        "name": "Aether",
-        "status": runtime.status(),
-        "human_authorization": record,
-        "found": record is not None,
-    }
+    return handle_get_human_authorization(human_authorization_id)
 
 
 @app.post("/human-authorizations/{human_authorization_id}/cancel")
 def cancel_human_authorization(human_authorization_id: str, request: HumanAuthDecisionBody | None = None):
-    reviewer = None
-    reason = None
-    if request:
-        reviewer = request.reviewer
-        reason = request.reason
-    record = _update_ha_rec(
-        human_authorization_id, decision="cancelled", reviewer=reviewer, reason=reason
-    )
-    if record is None:
-        return {
-            "name": "Aether",
-            "status": runtime.status(),
-            "human_authorization": None,
-            "found": False,
-            "warnings": ["Human authorization record not found."],
-        }
-    return {
-        "name": "Aether",
-        "status": runtime.status(),
-        "human_authorization": record,
-        "found": True,
-    }
+    reviewer = request.reviewer if request else None
+    reason = request.reason if request else None
+    return handle_cancel_human_authorization(human_authorization_id, reviewer, reason)
 
 
 @app.post("/human-authorizations/{human_authorization_id}/reject")
 def reject_human_authorization(human_authorization_id: str, request: HumanAuthDecisionBody | None = None):
-    reviewer = None
-    reason = None
-    if request:
-        reviewer = request.reviewer
-        reason = request.reason
-    record = _update_ha_rec(
-        human_authorization_id, decision="rejected", reviewer=reviewer, reason=reason
-    )
-    if record is None:
-        return {
-            "name": "Aether",
-            "status": runtime.status(),
-            "human_authorization": None,
-            "found": False,
-            "warnings": ["Human authorization record not found."],
-        }
-    return {
-        "name": "Aether",
-        "status": runtime.status(),
-        "human_authorization": record,
-        "found": True,
-    }
+    reviewer = request.reviewer if request else None
+    reason = request.reason if request else None
+    return handle_reject_human_authorization(human_authorization_id, reviewer, reason)
 
 
 @app.post("/human-authorizations/{human_authorization_id}/approve-intent")
 def approve_intent_human_authorization(human_authorization_id: str, request: HumanAuthDecisionBody | None = None):
-    reviewer = None
-    reason = None
-    confirmations = None
-    if request:
-        reviewer = request.reviewer
-        reason = request.reason
-        confirmations = request.confirmations or []
-    record = _update_ha_rec(
-        human_authorization_id, decision="approved_intent", reviewer=reviewer, reason=reason, confirmations=confirmations
-    )
-    if record is None:
-        return {
-            "name": "Aether",
-            "status": runtime.status(),
-            "human_authorization": None,
-            "found": False,
-            "warnings": ["Could not approve intent: record not found or conditions not met."],
-        }
-    return {
-        "name": "Aether",
-        "status": runtime.status(),
-        "human_authorization": record,
-        "found": True,
-    }
+    reviewer = request.reviewer if request else None
+    reason = request.reason if request else None
+    confirmations = request.confirmations if request else None
+    return handle_approve_intent_human_authorization(human_authorization_id, reviewer, reason, confirmations)
 
 
 # ===================================================================== #
