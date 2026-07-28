@@ -2541,9 +2541,11 @@ def approve_plan_intent_executor(apply_executor_plan_id: str, request: ApplyExec
 # ===================================================================== #
 # Apply Executor Evidence Contract (Milestone 75A)
 # ===================================================================== #
-
 from aether.action.apply_executor_evidence_contract import (
     build_apply_executor_evidence_contract as _build_aeecc,
+)
+from aether.action.apply_executor_evidence_collection_plan import (
+    build_apply_executor_evidence_collection_plan as _build_aeecp,
 )
 from aether.action.apply_executor_evidence_contract_queue import (
     create_apply_executor_evidence_contract_record as _create_aeecr,
@@ -2839,6 +2841,83 @@ def approve_evidence_contract_intent(
         "status": runtime.status(),
         "apply_executor_evidence_contract": record,
         "found": True,
+    }
+
+
+@app.post("/apply-executor-evidence-contracts/{apply_executor_evidence_contract_id}/evidence-collection-plan")
+def evidence_collection_plan(
+    apply_executor_evidence_contract_id: str,
+    request: EvidenceContractBody | None = None,
+):
+    """Build an apply executor evidence collection plan from an evidence contract record.
+
+    This endpoint creates a structured evidence collection plan object without
+    collecting evidence or authorizing execution per Milestone 77A safety.
+    """
+    context = request.context if request and request.context else None
+
+    # Read the evidence contract record
+    record = _get_aeec(apply_executor_evidence_contract_id)
+    if record is None:
+        # Build a blocked plan for missing record
+        plan = _build_aeecp(None, context)
+        return {
+            "name": "Aether",
+            "status": runtime.status(),
+            "apply_executor_evidence_contract_record": None,
+            "apply_executor_evidence_collection_plan": plan,
+            "evidence_collection_plan_required": plan.get("evidence_collection_plan_required"),
+            "evidence_collection_plan_status": plan.get("evidence_collection_plan_status"),
+            "decision": plan.get("decision"),
+            "evidence_contract_review_completed": record.get("evidence_contract_review_completed") if record else False,
+            "evidence_contract_intent_recorded": record.get("evidence_contract_intent_recorded") if record else False,
+            "evidence_collected": False,
+            "rollback_plan_attached": False,
+            "apply_authorized": False,
+            "apply_allowed": False,
+            "rollback_allowed": False,
+            "execution_allowed": False,
+            "tool_execution_allowed": False,
+            "dry_run_execution_allowed": False,
+            "simulation_execution_allowed": False,
+            "apply_gate_execution_allowed": False,
+            "human_authorization_execution_allowed": False,
+            "apply_execution_gate_execution_allowed": False,
+            "apply_executor_contract_execution_allowed": False,
+            "apply_executor_plan_execution_allowed": False,
+            "apply_executor_evidence_contract_execution_allowed": False,
+            "apply_executor_evidence_collection_plan_execution_allowed": False,
+        }
+
+    # Build the evidence collection plan
+    plan = _build_aeecp(record, context)
+
+    return {
+        "name": "Aether",
+        "status": runtime.status(),
+        "apply_executor_evidence_contract_record": record,
+        "apply_executor_evidence_collection_plan": plan,
+        "evidence_collection_plan_required": plan.get("evidence_collection_plan_required"),
+        "evidence_collection_plan_status": plan.get("evidence_collection_plan_status"),
+        "decision": plan.get("decision"),
+        "evidence_contract_review_completed": record.get("evidence_contract_review_completed", False),
+        "evidence_contract_intent_recorded": record.get("evidence_contract_intent_recorded", False),
+        "evidence_collected": False,
+        "rollback_plan_attached": False,
+        "apply_authorized": False,
+        "apply_allowed": False,
+        "rollback_allowed": False,
+        "execution_allowed": False,
+        "tool_execution_allowed": False,
+        "dry_run_execution_allowed": False,
+        "simulation_execution_allowed": False,
+        "apply_gate_execution_allowed": False,
+        "human_authorization_execution_allowed": False,
+        "apply_execution_gate_execution_allowed": False,
+        "apply_executor_contract_execution_allowed": False,
+        "apply_executor_plan_execution_allowed": False,
+        "apply_executor_evidence_contract_execution_allowed": False,
+        "apply_executor_evidence_collection_plan_execution_allowed": False,
     }
 
 
