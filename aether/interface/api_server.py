@@ -31,15 +31,6 @@ from aether.memory.graph.store import (
     upsert_node,
 )
 from aether.verification.risk import classify_risk, verification_plan
-from aether.action.approval_queue import (
-    approval_queue_status,
-    approve_item,
-    cancel_item,
-    create_approval_item,
-    get_approval_item,
-    list_approval_items,
-    reject_item,
-)
 from aether.action.tool_registry import (
     disable_tool,
     enable_tool,
@@ -1033,127 +1024,66 @@ def create_verification_plan(request: VerificationRequest):
     }
 
 
-def _add_approval_working_memory_event(item: dict, event_type: str) -> None:
-    runtime.working_memory.add_event(
-        role="aether",
-        content=f"Approval item {item['status']}: {item['id']}",
-        event_type=event_type,
-        metadata={
-            "approval_id": item["id"],
-            "action_type": item["action_type"],
-            "risk_level": item["risk_level"],
-            "status": item["status"],
-        },
-    )
+from aether.action.services.approval_service import (
+    handle_action_approval_create,
+    handle_action_approval_status,
+    handle_list_action_approvals,
+    handle_get_action_approval,
+    handle_approve_action_approval,
+    handle_reject_action_approval,
+    handle_cancel_action_approval,
+)
 
 
 @app.post("/action/approval/create")
 def create_action_approval(request: ApprovalCreateRequest):
-    plan = verification_plan(request.request_text)
-    item = create_approval_item(
+    return handle_action_approval_create(
         request_text=request.request_text,
         proposed_action=request.proposed_action,
-        verification_plan=plan,
         metadata=request.metadata,
     )
-    _add_approval_working_memory_event(item, "approval_item_created")
-    warnings = []
-    timeline_event = None
-    graph_relationship = None
-    if item["risk_level"] == "high":
-        timeline_event = record_event(
-            event_type="action_approval",
-            title=f"Approval item created: {item['action_type']}",
-            description=f"Aether created an approval item for a {item['risk_level']}-risk action.",
-            importance="high",
-        )
-    try:
-        graph_relationship = add_edge("Aether", "created_approval_item_for", item["action_type"])
-        graph_relationship.pop("created_new", None)
-    except Exception as error:
-        warnings.append(f"Graph Memory integration was unavailable: {error}")
-    return {
-        "name": "Aether",
-        "status": runtime.status(),
-        "item": item,
-        "approval_optional": not item["requires_user_approval"],
-        "queue_status": approval_queue_status(),
-        "timeline_event": timeline_event,
-        "graph_relationship": graph_relationship,
-        "warnings": warnings,
-    }
 
 
 @app.get("/action/approval/status")
 def get_action_approval_status():
-    return {"name": "Aether", "status": runtime.status(), "approval_queue": approval_queue_status()}
+    return handle_action_approval_status()
 
 
 @app.get("/action/approval/list")
 def list_action_approvals(status: str | None = None, limit: int = 50):
-    return {"name": "Aether", "status": runtime.status(), "items": list_approval_items(status, limit)}
+    return handle_list_action_approvals(status=status, limit=limit)
 
 
 @app.get("/action/approval/{approval_id}")
 def get_action_approval(approval_id: str):
-    return {"name": "Aether", "status": runtime.status(), "item": get_approval_item(approval_id)}
-
-
-def _record_approval_decision(approval_id: str, decision_reason: str, decision: str) -> dict:
-    decision_functions = {"approved": approve_item, "rejected": reject_item, "cancelled": cancel_item}
-    item = decision_functions[decision](approval_id, decision_reason)
-    if item is None:
-        return {"name": "Aether", "status": runtime.status(), "item": None, "warnings": ["Approval item was not found."]}
-    if item.get("warning"):
-        return {"name": "Aether", "status": runtime.status(), "item": item, "warnings": [item["warning"]]}
-
-    _add_approval_working_memory_event(item, f"approval_item_{decision}")
-    timeline_event = record_event(
-        event_type="action_approval_decision",
-        title=f"Approval item {decision}: {approval_id}",
-        description=f"User decision recorded for approval item {approval_id}.",
-        importance="high",
-    )
-    warnings = []
-    graph_relationship = None
-    try:
-        graph_relationship = add_edge(approval_id, "has_decision", decision)
-        graph_relationship.pop("created_new", None)
-    except Exception as error:
-        warnings.append(f"Graph Memory integration was unavailable: {error}")
-    return {
-        "name": "Aether",
-        "status": runtime.status(),
-        "item": item,
-        "timeline_event": timeline_event,
-        "graph_relationship": graph_relationship,
-        "warnings": warnings,
-    }
+    return handle_get_action_approval(approval_id)
 
 
 @app.post("/action/approval/approve")
 def approve_action_approval(request: ApprovalDecisionRequest):
-    return _record_approval_decision(request.approval_id, request.decision_reason, "approved")
+    return handle_approve_action_approval(request.approval_id, request.decision_reason)
 
 
 @app.post("/action/approval/reject")
 def reject_action_approval(request: ApprovalDecisionRequest):
-    return _record_approval_decision(request.approval_id, request.decision_reason, "rejected")
+    return handle_reject_action_approval(request.approval_id, request.decision_reason)
 
 
 @app.post("/action/approval/cancel")
 def cancel_action_approval(request: ApprovalDecisionRequest):
-    return _record_approval_decision(request.approval_id, request.decision_reason, "cancelled")
+    return handle_cancel_action_approval(request.approval_id, request.decision_reason)
 
 
 # ===================================================================== #
 # Approval Queue Endpoints (Milestone 54A)
 # ===================================================================== #
 
-from aether.action.approval_queue import (
-    get_approval_record as _get_approval_record,
-    list_approval_records as _list_approval_records,
-    update_approval_record_status as _update_approval_record_status,
+from aether.action.services.approval_service import (
+    handle_list_approvals,
+    handle_get_approval,
+    handle_approve_approval,
+    handle_reject_approval,
+    handle_cancel_approval,
 )
 
 
@@ -1164,110 +1094,41 @@ class ApprovalDecisionBody(BaseModel):
 
 @app.get("/approvals")
 def get_approvals(status: str | None = None, limit: int = 50):
-    records = _list_approval_records(status=status, limit=limit)
-    return {
-        "name": "Aether",
-        "status": runtime.status(),
-        "approvals": records,
-        "count": len(records),
-    }
+    return handle_list_approvals(status=status, limit=limit)
 
 
 @app.get("/approvals/{approval_id}")
 def get_approval(approval_id: str):
-    record = _get_approval_record(approval_id)
-    return {
-        "name": "Aether",
-        "status": runtime.status(),
-        "approval": record,
-        "found": record is not None,
-    }
+    return handle_get_approval(approval_id)
 
 
 @app.post("/approvals/{approval_id}/approve")
 def approve_approval_record(approval_id: str, request: ApprovalDecisionBody | None = None):
-    reviewer = None
-    reason = None
-    if request:
-        reviewer = request.reviewer
-        reason = request.reason
-    record = _update_approval_record_status(
-        approval_id, decision="approved", reviewer=reviewer, reason=reason
-    )
-    if record is None:
-        return {
-            "name": "Aether",
-            "status": runtime.status(),
-            "approval": None,
-            "found": False,
-            "warnings": ["Approval record not found."],
-        }
-    return {
-        "name": "Aether",
-        "status": runtime.status(),
-        "approval": record,
-        "found": True,
-    }
+    reviewer = request.reviewer if request else None
+    reason = request.reason if request else None
+    return handle_approve_approval(approval_id, reviewer, reason)
 
 
 @app.post("/approvals/{approval_id}/reject")
 def reject_approval_record(approval_id: str, request: ApprovalDecisionBody | None = None):
-    reviewer = None
-    reason = None
-    if request:
-        reviewer = request.reviewer
-        reason = request.reason
-    record = _update_approval_record_status(
-        approval_id, decision="rejected", reviewer=reviewer, reason=reason
-    )
-    if record is None:
-        return {
-            "name": "Aether",
-            "status": runtime.status(),
-            "approval": None,
-            "found": False,
-            "warnings": ["Approval record not found."],
-        }
-    return {
-        "name": "Aether",
-        "status": runtime.status(),
-        "approval": record,
-        "found": True,
-    }
+    reviewer = request.reviewer if request else None
+    reason = request.reason if request else None
+    return handle_reject_approval(approval_id, reviewer, reason)
 
 
 @app.post("/approvals/{approval_id}/cancel")
 def cancel_approval_record(approval_id: str, request: ApprovalDecisionBody | None = None):
-    reviewer = None
-    reason = None
-    if request:
-        reviewer = request.reviewer
-        reason = request.reason
-    record = _update_approval_record_status(
-        approval_id, decision="cancelled", reviewer=reviewer, reason=reason
-    )
-    if record is None:
-        return {
-            "name": "Aether",
-            "status": runtime.status(),
-            "approval": None,
-            "found": False,
-            "warnings": ["Approval record not found."],
-        }
-    return {
-        "name": "Aether",
-        "status": runtime.status(),
-        "approval": record,
-        "found": True,
-    }
+    reviewer = request.reviewer if request else None
+    reason = request.reason if request else None
+    return handle_cancel_approval(approval_id, reviewer, reason)
 
 
 # ===================================================================== #
 # Approval Decision Gate (Milestone 55A)
 # ===================================================================== #
 
-from aether.action.approval_decision_gate import (
-    validate_approval_for_action as _validate_action,
+from aether.action.services.approval_service import (
+    handle_validate_action,
 )
 
 
@@ -1278,21 +1139,9 @@ class ActionValidationBody(BaseModel):
 
 @app.post("/approvals/{approval_id}/validate-action")
 def validate_action_endpoint(approval_id: str, request: ActionValidationBody | None = None):
-    requested_action = None
-    context = None
-    if request:
-        requested_action = request.requested_action
-        context = request.context
-    result = _validate_action(
-        approval_id=approval_id,
-        requested_action=requested_action,
-        context=context,
-    )
-    return {
-        "name": "Aether",
-        "status": runtime.status(),
-        **result,
-    }
+    requested_action = request.requested_action if request else None
+    context = request.context if request else None
+    return handle_validate_action(approval_id, requested_action, context)
 
 
 # ===================================================================== #
@@ -1340,8 +1189,8 @@ def cancel_dry_run(dry_run_id: str, request: DryRunDecisionBody | None = None):
 # Dry-Run Sandbox Contract Endpoint (Milestone 58A)
 # ===================================================================== #
 
-from aether.action.dry_run_sandbox_contract import (
-    build_dry_run_sandbox_contract as _build_contract,
+from aether.action.services.sandbox_contract_service import (
+    handle_sandbox_contract_create,
 )
 
 
@@ -1351,17 +1200,8 @@ class SandboxContextBody(BaseModel):
 
 @app.post("/dry-runs/{dry_run_id}/sandbox-contract")
 def sandbox_contract_endpoint(dry_run_id: str, request: SandboxContextBody | None = None):
-    from aether.action.dry_run_queue import get_dry_run_record as _get_dr
-    dr_record = _get_dr(dry_run_id) if dry_run_id else None
-    context = None
-    if request:
-        context = request.context
-    contract = _build_contract(dr_record, context)
-    return {
-        "name": "Aether",
-        "status": runtime.status(),
-        **contract,
-    }
+    context = request.context if request else None
+    return handle_sandbox_contract_create(dry_run_id, context)
 
 
 # ===================================================================== #

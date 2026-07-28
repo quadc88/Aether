@@ -1,6 +1,6 @@
 # Aether Project Progress Ledger
 
-**Last updated:** Milestone 80F — Thin Interface Refactor Phase 5
+**Last updated:** Milestone 80G — Thin Interface Refactor Phase 6
 **Aether version:** 0.2.0  
 **Pipeline maturity:** Declarative Apply Executor Evidence Contract (prepared/blocked, no collection or execution)
 
@@ -889,5 +889,117 @@ Simulation Result (Milestones 61A-62A):
 - 80C `executor_plan_service.py` and `evidence_contract_service.py` untouched
 - 80D `apply_execution_gate_service.py` and `executor_contract_service.py` untouched
 - 80E `verification_verdict_service.py`, `apply_gate_service.py`, `human_authorization_service.py` untouched
+- 80F `dry_run_service.py`, `simulation_plan_service.py`, `simulation_result_service.py` untouched
 
-**80G has NOT been started. No commit made.**
+**Next recommended milestone:**
+Milestone 80H — Thin Interface Refactor Phase 7 (repair/guided repair + memory/tool/file service extraction plan)
+
+
+### 80G — Thin Interface Refactor Phase 6
+
+**Status:** Complete
+
+**Description:**
+Moved approval orchestration (legacy /action/approval/*, Milestone 54A /approvals/*,
+Milestone 55A approval decision gate) and sandbox contract orchestration (Milestone 58A)
+from `aether/interface/api_server.py` into two new service modules. Behavior-preserving
+refactor — no endpoint paths, response shapes, safety logic, or queue semantics changed.
+
+**Scope moved (14 endpoints):**
+
+Legacy Action Approval (pre-Milestone 52A):
+- `POST /action/approval/create` — create approval item with working-memory, timeline, graph
+- `GET /action/approval/status` — approval queue status
+- `GET /action/approval/list` — list approval items
+- `GET /action/approval/{id}` — get single approval item
+- `POST /action/approval/approve` — approve
+- `POST /action/approval/reject` — reject
+- `POST /action/approval/cancel` — cancel
+
+Milestone 54A Approval Records:
+- `GET /approvals` — list approval records
+- `GET /approvals/{id}` — get single approval record
+- `POST /approvals/{id}/approve` — approve
+- `POST /approvals/{id}/reject` — reject
+- `POST /approvals/{id}/cancel` — cancel
+
+Milestone 55A Approval Decision Gate:
+- `POST /approvals/{id}/validate-action` — validate action against approved record
+
+Milestone 58A Sandbox Contract:
+- `POST /dry-runs/{id}/sandbox-contract` — build sandbox contract from dry-run record
+
+**Files created:**
+- `aether/action/services/approval_service.py` — 14 service functions (7 legacy + 5 M54A + 1 M55A + 1 internal helper)
+- `aether/action/services/sandbox_contract_service.py` — 1 service function
+
+**Files modified:**
+- `aether/interface/api_server.py` — thinned 14 endpoints to single service calls;
+  removed unused imports (7 approval_queue functions, approval_decision_gate,
+  dry_run_sandbox_contract builder); kept all request model classes
+
+**Files specifically NOT modified (queue semantics unchanged):**
+- `aether/action/approval_queue.py` — untouched
+- `aether/action/approval_decision_gate.py` — untouched
+- `aether/action/dry_run_sandbox_contract.py` — untouched
+- `aether/action/dry_run_queue.py` — untouched
+
+**Service functions created:**
+
+`approval_service.py`:
+1. `handle_action_approval_create(text, proposed, metadata)` — legacy create
+2. `handle_action_approval_status()` — legacy status
+3. `handle_list_action_approvals(status, limit)` — legacy list
+4. `handle_get_action_approval(id)` — legacy get
+5. `handle_approve_action_approval(id, reason)` — legacy approve
+6. `handle_reject_action_approval(id, reason)` — legacy reject
+7. `handle_cancel_action_approval(id, reason)` — legacy cancel
+8. `handle_list_approvals(status, decision, limit)` — M54A list
+9. `handle_get_approval(id)` — M54A get
+10. `handle_approve_approval(id, reviewer, reason)` — M54A approve
+11. `handle_reject_approval(id, reviewer, reason)` — M54A reject
+12. `handle_cancel_approval(id, reviewer, reason)` — M54A cancel
+13. `handle_validate_action(id, requested_action, context)` — M55A validate
+14. `_handle_approval_record_decision(id, decision, reviewer, reason)` — internal helper
+15. `_record_approval_decision(id, reason, decision)` — legacy internal helper
+16. `_add_approval_working_memory_event(item, event_type)` — legacy internal helper
+
+`sandbox_contract_service.py`:
+1. `handle_sandbox_contract_create(dr_id, context)` — build sandbox contract
+
+**Verification:**
+- Focused builder/queue tests: 15/15, 15/15, 18/18, 24/24 all passed
+- 80G API integration tests (Approval + SandboxContract): 31/31 passed
+- 80F regression: 117/117 builder/queue + 60/60 API = 177/177
+- 80E regression: 189/189 builder/queue + 81/81 API = 270/270
+- 80D regression: 168/168 builder/queue + 82/82 API = 250/250
+- 80C regression: 186/186 builder/queue + 106/106 API = 292/292
+- 80B regression: 73/73 builder/queue + 40/40 API = 113/113
+- Full pytest: 1347/1347 passed, 0 failures, 0 errors
+- All 8 modules compiled successfully (2 new services + api_server.py + 5 builder/queue)
+- Git diff clean: api_server.py thinned; no whitespace errors
+- No runtime/private data modified
+
+**Safety invariants maintained:**
+- No evidence collection performed
+- No apply or rollback executed
+- No tool execution invoked
+- No execution or apply authorization granted
+- No sandbox or dry-run execution performed
+- No simulation executed
+- No prohibited actions
+
+**Not changed:**
+- No builder modules modified
+- No queue modules modified
+- No test files modified
+- No endpoint paths changed
+- No response shapes changed
+- No safety logic changed
+- 80B `collection_plan_service.py` untouched
+- 80C `executor_plan_service.py` and `evidence_contract_service.py` untouched
+- 80D `apply_execution_gate_service.py` and `executor_contract_service.py` untouched
+- 80E `verification_verdict_service.py`, `apply_gate_service.py`, `human_authorization_service.py` untouched
+- 80F `dry_run_service.py`, `simulation_plan_service.py`, `simulation_result_service.py` untouched
+
+**80H has NOT been started. No commit made.**
