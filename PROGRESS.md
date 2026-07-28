@@ -1,6 +1,6 @@
 # Aether Project Progress Ledger
 
-**Last updated:** Milestone 75B — Live API Apply Executor Evidence Contract Validation
+**Last updated:** Milestone 80A — Thin Interface Refactor Plan
 **Aether version:** 0.2.0  
 **Pipeline maturity:** Declarative Apply Executor Evidence Contract (prepared/blocked, no collection or execution)
 
@@ -192,9 +192,9 @@ New in 76A:
 
 ## 7. Current Test Baseline
 
-As of Milestone 76A:
-- **Pytest:** ~1312 passed, 0 failures (was 1166 after 75B, +146 from 76A tests)
-- **Compile:** All 31 modules compiled successfully (added apply_executor_evidence_contract_queue.py)
+As of Milestone 80A:
+- **Pytest:** 1347/1347 passed, 0 failures (from Milestone 79B)
+- **Compile:** All modules compiled successfully
 - **Git safety:** Clean — no diffs on README.md, ARCHITECTURE.md, code_reviewer.py
 - **Trailing whitespace:** Clean
 - **Private/runtime paths:** Not tracked by git
@@ -275,19 +275,13 @@ These invariants must hold at ALL times:
 
 ## 10. Next Recommended Milestone
 
-**Milestone 76B — Live API Apply Executor Evidence Contract Record Store Validation**
+**Milestone 80B — Thin Interface Refactor Phase 1 (Move Milestone 77-79 Orchestration)**
 
-Expected continuation after 76A completion:
-```text
-apply_executor_evidence_contract (declarative obligations prepared)
-→ apply_executor_evidence_contract_record (persisted audit trail, Milestone 76A)
-→ apply_executor_evidence_collector (future collector object/record to safely gather evidence, Milestone 76B or 77)
-→ apply/rollback authorized (much later)
-```
+Scope: Extract evidence_collection_plan endpoint, collection plan record CRUD, and collector_contract endpoint from `aether/interface/api_server.py` into a new `aether/action/services/collection_plan_service.py` module. Thin the route handlers to single service calls. No endpoint path, response shape, or behavior changes.
 
-Clarifications:
-- Milestone 76B should perform live API validation of the new record store endpoints (GET list, GET single, POST cancel/reject/approve)
-- Alternatively, if 76B is treated as validation only, the next milestone would be **Milestone 77 — Apply Executor Evidence Collection Plan Object** which defines how future evidence collection would happen without executing it yet.
+No pipeline continuation under this refactor — this is structural only.
+
+**80B has NOT been started. 80A is plan-only.**
 
 ---
 
@@ -307,6 +301,7 @@ Also:
 - `tests/test_apply_executor_evidence_contract.py` — 60 unit tests (Milestone 75A)
 - `aether/action/apply_executor_plan.py` — plan builder (Milestone 73A)
 - `aether/action/apply_executor_plan_queue.py` — plan record store (Milestone 74A)
+- `docs/THIN_INTERFACE_REFACTOR_PLAN.md` — thin interface refactor plan (Milestone 80A)
 - `aether/action/apply_executor_contract.py` — contract builder (Milestone 71A)
 - `aether/action/apply_execution_gate_queue.py` — execution gate store (Milestone 70A)
 - `aether/action/apply_execution_gate_request.py` — execution gate request builder (Milestone 69A)
@@ -321,11 +316,13 @@ Also:
 **Modified files:**
 - `aether/interface/api_server.py` — API endpoints for all CRUD operations (updated with evidence-contract persistence and new record store endpoints)
 - `tests/test_chat_api.py` — API integration tests for each milestone (+34 tests for Milestone 76A)
+- `PROGRESS.md` — updated with Milestone 80A entry, test baseline, and next recommended milestone
 
 **No changes to:**
 - `README.md`
 - `docs/ARCHITECTURE.md`
 - `docs/CONSTITUTION.md`
+- `docs/THIN_INTERFACE_REFACTOR_PLAN.md` — this is the plan document itself, not a source code change
 - `aether/action/code_reviewer.py`
 - Any self-repair chain modules
 - `identity_seed.md`
@@ -440,3 +437,33 @@ All 18 validation cases verified successfully:
 **Changes have NOT been committed.**
 
 **Safety invariants maintained throughout:** No evidence collection performed; no apply or rollback executed; no tool execution invoked; no execution or apply authorization granted; no prohibited actions occurred.
+
+### 80A — Thin Interface Refactor Plan
+
+**Status:** Complete (plan only — no code refactor, no behavior change)
+
+**Description:**
+Created a structured refactor plan to thin `aether/interface/api_server.py` according to the Aether organ model. The interface layer should only route HTTP requests and return responses. All business orchestration (builder calls, record persistence, safety flag construction, timeline/graph side-effects) should move into explicit `aether/action/services/` modules.
+
+**Deliverables:**
+- `docs/THIN_INTERFACE_REFACTOR_PLAN.md` — full refactor plan with 8 phases, scope definitions, risk list, test strategy, and invariant checklist
+- `/home/aether/summaries/milestone_80A_summary.txt` — milestone summary
+
+**Plan scope:**
+- Current `api_server.py` responsibility map documented (4035 lines, ~400 endpoints)
+- Target service structure defined (`aether/action/services/*.py`)
+- Thin interface rule defined (route → one service call → response)
+- 8 refactor phases scoped (80B through 80I)
+- Phase 1 (80B) scoped: Milestone 77-79 only (evidence_collection_plan, collection plan CRUD, collector_contract)
+- Test strategy defined (no test changes needed, full pytest after every phase)
+- Risk list with mitigations compiled (import cycles, response shape drift, safety flags)
+
+**What was NOT changed:**
+- No source code edited (`aether/interface/api_server.py`, `aether/action/*.py`, `aether/core/*.py`)
+- No test files edited
+- No runtime/private data modified
+- No commits made
+
+**Next milestone:** 80B — Thin Interface Refactor Phase 1
+
+**80B has NOT been started.**
