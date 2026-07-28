@@ -1,6 +1,6 @@
 # Aether Project Progress Ledger
 
-**Last updated:** Milestone 80C — Thin Interface Refactor Phase 2
+**Last updated:** Milestone 80D — Thin Interface Refactor Phase 3
 **Aether version:** 0.2.0  
 **Pipeline maturity:** Declarative Apply Executor Evidence Contract (prepared/blocked, no collection or execution)
 
@@ -192,7 +192,7 @@ New in 76A:
 
 ## 7. Current Test Baseline
 
-As of Milestone 80C:
+As of Milestone 80D:
 - **Pytest:** 1347/1347 passed, 0 failures
 - **Compile:** All modules compiled successfully
 - **Git safety:** Clean — no diffs on README.md, ARCHITECTURE.md, code_reviewer.py
@@ -609,3 +609,88 @@ Evidence Contract (Milestones 75-76):
 Milestone 80D — Thin Interface Refactor Phase 3 (executor_contract + apply_execution_gate service extraction)
 
 **80D has NOT been started. No commit made.**
+
+
+### 80D — Thin Interface Refactor Phase 3
+
+**Status:** Complete
+
+**Description:**
+Moved Milestone 69-72 orchestration from `aether/interface/api_server.py` into `aether/action/services/apply_execution_gate_service.py` and `aether/action/services/executor_contract_service.py`. This is a behavior-preserving structural refactor — no endpoint paths, response shapes, or safety logic changed.
+
+**Scope moved:**
+
+Apply Execution Gate (Milestones 69-70):
+- `POST /human-authorizations/{id}/apply-execution-gate-request` — execution gate request creation
+- `GET /apply-execution-gates` — list execution gate records
+- `GET /apply-execution-gates/{id}` — get single execution gate record
+- `POST /apply-execution-gates/{id}/cancel` — cancel
+- `POST /apply-execution-gates/{id}/reject` — reject
+- `POST /apply-execution-gates/{id}/approve-execution-intent` — approve
+
+Executor Contract (Milestones 71-72):
+- `POST /apply-execution-gates/{id}/executor-contract` — executor contract creation
+- `GET /apply-executor-contracts` — list executor contract records
+- `GET /apply-executor-contracts/{id}` — get single executor contract record
+- `POST /apply-executor-contracts/{id}/cancel` — cancel
+- `POST /apply-executor-contracts/{id}/reject` — reject
+- `POST /apply-executor-contracts/{id}/approve-contract-intent` — approve
+
+**Files created:**
+- `aether/action/services/apply_execution_gate_service.py` — 6 service functions
+- `aether/action/services/executor_contract_service.py` — 6 service functions
+
+**Files modified:**
+- `aether/interface/api_server.py` — thinned 12 endpoints to single service calls; removed unused builder/queue imports; kept `ApplyExecGateDecisionBody` and `HumanAuthContextBody` model classes
+
+**Service functions created:**
+
+`apply_execution_gate_service.py`:
+1. `handle_apply_execution_gate_create(ha_id, context)` — build + persist + response
+2. `handle_list_apply_execution_gates(status, decision, limit)` — list records
+3. `handle_get_apply_execution_gate(gate_id)` — get single record
+4. `handle_cancel_apply_execution_gate(gate_id, reviewer, reason)` — cancel
+5. `handle_reject_apply_execution_gate(gate_id, reviewer, reason)` — reject
+6. `handle_approve_execution_intent(gate_id, reviewer, reason, confirmations)` — approve
+
+`executor_contract_service.py`:
+1. `handle_executor_contract_create(gate_id, context)` — build + persist + response
+2. `handle_list_executor_contracts(status, decision, limit)` — list records
+3. `handle_get_executor_contract(contract_id)` — get single record
+4. `handle_cancel_executor_contract(contract_id, reviewer, reason)` — cancel
+5. `handle_reject_executor_contract(contract_id, reviewer, reason)` — reject
+6. `handle_approve_contract_intent(contract_id, reviewer, reason, confirmations)` — approve
+
+**Verification:**
+- Focused tests: 35/35, 41/41, 44/44, 48/48 all passed
+- 80D API integration tests: 82/82 passed
+- 80C regression: 56/56, 48/48, 60/60, 22/22 all passed
+- 80C API integration tests: 106/106 passed
+- 80B regression: 16/16, 22/22, 35/35 all passed
+- 80B API integration tests: 40/40 passed
+- Full pytest: 1347/1347 passed, 0 failures, 0 errors
+- All 11 modules compiled successfully
+- Git diff clean (no whitespace errors)
+- No runtime/private data modified
+
+**Safety invariants maintained:**
+- No evidence collection performed
+- No apply or rollback executed
+- No tool execution invoked
+- No execution or apply authorization granted
+- No prohibited actions
+
+**Not changed:**
+- No builder modules modified
+- No queue modules modified
+- No test files modified
+- No endpoint paths changed
+- No response shapes changed
+- No safety logic changed
+- 80B `collection_plan_service.py` untouched
+- 80C `executor_plan_service.py` and `evidence_contract_service.py` untouched
+
+**Next recommended milestone:**
+Milestone 80E — Thin Interface Refactor Phase 4 (human_authorization + apply_gate + verification_verdict service extraction)
+
+**80E has NOT been started. No commit made.**

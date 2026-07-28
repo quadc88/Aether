@@ -2006,62 +2006,25 @@ def approve_intent_human_authorization(human_authorization_id: str, request: Hum
 # Apply Execution Gate Request Endpoint (Milestone 69A)
 # ===================================================================== #
 
-from aether.action.apply_execution_gate_request import (
-    build_apply_execution_gate_request as _build_aegr,
-)
-from aether.action.apply_execution_gate_queue import (
-    create_apply_execution_gate_record as _create_aegr,
+from aether.action.services.apply_execution_gate_service import (
+    handle_apply_execution_gate_create,
+    handle_list_apply_execution_gates,
+    handle_get_apply_execution_gate,
+    handle_cancel_apply_execution_gate,
+    handle_reject_apply_execution_gate,
+    handle_approve_execution_intent,
 )
 
 
 @app.post("/human-authorizations/{human_authorization_id}/apply-execution-gate-request")
 def human_auth_apply_execution_gate_request_endpoint(human_authorization_id: str, request: HumanAuthContextBody | None = None):
-    record = _get_ha_rec(human_authorization_id)
-    context = None
-    if request:
-        context = request.context
-    aegr = _build_aegr(record, context)
-
-    persisted_record = _create_aegr(aegr, context)
-    apply_exec_gate_id = persisted_record["apply_execution_gate_id"]
-
-    return {
-        "name": "Aether",
-        "status": runtime.status(),
-        "human_authorization_record": record,
-        "apply_execution_gate_request": aegr,
-        "apply_execution_gate_record": persisted_record,
-        "apply_execution_gate_id": apply_exec_gate_id,
-        "apply_execution_gate_required": aegr.get("apply_execution_gate_required"),
-        "apply_execution_gate_status": aegr.get("apply_execution_gate_status"),
-        "decision": aegr.get("decision"),
-        "human_review_completed": aegr.get("human_review_completed"),
-        "human_intent_recorded": aegr.get("human_intent_recorded"),
-        "execution_review_completed": persisted_record.get("execution_review_completed", False),
-        "execution_intent_recorded": persisted_record.get("execution_intent_recorded", False),
-        "apply_authorized": False,
-        "apply_allowed": False,
-        "rollback_allowed": False,
-        "execution_allowed": False,
-        "tool_execution_allowed": False,
-        "dry_run_execution_allowed": False,
-        "simulation_execution_allowed": False,
-        "apply_gate_execution_allowed": False,
-        "human_authorization_execution_allowed": False,
-        "apply_execution_gate_execution_allowed": False,
-    }
+    context = request.context if request else None
+    return handle_apply_execution_gate_create(human_authorization_id, context)
 
 
 # ===================================================================== #
 # Apply Execution Gate Record Store Endpoints (Milestone 70A)
 # ===================================================================== #
-
-from aether.action.apply_execution_gate_queue import (
-    get_apply_execution_gate_record as _get_aeg,
-    list_apply_execution_gate_records as _list_aeg,
-    update_apply_execution_gate_record_status as _update_aeg,
-)
-
 
 class ApplyExecGateDecisionBody(BaseModel):
     reviewer: str | None = None
@@ -2075,123 +2038,47 @@ def list_apply_execution_gates(
     decision: str | None = None,
     limit: int = 50,
 ):
-    records = _list_aeg(status=status, decision=decision, limit=limit)
-    return {
-        "name": "Aether",
-        "status": runtime.status(),
-        "apply_execution_gates": records,
-        "count": len(records),
-    }
+    return handle_list_apply_execution_gates(status, decision, limit)
 
 
 @app.get("/apply-execution-gates/{apply_execution_gate_id}")
 def get_apply_execution_gate(apply_execution_gate_id: str):
-    record = _get_aeg(apply_execution_gate_id)
-    if record is None:
-        return {
-            "name": "Aether",
-            "status": runtime.status(),
-            "apply_execution_gate": None,
-            "found": False,
-        }
-    return {
-        "name": "Aether",
-        "status": runtime.status(),
-        "apply_execution_gate": record,
-        "found": True,
-    }
+    return handle_get_apply_execution_gate(apply_execution_gate_id)
 
 
 @app.post("/apply-execution-gates/{apply_execution_gate_id}/cancel")
 def cancel_apply_execution_gate(apply_execution_gate_id: str, request: ApplyExecGateDecisionBody | None = None):
-    reviewer = None
-    reason = None
-    if request:
-        reviewer = request.reviewer
-        reason = request.reason
-    record = _update_aeg(
-        apply_execution_gate_id, decision="cancelled", reviewer=reviewer, reason=reason
-    )
-    if record is None:
-        return {
-            "name": "Aether",
-            "status": runtime.status(),
-            "apply_execution_gate": None,
-            "found": False,
-        }
-    return {
-        "name": "Aether",
-        "status": runtime.status(),
-        "apply_execution_gate": record,
-        "found": True,
-    }
+    reviewer = request.reviewer if request else None
+    reason = request.reason if request else None
+    return handle_cancel_apply_execution_gate(apply_execution_gate_id, reviewer, reason)
 
 
 @app.post("/apply-execution-gates/{apply_execution_gate_id}/reject")
 def reject_apply_execution_gate(apply_execution_gate_id: str, request: ApplyExecGateDecisionBody | None = None):
-    reviewer = None
-    reason = None
-    if request:
-        reviewer = request.reviewer
-        reason = request.reason
-    record = _update_aeg(
-        apply_execution_gate_id, decision="rejected", reviewer=reviewer, reason=reason
-    )
-    if record is None:
-        return {
-            "name": "Aether",
-            "status": runtime.status(),
-            "apply_execution_gate": None,
-            "found": False,
-        }
-    return {
-        "name": "Aether",
-        "status": runtime.status(),
-        "apply_execution_gate": record,
-        "found": True,
-    }
+    reviewer = request.reviewer if request else None
+    reason = request.reason if request else None
+    return handle_reject_apply_execution_gate(apply_execution_gate_id, reviewer, reason)
 
 
 @app.post("/apply-execution-gates/{apply_execution_gate_id}/approve-execution-intent")
 def approve_execution_intent_apply_gate(apply_execution_gate_id: str, request: ApplyExecGateDecisionBody | None = None):
-    reviewer = None
-    reason = None
-    confirmations = None
-    if request:
-        reviewer = request.reviewer
-        reason = request.reason
-        confirmations = request.confirmations or []
-    record = _update_aeg(
-        apply_execution_gate_id,
-        decision="approved_execution_intent",
-        reviewer=reviewer,
-        reason=reason,
-        confirmations=confirmations,
-    )
-    if record is None:
-        return {
-            "name": "Aether",
-            "status": runtime.status(),
-            "apply_execution_gate": None,
-            "found": False,
-        }
-    return {
-        "name": "Aether",
-        "status": runtime.status(),
-        "apply_execution_gate": record,
-        "found": True,
-    }
+    reviewer = request.reviewer if request else None
+    reason = request.reason if request else None
+    confirmations = request.confirmations if request else None
+    return handle_approve_execution_intent(apply_execution_gate_id, reviewer, reason, confirmations)
 
 
 # ===================================================================== #
 # Apply Executor Contract Endpoint (Milestone 71A, 72A)
 # ===================================================================== #
 
-from aether.action.apply_executor_contract import (
-    build_apply_executor_contract as _build_aec,
-)
-from aether.action.apply_executor_contract_queue import (
-    create_apply_executor_contract_record as _create_aecri,
+from aether.action.services.executor_contract_service import (
+    handle_executor_contract_create,
+    handle_list_executor_contracts,
+    handle_get_executor_contract,
+    handle_cancel_executor_contract,
+    handle_reject_executor_contract,
+    handle_approve_contract_intent,
 )
 
 
@@ -2199,50 +2086,12 @@ from aether.action.apply_executor_contract_queue import (
 def apply_executor_contract_endpoint(
     apply_execution_gate_id: str, request: ApplyExecGateDecisionBody | None = None
 ):
-    context = None
-    if request and request.reason is not None and hasattr(request, "context"):
-        pass  # no context field yet, but leave room
-    aeg_record = _get_aeg(apply_execution_gate_id)
-    contract = _build_aec(aeg_record, context)
-    persisted = _create_aecri(contract, context)
-
-    return {
-        "name": "Aether",
-        "status": runtime.status(),
-        "apply_execution_gate_record": aeg_record,
-        "apply_executor_contract": contract,
-        "apply_executor_contract_record": persisted,
-        "apply_executor_contract_id": persisted.get("apply_executor_contract_id"),
-        "contract_required": contract.get("contract_required"),
-        "contract_status": contract.get("contract_status"),
-        "decision": contract.get("decision"),
-        "contract_review_completed": persisted.get("contract_review_completed", False),
-        "contract_intent_recorded": persisted.get("contract_intent_recorded", False),
-        "evidence_collected": persisted.get("evidence_collected", False),
-        "rollback_plan_attached": persisted.get("rollback_plan_attached", False),
-        "apply_authorized": False,
-        "apply_allowed": False,
-        "rollback_allowed": False,
-        "execution_allowed": False,
-        "tool_execution_allowed": False,
-        "dry_run_execution_allowed": False,
-        "simulation_execution_allowed": False,
-        "apply_gate_execution_allowed": False,
-        "human_authorization_execution_allowed": False,
-        "apply_execution_gate_execution_allowed": False,
-        "apply_executor_contract_execution_allowed": False,
-    }
+    return handle_executor_contract_create(apply_execution_gate_id)
 
 
 # ===================================================================== #
 # Apply Executor Contract Record Store Endpoints (Milestone 72A)
 # ===================================================================== #
-
-from aether.action.apply_executor_contract_queue import (
-    get_apply_executor_contract_record as _get_aecr,
-    list_apply_executor_contract_records as _list_aecr,
-    update_apply_executor_contract_record_status as _update_aecr,
-)
 
 
 @app.get("/apply-executor-contracts")
@@ -2251,112 +2100,34 @@ def list_apply_executor_contracts(
     decision: str | None = None,
     limit: int = 50,
 ):
-    records = _list_aecr(status=status, decision=decision, limit=limit)
-    return {
-        "name": "Aether",
-        "status": runtime.status(),
-        "apply_executor_contracts": records,
-        "count": len(records),
-    }
+    return handle_list_executor_contracts(status, decision, limit)
 
 
 @app.get("/apply-executor-contracts/{apply_executor_contract_id}")
 def get_apply_executor_contract(apply_executor_contract_id: str):
-    record = _get_aecr(apply_executor_contract_id)
-    if record is None:
-        return {
-            "name": "Aether",
-            "status": runtime.status(),
-            "apply_executor_contract": None,
-            "found": False,
-        }
-    return {
-        "name": "Aether",
-        "status": runtime.status(),
-        "apply_executor_contract": record,
-        "found": True,
-    }
+    return handle_get_executor_contract(apply_executor_contract_id)
 
 
 @app.post("/apply-executor-contracts/{apply_executor_contract_id}/cancel")
 def cancel_apply_executor_contract(apply_executor_contract_id: str, request: ApplyExecGateDecisionBody | None = None):
-    reviewer = None
-    reason = None
-    if request:
-        reviewer = request.reviewer
-        reason = request.reason
-    record = _update_aecr(
-        apply_executor_contract_id, decision="cancelled", reviewer=reviewer, reason=reason
-    )
-    if record is None:
-        return {
-            "name": "Aether",
-            "status": runtime.status(),
-            "apply_executor_contract": None,
-            "found": False,
-        }
-    return {
-        "name": "Aether",
-        "status": runtime.status(),
-        "apply_executor_contract": record,
-        "found": True,
-    }
+    reviewer = request.reviewer if request else None
+    reason = request.reason if request else None
+    return handle_cancel_executor_contract(apply_executor_contract_id, reviewer, reason)
 
 
 @app.post("/apply-executor-contracts/{apply_executor_contract_id}/reject")
 def reject_apply_executor_contract(apply_executor_contract_id: str, request: ApplyExecGateDecisionBody | None = None):
-    reviewer = None
-    reason = None
-    if request:
-        reviewer = request.reviewer
-        reason = request.reason
-    record = _update_aecr(
-        apply_executor_contract_id, decision="rejected", reviewer=reviewer, reason=reason
-    )
-    if record is None:
-        return {
-            "name": "Aether",
-            "status": runtime.status(),
-            "apply_executor_contract": None,
-            "found": False,
-        }
-    return {
-        "name": "Aether",
-        "status": runtime.status(),
-        "apply_executor_contract": record,
-        "found": True,
-    }
+    reviewer = request.reviewer if request else None
+    reason = request.reason if request else None
+    return handle_reject_executor_contract(apply_executor_contract_id, reviewer, reason)
 
 
 @app.post("/apply-executor-contracts/{apply_executor_contract_id}/approve-contract-intent")
 def approve_contract_intent_executor(apply_executor_contract_id: str, request: ApplyExecGateDecisionBody | None = None):
-    reviewer = None
-    reason = None
-    confirmations = None
-    if request:
-        reviewer = request.reviewer
-        reason = request.reason
-        confirmations = request.confirmations or []
-    record = _update_aecr(
-        apply_executor_contract_id,
-        decision="approved_contract_intent",
-        reviewer=reviewer,
-        reason=reason,
-        confirmations=confirmations,
-    )
-    if record is None:
-        return {
-            "name": "Aether",
-            "status": runtime.status(),
-            "apply_executor_contract": None,
-            "found": False,
-        }
-    return {
-        "name": "Aether",
-        "status": runtime.status(),
-        "apply_executor_contract": record,
-        "found": True,
-    }
+    reviewer = request.reviewer if request else None
+    reason = request.reason if request else None
+    confirmations = request.confirmations if request else None
+    return handle_approve_contract_intent(apply_executor_contract_id, reviewer, reason, confirmations)
 
 
 # ===================================================================== #
