@@ -1080,7 +1080,90 @@ Note: 14 endpoint groups above (some with multiple HTTP methods); 17 individual 
 - All tool registry, planner, executor semantics unchanged
 - All audit/memory/timeline/graph side effects unchanged
 
-**Next recommended milestone:**
-- 80J — Thin Interface Refactor Phase 8 Plan: memory/cognitive endpoint extraction plan
+**80K has NOT been started. No commit made.**
 
-**80H plan completed — 80I built. No commit made.**
+### 80K — Thin Interface Refactor Phase 8
+
+**Status:** Complete
+
+**Description:**
+Moved memory endpoint orchestration (working, episodic, semantic, timeline, graph memory)
+from `aether/interface/api_server.py` into a single service module. Behavior-preserving
+refactor — no endpoint paths, response shapes, safety logic, or side-effect changes.
+
+**Scope moved (22 endpoints):**
+
+Working Memory (4 endpoints):
+- `GET /memory/working` — working memory summary with time state
+- `POST /memory/working/goal` — set working goal
+- `POST /memory/working/milestone` — set working milestone
+- `POST /memory/working/clear` — clear working memory
+
+Episodic Memory (3 endpoints):
+- `POST /memory/episodic/write` — write episode with working memory event
+- `GET /memory/episodic/list` — list episodes
+- `GET /memory/episodic/latest` — latest episode
+
+Semantic Memory (3 endpoints):
+- `POST /memory/semantic/index` — build index with working memory event
+- `GET /memory/semantic/status` — semantic memory status
+- `POST /memory/semantic/search` — search with working memory event
+
+Timeline Memory (4 endpoints):
+- `GET /memory/timeline/status` — timeline status
+- `GET /memory/timeline/list` — list timeline events
+- `GET /memory/timeline/latest` — latest timeline event
+- `POST /memory/timeline/search` — search with working memory event
+
+Graph Memory (8 endpoints):
+- `GET /memory/graph/status` — graph status
+- `POST /memory/graph/node` — create node with working memory event
+- `POST /memory/graph/edge` — create edge with timeline + working memory side effects
+- `GET /memory/graph/nodes` — list nodes
+- `GET /memory/graph/edges` — list edges
+- `POST /memory/graph/search` — search with working memory event
+- `POST /memory/graph/seed` — seed 10 hardcoded relationships with timeline + working memory events
+
+**Files created (1):**
+- `aether/action/services/memory_service.py` — 22 handler functions
+  (4 working + 3 episodic + 3 semantic + 4 timeline + 8 graph)
+
+**Files modified (1):**
+- `aether/interface/api_server.py` — thinned 22 memory endpoints to single service calls;
+  removed episodic, semantic, most timeline, and most graph module imports (replaced
+  with memory_service import); kept `record_event`, `search_events`, `add_edge` imports
+  (still used by non-memory endpoints)
+
+**Files not modified:**
+- `aether/memory/timeline/recorder.py` — untouched
+- `aether/memory/episodic/writer.py` — untouched
+- `aether/memory/semantic/indexer.py` — untouched
+- `aether/memory/graph/store.py` — untouched
+- All 14 existing service modules (80B–80I) — untouched
+- All test files — untouched
+- `/chat` — untouched
+- `/awaken` — untouched
+- All verification, file, repair, guided, identity, root endpoints — untouched
+
+**Verification:**
+- Full pytest: 1347/1347 passed, 0 failures, 0 errors
+- Focused memory test: 1/1 passed (TestApprovalRequestInApiResponse high-risk memory deletion)
+- All 7 modules compiled successfully (1 new service + api_server.py + 5 memory modules)
+- Git diff clean: api_server.py thinned by 166 lines (219 removed, 53 added); no whitespace errors
+- No runtime/private data modified
+
+**Safety invariants maintained:**
+- No evidence collection performed
+- No apply or rollback executed
+- No tool execution invoked beyond existing tests
+- No execution or apply authorization granted
+- No sandbox or dry-run execution performed
+- No simulation executed
+- No prohibited actions
+- All memory/timeline/graph/working-memory side effects unchanged
+- /chat and /awaken behavior unchanged
+
+**Next recommended milestone:**
+- 80L — Verification Plan Service Extraction Plan
+
+**80K complete. No commit made.**

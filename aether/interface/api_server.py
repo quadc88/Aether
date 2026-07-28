@@ -8,28 +8,9 @@ from aether.identity.guard import (
     identity_guard_status,
 )
 from aether.time.clock import time_state
-from aether.memory.timeline.recorder import (
-    record_event,
-    list_events,
-    latest_event,
-    search_events,
-    timeline_status,
-)
+from aether.memory.timeline.recorder import record_event, search_events
 from aether.core.runtime import runtime
-from aether.memory.episodic.writer import write_episode, list_episodes, latest_episode
-from aether.memory.semantic.indexer import (
-    build_semantic_index,
-    search_semantic_memory,
-    semantic_memory_status,
-)
-from aether.memory.graph.store import (
-    add_edge,
-    graph_status,
-    list_edges,
-    list_nodes,
-    search_graph,
-    upsert_node,
-)
+from aether.memory.graph.store import add_edge
 from aether.verification.risk import classify_risk, verification_plan
 from aether.action.services.tool_registry_service import (
     handle_disable_action_tool as _handle_disable_tool,
@@ -56,6 +37,29 @@ from aether.action.services.tool_execution_service import (
     handle_seed_action_sandbox_tools as _handle_seed_sandbox_tools,
     record_restricted_file_access as _record_restricted_file_access,
     record_self_inspection_report as _record_self_inspection_report,
+)
+from aether.action.services.memory_service import (
+    handle_clear_working_memory as _handle_clear_wm,
+    handle_create_graph_edge as _handle_create_graph_edge,
+    handle_create_graph_node as _handle_create_graph_node,
+    handle_get_working_memory as _handle_get_wm,
+    handle_graph_status as _handle_graph_status,
+    handle_index_semantic_memory as _handle_index_semantic,
+    handle_latest_episodic_memory as _handle_latest_episodic,
+    handle_latest_timeline_event as _handle_latest_timeline,
+    handle_list_episodic_memory as _handle_list_episodic,
+    handle_list_graph_edges as _handle_list_graph_edges,
+    handle_list_graph_nodes as _handle_list_graph_nodes,
+    handle_list_timeline_events as _handle_list_timeline,
+    handle_search_graph as _handle_search_graph,
+    handle_search_semantic_memory as _handle_search_semantic,
+    handle_search_timeline as _handle_search_timeline,
+    handle_seed_graph_memory as _handle_seed_graph,
+    handle_semantic_memory_status as _handle_semantic_status,
+    handle_set_working_goal as _handle_set_wm_goal,
+    handle_set_working_milestone as _handle_set_wm_milestone,
+    handle_timeline_status as _handle_timeline_status,
+    handle_write_episodic_memory as _handle_write_episodic,
 )
 from aether.action.restricted_file_reader import (
     file_access_status,
@@ -687,52 +691,27 @@ def chat(request: ChatRequest):
 
 @app.get("/memory/working")
 def get_working_memory():
-    return {
-        "name": "Aether",
-        "status": runtime.status(),
-        "time": time_state(),
-        "working_memory": runtime.working_memory.summary(),
-    }
+    return _handle_get_wm()
 
 
 @app.post("/memory/working/goal")
 def set_working_goal(request: GoalRequest):
-    runtime.working_memory.set_goal(request.goal)
-
-    return {
-        "name": "Aether",
-        "status": runtime.status(),
-        "message": "Working Memory goal updated.",
-        "working_memory": runtime.working_memory.summary(),
-    }
+    return _handle_set_wm_goal(goal=request.goal)
 
 
 @app.post("/memory/working/milestone")
 def set_working_milestone(request: MilestoneRequest):
-    runtime.working_memory.set_milestone(request.milestone)
-
-    return {
-        "name": "Aether",
-        "status": runtime.status(),
-        "message": "Working Memory milestone updated.",
-        "working_memory": runtime.working_memory.summary(),
-    }
+    return _handle_set_wm_milestone(milestone=request.milestone)
 
 
 @app.post("/memory/working/clear")
 def clear_working_memory():
-    runtime.working_memory.clear()
+    return _handle_clear_wm()
 
-    return {
-        "name": "Aether",
-        "status": runtime.status(),
-        "message": "Working Memory cleared.",
-        "working_memory": runtime.working_memory.summary(),
-    }
 
 @app.post("/memory/episodic/write")
 def write_episodic_memory(request: EpisodeWriteRequest):
-    episode = write_episode(
+    return _handle_write_episodic(
         title=request.title,
         summary=request.summary,
         details=request.details,
@@ -741,239 +720,94 @@ def write_episodic_memory(request: EpisodeWriteRequest):
         related_files=request.related_files,
     )
 
-    runtime.working_memory.add_event(
-        role="aether",
-        content=f"Episodic Memory written: {request.title}",
-        event_type="episodic_memory_written",
-        metadata={"file_path": episode["file_path"]},
-    )
-
-    return {
-        "name": "Aether",
-        "status": runtime.status(),
-        "message": "Episodic Memory written.",
-        "episode": episode,
-    }
-
 
 @app.get("/memory/episodic/list")
 def list_episodic_memory(limit: int = 20):
-    return {
-        "name": "Aether",
-        "status": runtime.status(),
-        "episodes": list_episodes(limit=limit),
-    }
+    return _handle_list_episodic(limit=limit)
 
 
 @app.get("/memory/episodic/latest")
 def get_latest_episodic_memory():
-    episode = latest_episode()
+    return _handle_latest_episodic()
 
-    return {
-        "name": "Aether",
-        "status": runtime.status(),
-        "episode": episode,
-    }
 
 @app.post("/memory/semantic/index")
 def index_semantic_memory():
-    result = build_semantic_index()
-
-    runtime.working_memory.add_event(
-        role="aether",
-        content=f"Semantic Memory index built with {result['document_count']} documents.",
-        event_type="semantic_memory_indexed",
-        metadata={"index_path": result["index_path"]},
-    )
-
-    return {
-        "name": "Aether",
-        "status": runtime.status(),
-        "message": "Semantic Memory index built.",
-        "result": result,
-    }
+    return _handle_index_semantic()
 
 
 @app.get("/memory/semantic/status")
 def get_semantic_memory_status():
-    return {
-        "name": "Aether",
-        "status": runtime.status(),
-        "semantic_memory": semantic_memory_status(),
-    }
+    return _handle_semantic_status()
 
 
 @app.post("/memory/semantic/search")
 def search_memory(request: SemanticSearchRequest):
-    results = search_semantic_memory(
-        query=request.query,
-        limit=request.limit,
-    )
+    return _handle_search_semantic(query=request.query, limit=request.limit)
 
-    runtime.working_memory.add_event(
-        role="user",
-        content=f"Semantic memory search: {request.query}",
-        event_type="semantic_memory_search",
-        metadata={"result_count": len(results)},
-    )
-
-    return {
-        "name": "Aether",
-        "status": runtime.status(),
-        "query": request.query,
-        "results": results,
-    }
 
 @app.get("/memory/timeline/status")
 def get_timeline_status():
-    return {
-        "name": "Aether",
-        "status": runtime.status(),
-        "timeline": timeline_status(),
-    }
+    return _handle_timeline_status()
 
 
 @app.get("/memory/timeline/list")
 def list_timeline_events(limit: int = 20):
-    return {
-        "name": "Aether",
-        "status": runtime.status(),
-        "events": list_events(limit=limit),
-    }
+    return _handle_list_timeline(limit=limit)
 
 
 @app.get("/memory/timeline/latest")
 def get_latest_timeline_event():
-    return {
-        "name": "Aether",
-        "status": runtime.status(),
-        "event": latest_event(),
-    }
+    return _handle_latest_timeline()
 
 
 @app.post("/memory/timeline/search")
 def search_timeline_memory(request: TimelineSearchRequest):
-    results = search_events(
-        query=request.query,
-        limit=request.limit,
-    )
-
-    runtime.working_memory.add_event(
-        role="user",
-        content=f"Timeline memory search: {request.query}",
-        event_type="timeline_memory_search",
-        metadata={"result_count": len(results)},
-    )
-
-    return {
-        "name": "Aether",
-        "status": runtime.status(),
-        "query": request.query,
-        "results": results,
-    }
+    return _handle_search_timeline(query=request.query, limit=request.limit)
 
 
 @app.get("/memory/graph/status")
 def get_graph_memory_status():
-    return {"name": "Aether", "status": runtime.status(), "graph_memory": graph_status()}
+    return _handle_graph_status()
 
 
 @app.post("/memory/graph/node")
 def create_graph_node(request: GraphNodeRequest):
-    node = upsert_node(request.label, request.node_type, request.properties)
-    runtime.working_memory.add_event(
-        role="aether",
-        content=f"Graph node upserted: {request.label}",
-        event_type="graph_node_upserted",
-        metadata={"node_id": node["id"]},
+    return _handle_create_graph_node(
+        label=request.label,
+        node_type=request.node_type,
+        properties=request.properties,
     )
-    return {"name": "Aether", "status": runtime.status(), "node": node}
 
 
 @app.post("/memory/graph/edge")
 def create_graph_edge(request: GraphEdgeRequest):
-    edge = add_edge(request.source, request.relation, request.target, request.properties)
-    created_new = edge.pop("created_new")
-    timeline_event = None
-    if created_new:
-        timeline_event = record_event(
-            event_type="graph_memory",
-            title=f"Graph relationship added: {request.source} --{request.relation}--> {request.target}",
-            description=f"Aether recorded a graph relationship from {request.source} to {request.target} using relation {request.relation}.",
-            importance="normal",
-        )
-    runtime.working_memory.add_event(
-        role="aether",
-        content=f"Graph relationship {'added' if created_new else 'already exists'}: {request.source} --{request.relation}--> {request.target}",
-        event_type="graph_edge_added",
-        metadata={"edge_id": edge["id"], "created_new": created_new},
+    return _handle_create_graph_edge(
+        source=request.source,
+        relation=request.relation,
+        target=request.target,
+        properties=request.properties,
     )
-    return {"name": "Aether", "status": runtime.status(), "edge": edge, "created_new": created_new, "timeline_event": timeline_event}
 
 
 @app.get("/memory/graph/nodes")
 def get_graph_nodes(limit: int = 50):
-    return {"name": "Aether", "status": runtime.status(), "nodes": list_nodes(limit)}
+    return _handle_list_graph_nodes(limit=limit)
 
 
 @app.get("/memory/graph/edges")
 def get_graph_edges(limit: int = 50):
-    return {"name": "Aether", "status": runtime.status(), "edges": list_edges(limit)}
+    return _handle_list_graph_edges(limit=limit)
 
 
 @app.post("/memory/graph/search")
 def search_graph_memory(request: GraphSearchRequest):
-    results = search_graph(request.query, request.limit)
-    runtime.working_memory.add_event(
-        role="user",
-        content=f"Graph memory search: {request.query}",
-        event_type="graph_memory_search",
-        metadata={"node_count": len(results["nodes"]), "edge_count": len(results["edges"])},
-    )
-    return {"name": "Aether", "status": runtime.status(), "query": request.query, "results": results}
+    return _handle_search_graph(query=request.query, limit=request.limit)
 
 
 @app.post("/memory/graph/seed")
 def seed_graph_memory():
-    relationships = [
-        ("Aether", "has_identity_seed", "identity/identity_seed.md"),
-        ("Aether", "follows", "docs/CONSTITUTION.md"),
-        ("Aether", "has_architecture", "docs/ARCHITECTURE.md"),
-        ("Time Layer", "supports", "Memory"),
-        ("Timeline Memory", "belongs_to", "Memory"),
-        ("Semantic Memory", "belongs_to", "Memory"),
-        ("Episodic Memory", "belongs_to", "Memory"),
-        ("Graph Memory", "belongs_to", "Memory"),
-        ("Workflow Policy", "belongs_to", "Thinking"),
-        ("External LLM", "is_consultant_not_identity", "Aether"),
-    ]
-    edges = []
-    new_edge_count = 0
-    for source, relation, target in relationships:
-        edge = add_edge(source, relation, target)
-        created_new = edge.pop("created_new")
-        if created_new:
-            new_edge_count += 1
-            record_event(
-                event_type="graph_memory",
-                title=f"Graph relationship added: {source} --{relation}--> {target}",
-                description=f"Aether recorded a graph relationship from {source} to {target} using relation {relation}.",
-                importance="normal",
-            )
-        runtime.working_memory.add_event(
-            role="aether",
-            content=f"Graph relationship {'added' if created_new else 'already exists'}: {source} --{relation}--> {target}",
-            event_type="graph_edge_added",
-            metadata={"edge_id": edge["id"], "created_new": created_new},
-        )
-        edges.append(edge)
-    runtime.working_memory.add_event(
-        role="aether",
-        content=f"Graph Memory seed completed with {new_edge_count} new relationships.",
-        event_type="graph_edge_added",
-        metadata={"new_edge_count": new_edge_count},
-    )
-    return {"name": "Aether", "status": runtime.status(), "new_edge_count": new_edge_count, "edges": edges, "graph_memory": graph_status()}
+    return _handle_seed_graph()
 
 
 @app.post("/verification/classify")
