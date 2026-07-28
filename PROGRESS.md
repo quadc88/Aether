@@ -1002,4 +1002,85 @@ Milestone 58A Sandbox Contract:
 - 80E `verification_verdict_service.py`, `apply_gate_service.py`, `human_authorization_service.py` untouched
 - 80F `dry_run_service.py`, `simulation_plan_service.py`, `simulation_result_service.py` untouched
 
-**80H has NOT been started. No commit made.**
+**80I — Thin Interface Refactor Phase 7 (Tool Service Extraction). No commit made.
+
+### 80I — Thin Interface Refactor Phase 7
+
+**Status:** Complete
+
+**Description:**
+Moved tool registry, tool plan, and tool execution orchestration from `aether/interface/api_server.py`
+into three new service modules. Also moved `_record_restricted_file_access` and
+`_record_self_inspection_report` helpers (used by tool execution and file/self-inspection endpoints).
+Behavior-preserving refactor — no endpoint paths, response shapes, safety logic, or tool semantics changed.
+
+**Scope moved (14 endpoints):**
+
+Tool registry (9 endpoints):
+- `GET /action/tools/status` — tool registry status
+- `POST /action/tools/register` — register tool with working-memory, timeline, graph
+- `POST /action/tools/seed` — seed default tools
+- `GET /action/tools/list` — list tools
+- `GET /action/tools/{tool_id}` — get single tool
+- `POST /action/tools/search` — search tools
+- `POST /action/tools/enable/{tool_id}` — enable tool
+- `POST /action/tools/disable/{tool_id}` — disable tool
+- `POST /action/tools/policy` — update tool policy
+
+Tool plan (4 endpoints):
+- `POST /action/tool-plan/create` — create tool invocation plan with working-memory, timeline, graph
+- `GET /action/tool-plan/status` — tool planner status
+- `GET /action/tool-plan/list` — list tool plans
+- `GET /action/tool-plan/{plan_id}` — get single tool plan
+
+Tool execution (4 endpoints, including 1 sandbox):
+- `POST /action/tool-executor/seed-sandbox-tools` — seed sandbox tools
+- `POST /action/tool-executor/execute` — execute tool with working-memory, timeline, graph, file access audit, self-inspection audit
+- `GET /action/tool-executor/status` — tool executor status
+- `GET /action/tool-executor/list` — list executions
+- `GET /action/tool-executor/{execution_id}` — get single execution
+
+Note: 14 endpoint groups above (some with multiple HTTP methods); 17 individual route handlers thinned.
+
+**Files created (3):**
+- `aether/action/services/tool_registry_service.py` — 9 handler functions + 4 internal helpers
+  (`_add_tool_working_memory_event`, `_add_tool_graph_relationships`, `_record_tool_timeline`,
+  `_change_tool_enabled`)
+- `aether/action/services/tool_plan_service.py` — 4 handler functions
+- `aether/action/services/tool_execution_service.py` — 5 handler functions + 2 shared record helpers
+  (`record_restricted_file_access`, `record_self_inspection_report`)
+
+**Files modified (1):**
+- `aether/interface/api_server.py` — thinned 17 tool endpoints to single service calls;
+  removed `_add_tool_working_memory_event`, `_add_tool_graph_relationships`, `_record_tool_timeline`,
+  `_change_tool_enabled`, `_record_restricted_file_access`, `_record_self_inspection_report`;
+  removed tool_registry, tool_planner, tool_executor imports (replaced with service module imports)
+
+**Files not modified:**
+- `aether/action/tool_registry.py` — untouched
+- `aether/action/tool_planner.py` — untouched
+- `aether/action/tool_executor.py` — untouched
+- All 80B–80G service modules — untouched
+- All test files — untouched
+
+**Verification:**
+- Full pytest: 1347/1347 passed, 0 failures, 0 errors
+- All 5 modules compiled successfully (3 new services + api_server.py + tool_execution_service helpers)
+- Git diff clean: api_server.py thinned by 247 lines (329 removed, 41 added); no whitespace errors
+- No runtime/private data modified
+
+**Safety invariants maintained:**
+- No evidence collection performed
+- No apply or rollback executed
+- No tool execution invoked beyond existing tests
+- No execution or apply authorization granted
+- No sandbox or dry-run execution performed beyond existing tests
+- No simulation executed
+- No prohibited actions
+- All tool registry, planner, executor semantics unchanged
+- All audit/memory/timeline/graph side effects unchanged
+
+**Next recommended milestone:**
+- 80J — Thin Interface Refactor Phase 8 Plan: memory/cognitive endpoint extraction plan
+
+**80H plan completed — 80I built. No commit made.**

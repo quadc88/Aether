@@ -31,29 +31,31 @@ from aether.memory.graph.store import (
     upsert_node,
 )
 from aether.verification.risk import classify_risk, verification_plan
-from aether.action.tool_registry import (
-    disable_tool,
-    enable_tool,
-    get_tool,
-    list_tools,
-    register_tool,
-    search_tools,
-    seed_default_tools,
-    tool_registry_status,
-    update_tool_policy,
+from aether.action.services.tool_registry_service import (
+    handle_disable_action_tool as _handle_disable_tool,
+    handle_enable_action_tool as _handle_enable_tool,
+    handle_get_action_tool as _handle_get_tool,
+    handle_get_tool_registry_status as _handle_tool_registry_status,
+    handle_list_action_tools as _handle_list_tools,
+    handle_register_action_tool as _handle_register_tool,
+    handle_search_action_tools as _handle_search_tools,
+    handle_seed_action_tools as _handle_seed_tools,
+    handle_update_action_tool_policy as _handle_update_tool_policy,
 )
-from aether.action.tool_planner import (
-    create_tool_invocation_plan,
-    get_tool_plan,
-    list_tool_plans,
-    tool_planner_status,
+from aether.action.services.tool_plan_service import (
+    handle_create_action_tool_plan as _handle_create_tool_plan,
+    handle_get_action_tool_plan as _handle_get_tool_plan,
+    handle_get_tool_plan_status as _handle_tool_plan_status,
+    handle_list_action_tool_plans as _handle_list_tool_plans,
 )
-from aether.action.tool_executor import (
-    execute_tool,
-    get_execution,
-    list_executions,
-    seed_sandbox_tools,
-    tool_executor_status,
+from aether.action.services.tool_execution_service import (
+    handle_execute_action_tool as _handle_execute_tool,
+    handle_get_action_tool_execution as _handle_get_execution,
+    handle_get_tool_executor_status as _handle_tool_executor_status,
+    handle_list_action_tool_executions as _handle_list_executions,
+    handle_seed_action_sandbox_tools as _handle_seed_sandbox_tools,
+    record_restricted_file_access as _record_restricted_file_access,
+    record_self_inspection_report as _record_self_inspection_report,
 )
 from aether.action.restricted_file_reader import (
     file_access_status,
@@ -1805,59 +1807,14 @@ def cancel_sim_plan(simulation_plan_id: str, request: SimPlanDecisionBody | None
     return handle_cancel_simulation_plan(simulation_plan_id, reviewer, reason)
 
 
-def _add_tool_working_memory_event(tool: dict, event_type: str) -> None:
-    runtime.working_memory.add_event(
-        role="aether",
-        content=f"Tool {event_type.replace('_', ' ')}: {tool['id']}",
-        event_type=event_type,
-        metadata={
-            "tool_id": tool["id"],
-            "risk_level": tool["risk_level"],
-            "enabled": tool["enabled"],
-            "requires_user_approval": tool["requires_user_approval"],
-            "allow_auto_execute": tool["allow_auto_execute"],
-        },
-    )
-
-
-def _add_tool_graph_relationships(tool: dict, policy_only: bool = False) -> tuple[list[dict], list[str]]:
-    relationships = []
-    warnings = []
-    try:
-        if not policy_only:
-            relationships.extend(
-                [
-                    add_edge("Aether", "registered_tool", tool["id"]),
-                    add_edge(tool["id"], "belongs_to_category", tool["category"]),
-                    add_edge(tool["id"], "has_risk_level", tool["risk_level"]),
-                ]
-            )
-        else:
-            relationships.append(add_edge(tool["id"], "has_policy", tool["risk_level"]))
-        for relationship in relationships:
-            relationship.pop("created_new", None)
-    except Exception as error:
-        warnings.append(f"Graph Memory integration was unavailable: {error}")
-    return relationships, warnings
-
-
-def _record_tool_timeline(tool: dict, title: str, description: str) -> dict:
-    return record_event(
-        event_type="tool_registry",
-        title=title,
-        description=description,
-        importance="high" if tool["risk_level"] == "high" else "normal",
-    )
-
-
 @app.get("/action/tools/status")
 def get_tool_registry_status():
-    return {"name": "Aether", "status": runtime.status(), "tool_registry": tool_registry_status()}
+    return _handle_tool_registry_status()
 
 
 @app.post("/action/tools/register")
 def register_action_tool(request: ToolRegisterRequest):
-    tool = register_tool(
+    return _handle_register_tool(
         tool_id=request.tool_id,
         name=request.name,
         description=request.description,
@@ -1871,171 +1828,82 @@ def register_action_tool(request: ToolRegisterRequest):
         output_schema=request.output_schema,
         metadata=request.metadata,
     )
-    _add_tool_working_memory_event(tool, "tool_registered")
-    timeline_event = None
-    if tool["risk_level"] == "high":
-        timeline_event = _record_tool_timeline(
-            tool,
-            f"Tool registered: {tool['id']}",
-            f"Aether registered tool {tool['id']} with risk level {tool['risk_level']}.",
-        )
-    graph_relationships, warnings = _add_tool_graph_relationships(tool)
-    return {"name": "Aether", "status": runtime.status(), "tool": tool, "timeline_event": timeline_event, "graph_relationships": graph_relationships, "warnings": warnings}
 
 
 @app.post("/action/tools/seed")
 def seed_action_tools():
-    result = seed_default_tools()
-    runtime.working_memory.add_event(
-        role="aether",
-        content=f"Tool Registry seeded with {result['created_count']} new tools.",
-        event_type="tool_registry_seeded",
-        metadata={"tool_count": len(result["tools"]), "created_count": result["created_count"]},
-    )
-    timeline_events = []
-    warnings = []
-    for tool in result["tools"]:
-        if tool["risk_level"] == "high" and tool["id"] in result["created_tool_ids"]:
-            timeline_events.append(_record_tool_timeline(tool, f"Tool registered: {tool['id']}", f"Aether registered tool {tool['id']} with risk level {tool['risk_level']}."))
-        _, graph_warnings = _add_tool_graph_relationships(tool)
-        warnings.extend(graph_warnings)
-    return {"name": "Aether", "status": runtime.status(), "result": result, "tool_registry": tool_registry_status(), "timeline_events": timeline_events, "warnings": warnings}
+    return _handle_seed_tools()
 
 
 @app.get("/action/tools/list")
 def list_action_tools(category: str | None = None, enabled: bool | None = None, limit: int = 100):
-    return {"name": "Aether", "status": runtime.status(), "tools": list_tools(category, enabled, limit)}
+    return _handle_list_tools(category, enabled, limit)
 
 
 @app.get("/action/tools/{tool_id}")
 def get_action_tool(tool_id: str):
-    return {"name": "Aether", "status": runtime.status(), "tool": get_tool(tool_id)}
+    return _handle_get_tool(tool_id)
 
 
 @app.post("/action/tools/search")
 def search_action_tools(request: ToolSearchRequest):
-    return {"name": "Aether", "status": runtime.status(), "query": request.query, "tools": search_tools(request.query, request.limit)}
-
-
-def _change_tool_enabled(tool_id: str, enabled: bool) -> dict:
-    tool = enable_tool(tool_id) if enabled else disable_tool(tool_id)
-    if tool is None:
-        return {"name": "Aether", "status": runtime.status(), "tool": None, "warnings": ["Tool was not found."]}
-    event_type = "tool_enabled" if enabled else "tool_disabled"
-    _add_tool_working_memory_event(tool, event_type)
-    timeline_event = None
-    if not enabled or tool["risk_level"] == "high":
-        action = "enabled" if enabled else "disabled"
-        timeline_event = _record_tool_timeline(tool, f"Tool {action}: {tool['id']}", f"Aether {action} tool {tool['id']}.")
-    return {"name": "Aether", "status": runtime.status(), "tool": tool, "timeline_event": timeline_event, "warnings": []}
+    return _handle_search_tools(request.query, request.limit)
 
 
 @app.post("/action/tools/enable/{tool_id}")
 def enable_action_tool(tool_id: str):
-    return _change_tool_enabled(tool_id, True)
+    return _handle_enable_tool(tool_id)
 
 
 @app.post("/action/tools/disable/{tool_id}")
 def disable_action_tool(tool_id: str):
-    return _change_tool_enabled(tool_id, False)
+    return _handle_disable_tool(tool_id)
 
 
 @app.post("/action/tools/policy")
 def update_action_tool_policy(request: ToolPolicyUpdateRequest):
-    tool = update_tool_policy(
+    return _handle_update_tool_policy(
         tool_id=request.tool_id,
         risk_level=request.risk_level,
         requires_verification=request.requires_verification,
         requires_user_approval=request.requires_user_approval,
         allow_auto_execute=request.allow_auto_execute,
     )
-    if tool is None:
-        return {"name": "Aether", "status": runtime.status(), "tool": None, "warnings": ["Tool was not found."]}
-    _add_tool_working_memory_event(tool, "tool_policy_updated")
-    timeline_event = None
-    if tool["risk_level"] == "high":
-        timeline_event = _record_tool_timeline(tool, f"Tool policy updated: {tool['id']}", f"Aether updated policy for high-risk tool {tool['id']}.")
-    graph_relationships, warnings = _add_tool_graph_relationships(tool, policy_only=True)
-    return {"name": "Aether", "status": runtime.status(), "tool": tool, "timeline_event": timeline_event, "graph_relationships": graph_relationships, "warnings": warnings}
 
 
 @app.post("/action/tool-plan/create")
 def create_action_tool_plan(request: ToolPlanRequest):
-    plan = create_tool_invocation_plan(
+    return _handle_create_tool_plan(
         text=request.text,
         proposed_action=request.proposed_action,
         metadata=request.metadata,
         create_approval_if_required=request.create_approval_if_required,
     )
-    decision = plan["decision"]
-    tool_id = plan["candidate_tool"]["tool_id"]
-    runtime.working_memory.add_event(
-        role="aether",
-        content=f"Tool invocation plan created: {tool_id or 'no tool'}.",
-        event_type="tool_invocation_plan_created",
-        metadata={
-            "plan_id": plan["id"],
-            "tool_id": tool_id,
-            "plan_status": decision["plan_status"],
-            "risk_level": decision["risk_level"],
-            "requires_user_approval": decision["requires_user_approval"],
-            "approval_item_created": decision["approval_item_created"],
-        },
-    )
-    timeline_event = None
-    if decision["plan_status"] in {"approval_required", "blocked", "tool_disabled"} or decision["approval_item_created"]:
-        timeline_event = record_event(
-            event_type="tool_planning",
-            title=f"Tool invocation plan: {tool_id or 'no tool'}",
-            description=f"Aether created a tool invocation plan with status {decision['plan_status']}.",
-            importance="high" if decision["requires_user_approval"] or decision["plan_status"] in {"blocked", "tool_disabled"} else "normal",
-        )
-    warnings = []
-    graph_relationships = []
-    try:
-        graph_relationships.append(add_edge("Aether", "created_tool_plan", plan["id"]))
-        if tool_id:
-            graph_relationships.append(add_edge(plan["id"], "planned_tool", tool_id))
-        graph_relationships.append(add_edge(plan["id"], "has_status", decision["plan_status"]))
-        if plan["approval_item"]:
-            graph_relationships.append(add_edge(plan["id"], "created_approval_item", plan["approval_item"]["id"]))
-        for relationship in graph_relationships:
-            relationship.pop("created_new", None)
-    except Exception as error:
-        warnings.append(f"Graph Memory integration was unavailable: {error}")
-    return {"name": "Aether", "status": runtime.status(), "plan": plan, "timeline_event": timeline_event, "graph_relationships": graph_relationships, "warnings": warnings}
 
 
 @app.get("/action/tool-plan/status")
 def get_action_tool_plan_status():
-    return {"name": "Aether", "status": runtime.status(), "tool_planner": tool_planner_status()}
+    return _handle_tool_plan_status()
 
 
 @app.get("/action/tool-plan/list")
 def list_action_tool_plans(limit: int = 50):
-    return {"name": "Aether", "status": runtime.status(), "plans": list_tool_plans(limit)}
+    return _handle_list_tool_plans(limit)
 
 
 @app.get("/action/tool-plan/{plan_id}")
 def get_action_tool_plan(plan_id: str):
-    return {"name": "Aether", "status": runtime.status(), "plan": get_tool_plan(plan_id)}
+    return _handle_get_tool_plan(plan_id)
 
 
 @app.post("/action/tool-executor/seed-sandbox-tools")
 def seed_action_sandbox_tools():
-    result = seed_sandbox_tools()
-    runtime.working_memory.add_event(
-        role="aether",
-        content=f"Sandbox tools seeded: {result['created_count']} new tools.",
-        event_type="sandbox_tools_seeded",
-        metadata={"tool_count": len(result["tools"]), "created_count": result["created_count"]},
-    )
-    return {"name": "Aether", "status": runtime.status(), "result": result}
+    return _handle_seed_sandbox_tools()
 
 
 @app.post("/action/tool-executor/execute")
 def execute_action_tool(request: ToolExecutionRequest):
-    execution = execute_tool(
+    return _handle_execute_tool(
         text=request.text,
         tool_id=request.tool_id,
         input_payload=request.input_payload,
@@ -2044,102 +1912,21 @@ def execute_action_tool(request: ToolExecutionRequest):
         dry_run=request.dry_run,
         metadata=request.metadata,
     )
-    runtime.working_memory.add_event(
-        role="aether",
-        content=f"Tool execution attempted: {execution['tool_id'] or 'no tool'} ({execution['status']}).",
-        event_type="tool_execution_attempted",
-        metadata={
-            "execution_id": execution["id"],
-            "tool_id": execution["tool_id"],
-            "status": execution["status"],
-            "dry_run": execution["dry_run"],
-            "requires_user_approval": execution["plan"]["decision"]["requires_user_approval"],
-        },
-    )
-    file_access_audit = None
-    if execution["tool_id"] == "file.restricted_read" and isinstance(execution["result"], dict) and "id" in execution["result"]:
-        file_access_audit = _record_restricted_file_access(execution["result"])
-    self_inspection_audit = None
-    if execution["tool_id"] == "project.self_inspect" and isinstance(execution["result"], dict) and "id" in execution["result"]:
-        self_inspection_audit = _record_self_inspection_report(execution["result"])
-    timeline_event = None
-    if (
-        execution["status"] in {"blocked", "approval_required", "failed"}
-        or not execution["dry_run"]
-        or execution["tool_id"] not in {"echo.test", "file.preview_read", "web.search.mock", "shell.plan_only", "memory.write.dry_run", "approval.status"}
-    ):
-        timeline_event = record_event(
-            event_type="tool_execution",
-            title=f"Tool execution attempt: {execution['tool_id']}",
-            description=f"Aether attempted tool execution with status {execution['status']}.",
-            importance="high" if execution["status"] in {"blocked", "approval_required", "failed"} else "normal",
-        )
-    warnings = []
-    graph_relationships = []
-    try:
-        graph_relationships.extend(
-            [
-                add_edge("Aether", "attempted_tool_execution", execution["id"]),
-                add_edge(execution["id"], "used_tool", execution["tool_id"] or "no_tool"),
-                add_edge(execution["id"], "has_status", execution["status"]),
-            ]
-        )
-        for relationship in graph_relationships:
-            relationship.pop("created_new", None)
-    except Exception as error:
-        warnings.append(f"Graph Memory integration was unavailable: {error}")
-    return {"name": "Aether", "status": runtime.status(), "execution": execution, "timeline_event": timeline_event, "file_access_audit": file_access_audit, "self_inspection_audit": self_inspection_audit, "graph_relationships": graph_relationships, "warnings": warnings}
 
 
 @app.get("/action/tool-executor/status")
 def get_action_tool_executor_status():
-    return {"name": "Aether", "status": runtime.status(), "tool_executor": tool_executor_status()}
+    return _handle_tool_executor_status()
 
 
 @app.get("/action/tool-executor/list")
 def list_action_tool_executions(limit: int = 50):
-    return {"name": "Aether", "status": runtime.status(), "executions": list_executions(limit)}
+    return _handle_list_executions(limit)
 
 
 @app.get("/action/tool-executor/{execution_id}")
 def get_action_tool_execution(execution_id: str):
-    return {"name": "Aether", "status": runtime.status(), "execution": get_execution(execution_id)}
-
-
-def _record_restricted_file_access(access: dict) -> tuple[dict | None, list[dict], list[str]]:
-    runtime.working_memory.add_event(
-        role="aether",
-        content=f"Restricted file read attempted: {access['path']} ({access['status']}).",
-        event_type="restricted_file_read_attempted",
-        metadata={
-            "access_id": access["id"],
-            "path": access["path"],
-            "status": access["status"],
-            "allowed": access["allowed"],
-            "reason": access["reason"],
-        },
-    )
-    timeline_event = record_event(
-        event_type="file_access",
-        title=f"Restricted file read: {access['status']}",
-        description=f"Aether attempted restricted file read for {access['path']} with status {access['status']}.",
-        importance="high" if access["status"] == "blocked" else "normal",
-    )
-    warnings = []
-    graph_relationships = []
-    try:
-        graph_relationships.extend(
-            [
-                add_edge("Aether", "attempted_file_access", access["id"]),
-                add_edge(access["id"], "has_status", access["status"]),
-                add_edge(access["id"], "target_path", access["normalized_path"]),
-            ]
-        )
-        for relationship in graph_relationships:
-            relationship.pop("created_new", None)
-    except Exception as error:
-        warnings.append(f"Graph Memory integration was unavailable: {error}")
-    return timeline_event, graph_relationships, warnings
+    return _handle_get_execution(execution_id)
 
 
 @app.post("/action/file/read")
@@ -2239,40 +2026,6 @@ def list_action_file_browses(limit: int = 50):
 @app.get("/action/file/browser/{browse_id}")
 def get_action_file_browse(browse_id: str):
     return {"name": "Aether", "status": runtime.status(), "browse": get_file_browse(browse_id)}
-
-
-def _record_self_inspection_report(report: dict) -> tuple[dict, list[dict], list[str]]:
-    runtime.working_memory.add_event(
-        role="aether",
-        content=f"Project self-inspection report created: {report['id']} ({report['status']}).",
-        event_type="self_inspection_report_created",
-        metadata={
-            "report_id": report["id"], "status": report["status"],
-            "files_read": report["summary"]["files_read"], "endpoint_count": report["summary"]["endpoint_count"],
-            "warning_count": len(report["warnings"]),
-        },
-    )
-    timeline_event = record_event(
-        event_type="self_inspection",
-        title="Project self-inspection report created",
-        description=f"Aether created project self-inspection report {report['id']} with status {report['status']}.",
-        importance="high" if report["status"] in {"failed", "blocked"} else "normal",
-    )
-    warnings = []
-    graph_relationships = []
-    try:
-        graph_relationships.extend(
-            [
-                add_edge("Aether", "created_self_inspection_report", report["id"]),
-                add_edge(report["id"], "inspected_project", "Aether"),
-                add_edge(report["id"], "has_status", report["status"]),
-            ]
-        )
-        for relationship in graph_relationships:
-            relationship.pop("created_new", None)
-    except Exception as error:
-        warnings.append(f"Graph Memory integration was unavailable: {error}")
-    return timeline_event, graph_relationships, warnings
 
 
 @app.post("/action/self-inspection/create")
