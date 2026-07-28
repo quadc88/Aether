@@ -1296,65 +1296,14 @@ def validate_action_endpoint(approval_id: str, request: ActionValidationBody | N
 
 
 # ===================================================================== #
-# Dry-Run Request Endpoint (Milestone 56A)
+# Dry-Run Endpoints (Milestone 56A, 57A)
 # ===================================================================== #
 
-from aether.action.dry_run_request import (
-    build_dry_run_request as _build_dry_run,
-)
-from aether.action.dry_run_queue import (
-    create_dry_run_record as _create_dr_record,
-)
-
-
-@app.post("/approvals/{approval_id}/dry-run-request")
-def dry_run_request_endpoint(approval_id: str, request: ActionValidationBody | None = None):
-    requested_action = None
-    context = None
-    if request:
-        requested_action = request.requested_action
-        context = request.context
-    # First validate the approval for the requested action
-    validation_result = _validate_action(
-        approval_id=approval_id,
-        requested_action=requested_action,
-        context=context,
-    )
-    # Then build the dry-run request object from the validation result
-    dry_run_req = _build_dry_run(validation_result, requested_action, context)
-
-    # Persist dry-run record when a valid dry_run_request exists
-    dry_run_rec = None
-    dry_run_id = None
-    if dry_run_req is not None:
-        dry_run_rec = _create_dr_record(dry_run_request=dry_run_req, context=context)
-        dry_run_id = dry_run_rec["dry_run_id"]
-
-    return {
-        "name": "Aether",
-        "status": runtime.status(),
-        "approval_validation": validation_result,
-        "dry_run_request": dry_run_req,
-        "dry_run_record": dry_run_rec,
-        "dry_run_id": dry_run_id,
-        "dry_run_required": dry_run_req is not None,
-        "dry_run_status": dry_run_req.get("dry_run_status") if dry_run_req else None,
-        "dry_run_allowed": validation_result.get("dry_run_allowed", False),
-        "execution_allowed": False,
-        "tool_execution_allowed": False,
-        "apply_allowed": False,
-        "rollback_allowed": False,
-    }
-
-
-# ===================================================================== #
-# Dry-Run Record Endpoints (Milestone 57A)
-# ===================================================================== #
-
-from aether.action.dry_run_queue import (
-    get_dry_run_record as _get_dr,
-    list_dry_run_records as _list_dr,
-    update_dry_run_record_status as _update_dr,
+from aether.action.services.dry_run_service import (
+    handle_dry_run_create,
+    handle_list_dry_runs,
+    handle_get_dry_run,
+    handle_cancel_dry_run,
 )
 
 
@@ -1363,52 +1312,28 @@ class DryRunDecisionBody(BaseModel):
     reason: str | None = None
 
 
+@app.post("/approvals/{approval_id}/dry-run-request")
+def dry_run_request_endpoint(approval_id: str, request: ActionValidationBody | None = None):
+    requested_action = request.requested_action if request else None
+    context = request.context if request else None
+    return handle_dry_run_create(approval_id, requested_action, context)
+
+
 @app.get("/dry-runs")
 def list_dry_runs(status: str | None = None, limit: int = 50):
-    records = _list_dr(status=status, limit=limit)
-    return {
-        "name": "Aether",
-        "status": runtime.status(),
-        "dry_runs": records,
-        "count": len(records),
-    }
+    return handle_list_dry_runs(status=status, limit=limit)
 
 
 @app.get("/dry-runs/{dry_run_id}")
 def get_dry_run(dry_run_id: str):
-    record = _get_dr(dry_run_id)
-    return {
-        "name": "Aether",
-        "status": runtime.status(),
-        "dry_run": record,
-        "found": record is not None,
-    }
+    return handle_get_dry_run(dry_run_id)
 
 
 @app.post("/dry-runs/{dry_run_id}/cancel")
 def cancel_dry_run(dry_run_id: str, request: DryRunDecisionBody | None = None):
-    reviewer = None
-    reason = None
-    if request:
-        reviewer = request.reviewer
-        reason = request.reason
-    record = _update_dr(
-        dry_run_id, decision="cancelled", reviewer=reviewer, reason=reason
-    )
-    if record is None:
-        return {
-            "name": "Aether",
-            "status": runtime.status(),
-            "dry_run": None,
-            "found": False,
-            "warnings": ["Dry-run record not found."],
-        }
-    return {
-        "name": "Aether",
-        "status": runtime.status(),
-        "dry_run": record,
-        "found": True,
-    }
+    reviewer = request.reviewer if request else None
+    reason = request.reason if request else None
+    return handle_cancel_dry_run(dry_run_id, reviewer, reason)
 
 
 # ===================================================================== #
@@ -1443,55 +1368,26 @@ def sandbox_contract_endpoint(dry_run_id: str, request: SandboxContextBody | Non
 # Simulation Plan Endpoint (Milestone 59A)
 # ===================================================================== #
 
-from aether.action.simulation_plan import build_simulation_plan as _build_plan
-from aether.action.simulation_plan_queue import (
-    create_simulation_plan_record as _create_sp_record,
+from aether.action.services.simulation_plan_service import (
+    handle_simulation_plan_create,
 )
 
 
 @app.post("/dry-runs/{dry_run_id}/simulation-plan")
 def simulation_plan_endpoint(dry_run_id: str, request: SandboxContextBody | None = None):
-    from aether.action.dry_run_queue import get_dry_run_record as _get_dr
-    dr_record = _get_dr(dry_run_id) if dry_run_id else None
-    context = None
-    if request:
-        context = request.context
-    # First build the sandbox contract
-    contract = _build_contract(dr_record, context)
-    # Then build the simulation plan from the contract
-    sim_plan = _build_plan(contract, context)
-
-    # Persist simulation plan record when a valid simulation_plan exists
-    sim_rec = None
-    sim_plan_id = None
-    if sim_plan is not None:
-        sim_rec = _create_sp_record(simulation_plan=sim_plan, context=context)
-        sim_plan_id = sim_rec["simulation_plan_id"]
-
-    return {
-        "name": "Aether",
-        "status": runtime.status(),
-        "sandbox_contract": contract,
-        "simulation_plan": sim_plan,
-        "simulation_plan_record": sim_rec,
-        "simulation_plan_id": sim_plan_id,
-        "simulation_plan_required": sim_plan is not None,
-        "simulation_plan_status": sim_plan.get("simulation_plan_status") if sim_plan else None,
-        "execution_allowed": False,
-        "tool_execution_allowed": False,
-        "dry_run_execution_allowed": False,
-        "apply_allowed": False,
-        "rollback_allowed": False,
-    }
+    context = request.context if request else None
+    return handle_simulation_plan_create(dry_run_id, context)
 
 
 # ===================================================================== #
-# Simulation Result Endpoint (Milestone 62A)
+# Simulation Result Endpoints (Milestone 62A)
 # ===================================================================== #
 
-from aether.action.simulation_result import build_simulation_result as _build_result
-from aether.action.simulation_result_queue import (
-    create_simulation_result_record as _create_srr,
+from aether.action.services.simulation_result_service import (
+    handle_simulation_result_create,
+    handle_list_simulation_results,
+    handle_get_simulation_result,
+    handle_cancel_simulation_result,
 )
 
 
@@ -1499,101 +1395,32 @@ class SimResultBody(BaseModel):
     context: dict | None = None
 
 
-@app.post("/simulation-plans/{simulation_plan_id}/simulation-result")
-def simulation_result_endpoint(simulation_plan_id: str, request: SimResultBody | None = None):
-    record = _get_sp(simulation_plan_id)
-    context = None
-    if request:
-        context = request.context
-    sim_result = _build_result(record, context)
-
-    # Persist simulation result record when a valid simulation_result exists
-    sim_rec = None
-    sim_result_id = None
-    if sim_result is not None:
-        sim_rec = _create_srr(simulation_result=sim_result, context=context)
-        sim_result_id = sim_rec["simulation_result_id"]
-
-    return {
-        "name": "Aether",
-        "status": runtime.status(),
-        "simulation_plan_record": record,
-        "simulation_result": sim_result,
-        "simulation_result_record": sim_rec,
-        "simulation_result_id": sim_result_id,
-        "simulation_result_required": sim_result is not None,
-        "simulation_result_status": sim_rec.get("status") if sim_rec else (sim_result.get("simulation_result_status") if sim_result else None),
-        "execution_allowed": False,
-        "tool_execution_allowed": False,
-        "dry_run_execution_allowed": False,
-        "simulation_execution_allowed": False,
-        "apply_allowed": False,
-        "rollback_allowed": False,
-    }
-
-
-# ===================================================================== #
-# Simulation Result Record Endpoints (Milestone 62A)
-# ===================================================================== #
-
-from aether.action.simulation_result_queue import (
-    get_simulation_result_record as _get_srr,
-    list_simulation_result_records as _list_srr,
-    update_simulation_result_record_status as _update_srr,
-)
-
-
 class SimResultDecisionBody(BaseModel):
     reviewer: str | None = None
     reason: str | None = None
 
 
+@app.post("/simulation-plans/{simulation_plan_id}/simulation-result")
+def simulation_result_endpoint(simulation_plan_id: str, request: SimResultBody | None = None):
+    context = request.context if request else None
+    return handle_simulation_result_create(simulation_plan_id, context)
+
+
 @app.get("/simulation-results")
 def list_simulation_results(status: str | None = None, limit: int = 50):
-    records = _list_srr(status=status, limit=limit)
-    return {
-        "name": "Aether",
-        "status": runtime.status(),
-        "simulation_results": records,
-        "count": len(records),
-    }
+    return handle_list_simulation_results(status=status, limit=limit)
 
 
 @app.get("/simulation-results/{simulation_result_id}")
 def get_simulation_result(simulation_result_id: str):
-    record = _get_srr(simulation_result_id)
-    return {
-        "name": "Aether",
-        "status": runtime.status(),
-        "simulation_result": record,
-        "found": record is not None,
-    }
+    return handle_get_simulation_result(simulation_result_id)
 
 
 @app.post("/simulation-results/{simulation_result_id}/cancel")
 def cancel_simulation_result(simulation_result_id: str, request: SimResultDecisionBody | None = None):
-    reviewer = None
-    reason = None
-    if request:
-        reviewer = request.reviewer
-        reason = request.reason
-    record = _update_srr(
-        simulation_result_id, decision="cancelled", reviewer=reviewer, reason=reason
-    )
-    if record is None:
-        return {
-            "name": "Aether",
-            "status": runtime.status(),
-            "simulation_result": None,
-            "found": False,
-            "warnings": ["Simulation result record not found."],
-        }
-    return {
-        "name": "Aether",
-        "status": runtime.status(),
-        "simulation_result": record,
-        "found": True,
-    }
+    reviewer = request.reviewer if request else None
+    reason = request.reason if request else None
+    return handle_cancel_simulation_result(simulation_result_id, reviewer, reason)
 
 
 # ===================================================================== #
@@ -2109,10 +1936,10 @@ def approve_evidence_collection_plan_intent(id: str, request: ApprovalIntentBody
     return handle_approve_collection_plan_intent(id, reviewer, reason, confirmations)
 
 
-from aether.action.simulation_plan_queue import (
-    get_simulation_plan_record as _get_sp,
-    list_simulation_plan_records as _list_sp,
-    update_simulation_plan_record_status as _update_sp,
+from aether.action.services.simulation_plan_service import (
+    handle_list_simulation_plans,
+    handle_get_simulation_plan,
+    handle_cancel_simulation_plan,
 )
 
 
@@ -2123,50 +1950,19 @@ class SimPlanDecisionBody(BaseModel):
 
 @app.get("/simulation-plans")
 def list_sim_plans(status: str | None = None, limit: int = 50):
-    records = _list_sp(status=status, limit=limit)
-    return {
-        "name": "Aether",
-        "status": runtime.status(),
-        "simulation_plans": records,
-        "count": len(records),
-    }
+    return handle_list_simulation_plans(status=status, limit=limit)
 
 
 @app.get("/simulation-plans/{simulation_plan_id}")
 def get_sim_plan(simulation_plan_id: str):
-    record = _get_sp(simulation_plan_id)
-    return {
-        "name": "Aether",
-        "status": runtime.status(),
-        "simulation_plan": record,
-        "found": record is not None,
-    }
+    return handle_get_simulation_plan(simulation_plan_id)
 
 
 @app.post("/simulation-plans/{simulation_plan_id}/cancel")
 def cancel_sim_plan(simulation_plan_id: str, request: SimPlanDecisionBody | None = None):
-    reviewer = None
-    reason = None
-    if request:
-        reviewer = request.reviewer
-        reason = request.reason
-    record = _update_sp(
-        simulation_plan_id, decision="cancelled", reviewer=reviewer, reason=reason
-    )
-    if record is None:
-        return {
-            "name": "Aether",
-            "status": runtime.status(),
-            "simulation_plan": None,
-            "found": False,
-            "warnings": ["Simulation plan record not found."],
-        }
-    return {
-        "name": "Aether",
-        "status": runtime.status(),
-        "simulation_plan": record,
-        "found": True,
-    }
+    reviewer = request.reviewer if request else None
+    reason = request.reason if request else None
+    return handle_cancel_simulation_plan(simulation_plan_id, reviewer, reason)
 
 
 def _add_tool_working_memory_event(tool: dict, event_type: str) -> None:

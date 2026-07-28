@@ -1,6 +1,6 @@
 # Aether Project Progress Ledger
 
-**Last updated:** Milestone 80E — Thin Interface Refactor Phase 4
+**Last updated:** Milestone 80F — Thin Interface Refactor Phase 5
 **Aether version:** 0.2.0  
 **Pipeline maturity:** Declarative Apply Executor Evidence Contract (prepared/blocked, no collection or execution)
 
@@ -791,6 +791,103 @@ Human Authorization (Milestones 67-68):
 - 80D `apply_execution_gate_service.py` and `executor_contract_service.py` untouched
 
 **Next recommended milestone:**
-Milestone 80F — Thin Interface Refactor Phase 5 (simulation_result + simulation_plan + dry_run service extraction)
+Milestone 80G — Thin Interface Refactor Phase 6 (approval + sandbox_contract service extraction)
 
-**80F has NOT been started. No commit made.**
+
+### 80F — Thin Interface Refactor Phase 5
+
+**Status:** Complete
+
+**Description:**
+Moved Milestone 56A-62A orchestration from `aether/interface/api_server.py` into three new service modules. Behavior-preserving refactor — no endpoint paths, response shapes, safety logic, or queue semantics changed.
+
+**Scope moved (12 endpoints):**
+
+Dry Run (Milestones 56A-57A):
+- `POST /approvals/{approval_id}/dry-run-request` — dry-run request creation (validate + build + persist)
+- `GET /dry-runs` — list dry-run records
+- `GET /dry-runs/{id}` — get single dry-run record
+- `POST /dry-runs/{id}/cancel` — cancel
+
+Simulation Plan (Milestones 59A-60A):
+- `POST /dry-runs/{id}/simulation-plan` — simulation plan creation (build from sandbox contract + persist)
+- `GET /simulation-plans` — list simulation plan records
+- `GET /simulation-plans/{id}` — get single simulation plan record
+- `POST /simulation-plans/{id}/cancel` — cancel
+
+Simulation Result (Milestones 61A-62A):
+- `POST /simulation-plans/{id}/simulation-result` — simulation result creation (build + persist)
+- `GET /simulation-results` — list simulation result records
+- `GET /simulation-results/{id}` — get single simulation result record
+- `POST /simulation-results/{id}/cancel` — cancel
+
+**Files created:**
+- `aether/action/services/dry_run_service.py` — 4 service functions
+- `aether/action/services/simulation_plan_service.py` — 4 service functions
+- `aether/action/services/simulation_result_service.py` — 4 service functions
+
+**Files modified:**
+- `aether/interface/api_server.py` — thinned 12 endpoints to single service calls; removed unused builder/queue imports; kept all request model classes
+
+**Files specifically NOT modified (queue semantics unchanged):**
+- `aether/action/dry_run_queue.py` — untouched
+- `aether/action/simulation_plan_queue.py` — untouched
+- `aether/action/simulation_result_queue.py` — untouched
+- `aether/action/dry_run_request.py` — untouched
+- `aether/action/simulation_plan.py` — untouched
+- `aether/action/simulation_result.py` — untouched
+- `aether/action/dry_run_sandbox_contract.py` — untouched
+
+**Service functions created:**
+
+`dry_run_service.py`:
+1. `handle_dry_run_create(approval_id, requested_action, context)` — validate + build + persist + response
+2. `handle_list_dry_runs(status, decision, limit)` — list records
+3. `handle_get_dry_run(dr_id)` — get single record
+4. `handle_cancel_dry_run(dr_id, reviewer, reason)` — cancel
+
+`simulation_plan_service.py`:
+1. `handle_simulation_plan_create(dr_id, context)` — build sandbox contract + build sim plan + persist + response
+2. `handle_list_simulation_plans(status, decision, limit)` — list records
+3. `handle_get_simulation_plan(sp_id)` — get single record
+4. `handle_cancel_simulation_plan(sp_id, reviewer, reason)` — cancel
+
+`simulation_result_service.py`:
+1. `handle_simulation_result_create(sp_id, context)` — build + persist + response
+2. `handle_list_simulation_results(status, decision, limit)` — list records
+3. `handle_get_simulation_result(sr_id)` — get single record
+4. `handle_cancel_simulation_result(sr_id, reviewer, reason)` — cancel
+
+**Verification:**
+- Focused builder/queue tests: 19/19, 16/16, 23/23, 18/18, 21/21, 20/20 all passed
+- 80F API integration tests: 60/60 passed
+- 80E regression: 81/81 passed
+- 80D regression: 82/82 passed
+- 80C regression: 106/106 passed
+- 80B regression: 40/40 passed
+- Full pytest: 1347/1347 passed, 0 failures, 0 errors
+- All 12 modules compiled successfully (3 new services + api_server.py + 6 builder/queue + __init__)
+- Git diff clean: no whitespace errors; 3 new untracked service files
+- No runtime/private data modified
+
+**Safety invariants maintained:**
+- No evidence collection performed
+- No apply or rollback executed
+- No tool execution invoked
+- No execution or apply authorization granted
+- No simulation or dry-run execution performed
+- No prohibited actions
+
+**Not changed:**
+- No builder modules modified
+- No queue modules modified
+- No test files modified
+- No endpoint paths changed
+- No response shapes changed
+- No safety logic changed
+- 80B `collection_plan_service.py` untouched
+- 80C `executor_plan_service.py` and `evidence_contract_service.py` untouched
+- 80D `apply_execution_gate_service.py` and `executor_contract_service.py` untouched
+- 80E `verification_verdict_service.py`, `apply_gate_service.py`, `human_authorization_service.py` untouched
+
+**80G has NOT been started. No commit made.**
