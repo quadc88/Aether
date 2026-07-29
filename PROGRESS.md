@@ -1,8 +1,8 @@
 # Aether Project Progress Ledger
 
-**Last updated:** Milestone 82H — Code Review and Review Bridge Service Extraction
+**Last updated:** Milestone 82O Build — Patch Router Extraction (not committed)
 **Aether version:** 0.2.0  
-**Pipeline maturity:** Full declarative safety chain (approval through evidence contract record stores) with thin interface refactor (80B-80M) and cognitive runtime observability (81A-81E) complete. Observation contract builder added (82B). Interface API model extraction complete (82C). File and self-inspection service extraction complete (82D). Patch lifecycle service extraction complete (82E). Mutation log service extraction complete (82F). Proposal console service extraction complete (82G). Code review and review bridge service extraction complete (82H). No real tool execution, apply, evidence collection, rollback, or observation yet.
+**Pipeline maturity:** Full declarative safety chain (approval through evidence contract record stores) with thin interface refactor (80B-80M) and cognitive runtime observability (81A-81E) complete. Observation contract builder added (82B). Interface API model extraction complete (82C). File and self-inspection service extraction complete (82D). Patch lifecycle service extraction complete (82E). Mutation log service extraction complete (82F). Proposal console service extraction complete (82G). Code review and review bridge service extraction complete (82H). Code review router extraction complete (82J). Mutation log router extraction complete (82K). Proposal console router extraction complete (82L). File router extraction complete (82N). Patch router extraction complete (82O). No real tool execution, apply, evidence collection, rollback, or observation yet.
 
 ---
 
@@ -2199,5 +2199,32 @@ Extracted 18 endpoint handlers (6 proposal-review-console, 6 proposal-revision-c
   - No apply/rollback
   - No Observation Record Store
   - Not committed
-- 82O — Patch Router Extraction Plan
-  82O not started
+- 82O Build — Patch Router Extraction
+  - Created aether/interface/routers/patch_routes.py (89 lines, 3839 bytes)
+  - Moved 17 patch lifecycle route definitions from api_server.py to patch_routes.py
+  - Added app.include_router(patch_router, prefix="")
+  - Removed patch_service handler imports from api_server.py
+  - OpenAPI exact match
+  - OpenAPI path count unchanged: 300
+  - OpenAPI schema count unchanged: 103
+  - All 17 moved patch paths present
+  - Full pytest 1401/1401 passed
+  - Raw len(app.routes) may change due to include_router representation and is not the contract gate
+  - No /chat changes
+  - No /awaken changes
+  - No api_models.py changes
+  - No patch_service.py changes
+  - No service module changes
+  - No action module changes
+  - No test file changes
+  - No source mutation behavior changes
+  - No apply behavior changes
+  - No rollback behavior changes
+  - No backup behavior changes
+  - No side-effect behavior changes
+  - No manual apply endpoint invocation
+  - No manual rollback endpoint invocation
+  - No Observation Record Store
+  - Not committed
+- 82P — Remaining Router Extraction Plan
+  82P not started

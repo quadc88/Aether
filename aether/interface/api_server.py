@@ -50,11 +50,6 @@ from aether.interface.api_models import (
     MilestoneReportExportRequest,
     MilestoneRequest,
     MutationRecordRequest,
-    PatchApplyRequest,
-    PatchProposalRequest,
-    PatchProposalStatusUpdateRequest,
-    PatchReviewRequest,
-    PatchRollbackRequest,
     PlanDecisionBody,
     PostApplyVerificationGateListRequest,
     PostApplyVerificationGateOpenRequest,
@@ -186,25 +181,7 @@ from aether.action.services.memory_service import (
     handle_timeline_status as _handle_timeline_status,
     handle_write_episodic_memory as _handle_write_episodic,
 )
-from aether.action.services.patch_service import (
-    handle_patch_proposal_create,
-    handle_patch_proposal_status,
-    handle_list_patch_proposals,
-    handle_get_patch_proposal,
-    handle_mark_patch_proposal_status,
-    handle_patch_review,
-    handle_patch_review_status,
-    handle_list_patch_reviews,
-    handle_get_patch_review,
-    handle_patch_apply,
-    handle_patch_apply_status,
-    handle_list_patch_applies,
-    handle_get_patch_apply,
-    handle_patch_rollback,
-    handle_patch_rollback_status,
-    handle_list_patch_rollbacks,
-    handle_get_patch_rollback,
-)
+
 from aether.action.self_modification_cycle import create_self_modification_session, review_self_modification_session, dry_run_self_modification_session, apply_self_modification_session, rollback_self_modification_session, self_modification_status, list_self_modification_sessions, get_self_modification_session, summarize_self_modification_session
 from aether.action.changelog_exporter import export_public_changelog, export_milestone_report, export_private_changelog_report, changelog_export_status
 from aether.action.repair_planner import create_repair_plan, get_repair_plan, list_repair_plans, repair_plan_status, summarize_repair_plan
@@ -215,6 +192,7 @@ from aether.interface.routers.code_review_routes import code_review_router
 from aether.interface.routers.mutation_log_routes import mutation_log_router
 from aether.interface.routers.proposal_console_routes import proposal_console_router
 from aether.interface.routers.file_routes import file_router
+from aether.interface.routers.patch_routes import patch_router
 from aether.action.approved_dry_run_gate import open_approved_dry_run_gate,execute_approved_dry_run,get_approved_dry_run_gate_record,list_approved_dry_run_gate_records,approved_dry_run_gate_status,summarize_approved_dry_run_gate
 from aether.action.dry_run_review_gate import open_dry_run_review_gate,submit_dry_run_review,get_dry_run_review_gate_record,list_dry_run_review_gate_records,dry_run_review_gate_status,summarize_dry_run_review_gate
 from aether.action.real_apply_approval_gate import open_real_apply_approval_gate,submit_real_apply_final_decision,get_real_apply_approval_gate_record,list_real_apply_approval_gate_records,real_apply_approval_gate_status,summarize_real_apply_approval_gate
@@ -239,6 +217,7 @@ app.include_router(code_review_router, prefix="")
 app.include_router(mutation_log_router, prefix="")
 app.include_router(proposal_console_router, prefix="")
 app.include_router(file_router, prefix="")
+app.include_router(patch_router, prefix="")
 
 
 # ---- Identity Integrity Endpoints (Milestone 48A) ----
@@ -1335,55 +1314,6 @@ def get_action_tool_execution(execution_id: str):
     return _handle_get_execution(execution_id)
 
 
-@app.post("/action/patch-proposal/create")
-def create_action_patch_proposal(request: PatchProposalRequest):
-    return handle_patch_proposal_create(request.target_path, request.request_text, request.proposed_change_summary, request.proposed_excerpt, request.reason, request.original_excerpt, request.create_approval_if_required, request.metadata)
-
-@app.get("/action/patch-proposal/status")
-def get_action_patch_proposal_status():
-    return handle_patch_proposal_status()
-
-@app.get("/action/patch-proposal/list")
-def list_action_patch_proposals(status: str | None = None, limit: int = 50):
-    return handle_list_patch_proposals(status, limit)
-
-@app.get("/action/patch-proposal/{proposal_id}")
-def get_action_patch_proposal(proposal_id: str):
-    return handle_get_patch_proposal(proposal_id)
-
-@app.post("/action/patch-proposal/mark-status")
-def mark_action_patch_proposal_status(request: PatchProposalStatusUpdateRequest):
-    return handle_mark_patch_proposal_status(request.proposal_id, request.status, request.reason)
-
-@app.post("/action/patch-review/review")
-def review_action_patch_proposal(request: PatchReviewRequest):
-    return handle_patch_review(request.proposal_id, request.decision, request.review_reason, request.reviewer, request.metadata)
-
-@app.get("/action/patch-review/status")
-def get_action_patch_review_status(): return handle_patch_review_status()
-@app.get("/action/patch-review/list")
-def list_action_patch_reviews(proposal_id: str | None = None, limit: int = 50): return handle_list_patch_reviews(proposal_id, limit)
-@app.get("/action/patch-review/{review_id}")
-def get_action_patch_review(review_id: str): return handle_get_patch_review(review_id)
-
-@app.post("/action/patch-apply/apply")
-def apply_action_patch(request: PatchApplyRequest):
-    return handle_patch_apply(request.proposal_id, request.dry_run, request.metadata)
-@app.get("/action/patch-apply/status")
-def get_action_patch_apply_status():return handle_patch_apply_status()
-@app.get("/action/patch-apply/list")
-def list_action_patch_applies(proposal_id: str|None=None,limit:int=50):return handle_list_patch_applies(proposal_id,limit)
-@app.get("/action/patch-apply/{apply_id}")
-def get_action_patch_apply(apply_id:str):return handle_get_patch_apply(apply_id)
-@app.post("/action/patch-rollback/rollback")
-def rollback_action_patch(request: PatchRollbackRequest):
-    return handle_patch_rollback(request.apply_id, request.dry_run, request.metadata)
-@app.get("/action/patch-rollback/status")
-def get_action_patch_rollback_status():return handle_patch_rollback_status()
-@app.get("/action/patch-rollback/list")
-def list_action_patch_rollbacks(apply_id:str|None=None,limit:int=50):return handle_list_patch_rollbacks(apply_id,limit)
-@app.get("/action/patch-rollback/{rollback_id}")
-def get_action_patch_rollback(rollback_id:str):return handle_get_patch_rollback(rollback_id)
 @app.post("/action/self-modification/create")
 def create_self_modification(request:SelfModificationCreateRequest):return {"name":"Aether","session":create_self_modification_session(request.goal,request.target_path,request.proposed_change_summary,request.proposed_excerpt,request.reason,request.original_excerpt,request.create_approval_if_required,request.metadata)}
 @app.post("/action/self-modification/review")
