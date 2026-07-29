@@ -230,26 +230,7 @@ from aether.action.repair_workflow_tracker import trace_repair_workflow, get_rep
 from aether.action.repair_workflow_exporter import export_workflow_report, export_workflow_index, export_private_workflow_report, repair_workflow_export_status
 from aether.interface.routers.code_review_routes import code_review_router
 from aether.interface.routers.mutation_log_routes import mutation_log_router
-from aether.action.services.proposal_console_service import (
-    handle_open_proposal_review_console,
-    handle_submit_proposal_review,
-    handle_proposal_review_console_status,
-    handle_list_proposal_review_console,
-    handle_summarize_proposal_review_console,
-    handle_get_proposal_review_console,
-    handle_open_proposal_revision_console,
-    handle_create_proposal_revision,
-    handle_proposal_revision_console_status,
-    handle_list_proposal_revision_console,
-    handle_summarize_proposal_revision_console,
-    handle_get_proposal_revision_console,
-    handle_open_revised_proposal_review,
-    handle_submit_revised_proposal_review,
-    handle_revised_proposal_review_status,
-    handle_list_revised_proposal_review,
-    handle_summarize_revised_proposal_review,
-    handle_get_revised_proposal_review,
-)
+from aether.interface.routers.proposal_console_routes import proposal_console_router
 from aether.action.approved_dry_run_gate import open_approved_dry_run_gate,execute_approved_dry_run,get_approved_dry_run_gate_record,list_approved_dry_run_gate_records,approved_dry_run_gate_status,summarize_approved_dry_run_gate
 from aether.action.dry_run_review_gate import open_dry_run_review_gate,submit_dry_run_review,get_dry_run_review_gate_record,list_dry_run_review_gate_records,dry_run_review_gate_status,summarize_dry_run_review_gate
 from aether.action.real_apply_approval_gate import open_real_apply_approval_gate,submit_real_apply_final_decision,get_real_apply_approval_gate_record,list_real_apply_approval_gate_records,real_apply_approval_gate_status,summarize_real_apply_approval_gate
@@ -272,6 +253,7 @@ app = FastAPI(
 
 app.include_router(code_review_router, prefix="")
 app.include_router(mutation_log_router, prefix="")
+app.include_router(proposal_console_router, prefix="")
 
 
 # ---- Identity Integrity Endpoints (Milestone 48A) ----
@@ -1556,42 +1538,6 @@ def export_repair_workflow_index_action(request:RepairWorkflowIndexExportRequest
 def export_private_repair_workflow_report_action(request:PrivateRepairWorkflowExportRequest):return export_private_workflow_report(request.report_id,request.metadata)
 @app.get("/action/repair-workflow-export/status")
 def get_repair_workflow_export_status_action():return repair_workflow_export_status()
-@app.post("/action/proposal-review-console/open")
-def open_proposal_review_console_action(request:ProposalReviewConsoleOpenRequest):return handle_open_proposal_review_console(request.source_type,request.source_id,request.metadata)
-@app.post("/action/proposal-review-console/submit")
-def submit_proposal_review_action(request:ProposalReviewSubmitRequest):return handle_submit_proposal_review(request.console_record_id,request.decision,request.comment,request.reviewer,request.create_approval_if_required,request.metadata)
-@app.get("/action/proposal-review-console/status")
-def get_proposal_review_console_status_action():return handle_proposal_review_console_status()
-@app.get("/action/proposal-review-console/list")
-def list_proposal_review_console_action(status:str|None=None,proposal_id:str|None=None,limit:int=50):return handle_list_proposal_review_console(status,proposal_id,limit)
-@app.get("/action/proposal-review-console/{record_id}/summary")
-def summarize_proposal_review_console_action(record_id:str):return handle_summarize_proposal_review_console(record_id)
-@app.get("/action/proposal-review-console/{record_id}")
-def get_proposal_review_console_action(record_id:str):return handle_get_proposal_review_console(record_id)
-@app.post("/action/proposal-revision-console/open")
-def open_proposal_revision_console_action(request:ProposalRevisionConsoleOpenRequest):return handle_open_proposal_revision_console(request.source_type,request.source_id,request.metadata)
-@app.post("/action/proposal-revision-console/create-revision")
-def create_proposal_revision_action(request:ProposalRevisionCreateRequest):return handle_create_proposal_revision(request.revision_record_id,request.revised_proposed_excerpt,request.revised_change_summary,request.human_revision_note,request.create_approval_if_required,request.metadata)
-@app.get("/action/proposal-revision-console/status")
-def get_proposal_revision_console_status_action():return handle_proposal_revision_console_status()
-@app.get("/action/proposal-revision-console/list")
-def list_proposal_revision_console_action(status:str|None=None,original_proposal_id:str|None=None,limit:int=50):return handle_list_proposal_revision_console(status,original_proposal_id,limit)
-@app.get("/action/proposal-revision-console/{record_id}/summary")
-def summarize_proposal_revision_console_action(record_id:str):return handle_summarize_proposal_revision_console(record_id)
-@app.get("/action/proposal-revision-console/{record_id}")
-def get_proposal_revision_console_action(record_id:str):return handle_get_proposal_revision_console(record_id)
-@app.post("/action/revised-proposal-review/open")
-def open_revised_proposal_review_action(request:RevisedProposalReviewOpenRequest):return handle_open_revised_proposal_review(request.proposal_revision_console_id,request.metadata)
-@app.post("/action/revised-proposal-review/submit")
-def submit_revised_proposal_review_action(request:RevisedProposalReviewSubmitRequest):return handle_submit_revised_proposal_review(request.review_loop_record_id,request.decision,request.comment,request.reviewer,request.create_approval_if_required,request.metadata)
-@app.get("/action/revised-proposal-review/status")
-def get_revised_proposal_review_status_action():return handle_revised_proposal_review_status()
-@app.get("/action/revised-proposal-review/list")
-def list_revised_proposal_review_action(status:str|None=None,revised_proposal_id:str|None=None,limit:int=50):return handle_list_revised_proposal_review(status,revised_proposal_id,limit)
-@app.get("/action/revised-proposal-review/{record_id}/summary")
-def summarize_revised_proposal_review_action(record_id:str):return handle_summarize_revised_proposal_review(record_id)
-@app.get("/action/revised-proposal-review/{record_id}")
-def get_revised_proposal_review_action(record_id:str):return handle_get_revised_proposal_review(record_id)
 @app.post("/action/approved-dry-run-gate/open")
 def open_approved_dry_run_gate_action(request:ApprovedDryRunGateOpenRequest):return {"name":"Aether","record":open_approved_dry_run_gate(request.source_type,request.source_id,request.metadata)}
 @app.post("/action/approved-dry-run-gate/execute")

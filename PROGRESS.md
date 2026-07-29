@@ -2155,4 +2155,25 @@ Extracted 18 endpoint handlers (6 proposal-review-console, 6 proposal-revision-c
   - No Observation Record Store
   - Not committed
 - 82L — Proposal Console Router Extraction
-  82L not started
+  - Created aether/interface/routers/proposal_console_routes.py (153 lines, 5761 bytes)
+  - Moved 18 proposal-console route definitions from api_server.py to proposal_console_routes.py
+  - Added app.include_router(proposal_console_router, prefix="")
+  - Removed proposal_console_service handler imports from api_server.py
+  - OpenAPI exact match
+  - OpenAPI path count unchanged: 300
+  - OpenAPI schema count unchanged: 103
+  - All 18 moved proposal-console paths present
+  - Full pytest 1401/1401 passed
+  - Raw len(app.routes) may change due to include_router representation and is not the contract gate
+  - No /chat changes
+  - No /awaken changes
+  - No api_models.py changes
+  - No service module changes
+  - No action module changes
+  - No test file changes
+  - No source mutation
+  - No apply/rollback
+  - No Observation Record Store
+  - Not committed
+- 82M — File Router Extraction Plan
+  82M not started
