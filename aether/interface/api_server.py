@@ -11,7 +11,7 @@ from aether.time.clock import time_state
 from aether.memory.timeline.recorder import record_event, search_events
 from aether.core.runtime import runtime
 from aether.memory.graph.store import add_edge
-from aether.verification.risk import classify_risk, verification_plan
+from aether.verification.risk import classify_risk
 from aether.action.services.tool_registry_service import (
     handle_disable_action_tool as _handle_disable_tool,
     handle_enable_action_tool as _handle_enable_tool,
@@ -37,6 +37,9 @@ from aether.action.services.tool_execution_service import (
     handle_seed_action_sandbox_tools as _handle_seed_sandbox_tools,
     record_restricted_file_access as _record_restricted_file_access,
     record_self_inspection_report as _record_self_inspection_report,
+)
+from aether.action.services.verification_plan_service import (
+    handle_create_verification_plan,
 )
 from aether.action.services.memory_service import (
     handle_clear_working_memory as _handle_clear_wm,
@@ -817,47 +820,7 @@ def classify_verification_risk(request: VerificationRequest):
 
 @app.post("/verification/plan")
 def create_verification_plan(request: VerificationRequest):
-    plan = verification_plan(request.text)
-    runtime.working_memory.add_event(
-        role="aether",
-        content=f"Verification plan created for {plan['action_type']} request.",
-        event_type="verification_plan_created",
-        metadata={
-            "risk_level": plan["risk_level"],
-            "action_type": plan["action_type"],
-            "requires_verification": plan["requires_verification"],
-            "requires_user_approval": plan["requires_user_approval"],
-        },
-    )
-
-    warnings = []
-    timeline_event = None
-    graph_relationship = None
-    if plan["risk_level"] == "high":
-        timeline_event = record_event(
-            event_type="verification",
-            title=f"High-risk verification plan: {plan['action_type']}",
-            description="Aether created a verification plan for a high-risk request.",
-            importance="high",
-        )
-        try:
-            graph_relationship = add_edge(
-                "Aether",
-                "created_verification_plan_for",
-                plan["action_type"],
-            )
-            graph_relationship.pop("created_new", None)
-        except Exception as error:
-            warnings.append(f"Graph Memory integration was unavailable: {error}")
-
-    return {
-        "name": "Aether",
-        "status": runtime.status(),
-        "plan": plan,
-        "timeline_event": timeline_event,
-        "graph_relationship": graph_relationship,
-        "warnings": warnings,
-    }
+    return handle_create_verification_plan(request.text)
 
 
 from aether.action.services.approval_service import (

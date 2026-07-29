@@ -1,6 +1,6 @@
 # Aether Project Progress Ledger
 
-**Last updated:** Milestone 80G — Thin Interface Refactor Phase 6
+**Last updated:** Milestone 80M — Thin Interface Refactor Phase 9
 **Aether version:** 0.2.0  
 **Pipeline maturity:** Declarative Apply Executor Evidence Contract (prepared/blocked, no collection or execution)
 
@@ -1167,3 +1167,58 @@ Graph Memory (8 endpoints):
 - 80L — Verification Plan Service Extraction Plan
 
 **80K complete. No commit made.**
+
+### 80M — Thin Interface Refactor Phase 9
+
+**Status:** Complete
+
+**Description:**
+Moved verification plan orchestration (`POST /verification/plan`) from `aether/interface/api_server.py`
+into a new service module. Behavior-preserving refactor — no endpoint paths, response shapes,
+request parsing, risk verification semantics, or side-effect changes.
+
+**Scope moved (1 endpoint):**
+- `POST /verification/plan` — create verification plan with working-memory, timeline, and graph side effects
+
+**Files created (1):**
+- `aether/action/services/verification_plan_service.py` — 1 handler function (`handle_create_verification_plan`)
+
+**Files modified (1):**
+- `aether/interface/api_server.py` — thinned `POST /verification/plan` endpoint to single service call;
+  removed `verification_plan` import from `aether.verification.risk` (kept `classify_risk` for `/verification/classify`);
+  added import of `handle_create_verification_plan` from new service module
+
+**Files not modified:**
+- `aether/verification/risk.py` — untouched
+- All 17 existing service modules (80B–80K) — untouched
+- All test files — untouched
+- `/chat` — untouched
+- `/awaken` — untouched
+- `/verification/classify` — untouched
+- All memory, tool, file, repair, guided, identity, root endpoints — untouched
+- All pipeline/gate/approval/sandbox endpoints — untouched
+
+**Verification:**
+- Full pytest: 1347/1347 passed, 0 failures, 0 errors
+- Focused risk expansion tests: 27/27 passed
+- Live endpoint validation (`POST /verification/plan`, 422 on missing `text`, `/verification/classify` unchanged): passed
+- Memory regression: 1/1 passed
+- Tool regression: 10/10 passed
+- Approval/sandbox/dry-run/simulation regression: 31/31 passed
+- All 3 modules compiled successfully (1 new service + api_server.py + risk.py)
+- Git diff clean: api_server.py thinned by 38 lines; no whitespace errors
+- No runtime/private data modified
+
+**Safety invariants maintained:**
+- No evidence collection performed
+- No apply or rollback executed
+- No tool execution invoked beyond existing tests
+- No execution or apply authorization granted
+- No sandbox or dry-run execution performed
+- No simulation executed
+- No prohibited actions
+- All verification/risk semantics unchanged
+- All working-memory/timeline/graph side effects unchanged
+- `/chat` and `/awaken` behavior unchanged
+
+**80M complete. No commit made.**
