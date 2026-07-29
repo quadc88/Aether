@@ -1,8 +1,8 @@
 # Aether Project Progress Ledger
 
-**Last updated:** Milestone 82P Build — Approval Router Extraction (not committed)
+**Last updated:** Milestone 82Q Build — Dry Run + Sandbox Contract Router Extraction (not committed)
 **Aether version:** 0.2.0  
-**Pipeline maturity:** Full declarative safety chain (approval through evidence contract record stores) with thin interface refactor (80B-80M) and cognitive runtime observability (81A-81E) complete. Observation contract builder added (82B). Interface API model extraction complete (82C). File and self-inspection service extraction complete (82D). Patch lifecycle service extraction complete (82E). Mutation log service extraction complete (82F). Proposal console service extraction complete (82G). Code review and review bridge service extraction complete (82H). Code review router extraction complete (82J). Mutation log router extraction complete (82K). Proposal console router extraction complete (82L). File router extraction complete (82N). Patch router extraction complete (82O). Approval router extraction complete (82P). No real tool execution, apply, evidence collection, rollback, or observation yet.
+**Pipeline maturity:** Full declarative safety chain (approval through evidence contract record stores) with thin interface refactor (80B-80M) and cognitive runtime observability (81A-81E) complete. Observation contract builder added (82B). Interface API model extraction complete (82C). File and self-inspection service extraction complete (82D). Patch lifecycle service extraction complete (82E). Mutation log service extraction complete (82F). Proposal console service extraction complete (82G). Code review and review bridge service extraction complete (82H). Code review router extraction complete (82J). Mutation log router extraction complete (82K). Proposal console router extraction complete (82L). File router extraction complete (82N). Patch router extraction complete (82O). Approval router extraction complete (82P). Dry run and sandbox contract router extraction complete (82Q). No real tool execution, apply, evidence collection, rollback, or observation yet.
 
 ---
 
@@ -2253,5 +2253,38 @@ Extracted 18 endpoint handlers (6 proposal-review-console, 6 proposal-revision-c
   - No backup behavior changes
   - No Observation Record Store
   - Not committed
-- 82Q — Remaining Router Extraction Plan
-  82Q not started
+- 82Q Build — Dry Run + Sandbox Contract Router Extraction
+  - Created aether/interface/routers/dry_run_routes.py (50 lines, 1647 bytes)
+  - Moved 5 dry-run/sandbox route definitions from api_server.py to dry_run_routes.py
+  - Added app.include_router(dry_run_router, prefix="")
+  - Removed dry_run_service and sandbox_contract_service handler imports from api_server.py
+  - simulation_plan_service imports left untouched in api_server.py
+  - OpenAPI exact match
+  - OpenAPI path count unchanged: 300
+  - OpenAPI schema count unchanged: 103
+  - All 5 moved dry-run/sandbox paths present
+  - Simulation-plan paths still present
+  - Simulation-plan imports unchanged
+  - Full pytest 1401/1401 passed
+  - Raw len(app.routes) may change due to include_router representation and is not the contract gate
+  - No /chat changes
+  - No /awaken changes
+  - No api_models.py changes
+  - No dry_run_service.py changes
+  - No sandbox_contract_service.py changes
+  - No simulation_plan_service.py changes
+  - No service module changes
+  - No action module changes
+  - No test file changes
+  - No dry-run behavior changes
+  - No sandbox behavior changes
+  - No side-effect behavior changes
+  - No manual dry-run/sandbox endpoint invocation
+  - No manual simulation-plan endpoint invocation
+  - No source mutation behavior changes
+  - No apply behavior changes
+  - No rollback behavior changes
+  - No Observation Record Store
+  - Next: 82R — Remaining Router Extraction Plan
+  - 82R not started
+

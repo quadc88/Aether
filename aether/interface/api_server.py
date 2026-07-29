@@ -194,6 +194,7 @@ from aether.interface.routers.proposal_console_routes import proposal_console_ro
 from aether.interface.routers.file_routes import file_router
 from aether.interface.routers.patch_routes import patch_router
 from aether.interface.routers.approval_routes import approval_router
+from aether.interface.routers.dry_run_routes import dry_run_router
 from aether.action.approved_dry_run_gate import open_approved_dry_run_gate,execute_approved_dry_run,get_approved_dry_run_gate_record,list_approved_dry_run_gate_records,approved_dry_run_gate_status,summarize_approved_dry_run_gate
 from aether.action.dry_run_review_gate import open_dry_run_review_gate,submit_dry_run_review,get_dry_run_review_gate_record,list_dry_run_review_gate_records,dry_run_review_gate_status,summarize_dry_run_review_gate
 from aether.action.real_apply_approval_gate import open_real_apply_approval_gate,submit_real_apply_final_decision,get_real_apply_approval_gate_record,list_real_apply_approval_gate_records,real_apply_approval_gate_status,summarize_real_apply_approval_gate
@@ -220,6 +221,7 @@ app.include_router(proposal_console_router, prefix="")
 app.include_router(file_router, prefix="")
 app.include_router(patch_router, prefix="")
 app.include_router(approval_router, prefix="")
+app.include_router(dry_run_router, prefix="")
 
 
 # ---- Identity Integrity Endpoints (Milestone 48A) ----
@@ -529,51 +531,16 @@ def create_verification_plan(request: VerificationRequest):
 # Dry-Run Endpoints (Milestone 56A, 57A)
 # ===================================================================== #
 
-from aether.action.services.dry_run_service import (
-    handle_dry_run_create,
-    handle_list_dry_runs,
-    handle_get_dry_run,
-    handle_cancel_dry_run,
-)
 
 
-@app.post("/approvals/{approval_id}/dry-run-request")
-def dry_run_request_endpoint(approval_id: str, request: ActionValidationBody | None = None):
-    requested_action = request.requested_action if request else None
-    context = request.context if request else None
-    return handle_dry_run_create(approval_id, requested_action, context)
-
-
-@app.get("/dry-runs")
-def list_dry_runs(status: str | None = None, limit: int = 50):
-    return handle_list_dry_runs(status=status, limit=limit)
-
-
-@app.get("/dry-runs/{dry_run_id}")
-def get_dry_run(dry_run_id: str):
-    return handle_get_dry_run(dry_run_id)
-
-
-@app.post("/dry-runs/{dry_run_id}/cancel")
-def cancel_dry_run(dry_run_id: str, request: DryRunDecisionBody | None = None):
-    reviewer = request.reviewer if request else None
-    reason = request.reason if request else None
-    return handle_cancel_dry_run(dry_run_id, reviewer, reason)
 
 
 # ===================================================================== #
 # Dry-Run Sandbox Contract Endpoint (Milestone 58A)
 # ===================================================================== #
 
-from aether.action.services.sandbox_contract_service import (
-    handle_sandbox_contract_create,
-)
 
 
-@app.post("/dry-runs/{dry_run_id}/sandbox-contract")
-def sandbox_contract_endpoint(dry_run_id: str, request: SandboxContextBody | None = None):
-    context = request.context if request else None
-    return handle_sandbox_contract_create(dry_run_id, context)
 
 
 # ===================================================================== #
