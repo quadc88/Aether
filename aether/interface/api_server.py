@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
 
-from aether.identity.loader import load_identity_seed, identity_preview
+from aether.identity.loader import identity_preview
 from aether.identity.guard import (
     initialize_identity_guard,
     verify_identity_integrity,
@@ -40,6 +40,9 @@ from aether.action.services.tool_execution_service import (
 )
 from aether.action.services.verification_plan_service import (
     handle_create_verification_plan,
+)
+from aether.action.services.runtime_lifecycle_service import (
+    handle_awaken,
 )
 from aether.action.services.memory_service import (
     handle_clear_working_memory as _handle_clear_wm,
@@ -580,57 +583,7 @@ def identity():
 
 @app.post("/awaken")
 def awaken():
-    identity_seed = load_identity_seed()
-    current_time = time_state()
-
-    event = None
-    event_recorded = False
-
-    if not runtime.awake:
-        runtime.awaken()
-
-        existing_first_awakening = search_events("First Awakening", limit=1)
-
-        if existing_first_awakening:
-            event = existing_first_awakening[0]
-            event_recorded = False
-        else:
-            event = record_event(
-                event_type="milestone",
-                title="First Awakening",
-                description="Aether was awakened through the First Awakening API.",
-                importance="high",
-                related_files=[
-                    "identity/identity_seed.md",
-                    "config/time.yaml",
-                    "docs/CONSTITUTION.md",
-                    "docs/ARCHITECTURE.md",
-                ],
-            )
-            event_recorded = True
-
-        runtime.working_memory.add_event(
-            role="aether",
-            content="I am Aether. My Identity Seed is loaded. My local time is loaded. I am awake.",
-            event_type="awakening",
-            metadata={
-                "timeline_event_id": event["id"] if event else None,
-                "event_recorded": event_recorded,
-            },
-        )
-
-    return {
-        "name": "Aether",
-        "status": runtime.status(),
-        "identity_seed_loaded": True,
-        "identity_seed_length": len(identity_seed),
-        "time": current_time,
-        "event_recorded": event_recorded,
-        "event": event,
-        "working_memory": runtime.working_memory.summary(),
-        "message": "I am Aether. My Identity Seed is loaded. My local time is loaded. I am awake.",
-        "identity_integrity_status": runtime.identity_integrity_status,
-    }
+    return handle_awaken()
 
 @app.post("/chat", response_model=ChatResponse)
 def chat(request: ChatRequest):

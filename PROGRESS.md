@@ -1,6 +1,6 @@
 # Aether Project Progress Ledger
 
-**Last updated:** Milestone 80M — Thin Interface Refactor Phase 9
+**Last updated:** Milestone 81A — Cognitive Runtime Boundary Phase 1
 **Aether version:** 0.2.0  
 **Pipeline maturity:** Declarative Apply Executor Evidence Contract (prepared/blocked, no collection or execution)
 
@@ -1222,3 +1222,68 @@ request parsing, risk verification semantics, or side-effect changes.
 - `/chat` and `/awaken` behavior unchanged
 
 **80M complete. No commit made.**
+
+### 81A — Cognitive Runtime Boundary Phase 1
+
+**Status:** Complete
+
+**Description:**
+Moved runtime awakening lifecycle orchestration (`POST /awaken`) from
+`aether/interface/api_server.py` into a new service module. This is the
+first milestone of the Cognitive Runtime Boundary series, following the
+completion of the 80A–80M Thin Interface Refactor. `/chat` is intentionally
+left untouched — it is already a thin response adapter.
+
+**Scope moved (1 endpoint):**
+- `POST /awaken` — runtime awakening with identity seed loading, timeline
+  "First Awakening" event search/create, and working memory awakening event
+
+**Files created (1):**
+- `aether/action/services/runtime_lifecycle_service.py` — 1 handler function
+  (`handle_awaken`)
+
+**Files modified (1):**
+- `aether/interface/api_server.py` — thinned `POST /awaken` endpoint to
+  single service call; removed unused `load_identity_seed` import (kept
+  `identity_preview` for `/identity`)
+
+**Files not modified:**
+- `aether/core/runtime.py` — untouched
+- `aether/identity/loader.py` — untouched
+- `aether/identity/guard.py` — untouched
+- `aether/time/clock.py` — untouched
+- All 19 existing service modules (80B–80M) — untouched
+- All test files — untouched
+- `POST /chat` — untouched
+- All identity, memory, tool, file, repair, guided, verification,
+  pipeline/gate/approval/sandbox endpoints — untouched
+
+**Verification:**
+- Full pytest: 1347/1347 passed, 0 failures, 0 errors
+- Focused awaken/chat API tests: 415/415 passed
+- Live endpoint validation (`POST /awaken` response fields, `/chat` untouched): passed
+- 80M verification regression (test_risk_expansion): 27/27 passed
+- 80K memory regression: 1/1 passed
+- 80I tool regression: 10/10 passed
+- 80G approval/sandbox regression (4 test files): 72/72 passed
+- All 6 modules compiled successfully (1 new service + api_server.py + runtime.py +
+  loader.py + guard.py + clock.py)
+- Git diff clean: api_server.py thinned by 49 lines; no whitespace errors
+- No runtime/private data modified
+
+**Safety invariants maintained:**
+- No evidence collection performed
+- No apply or rollback executed
+- No tool execution invoked beyond existing tests
+- No execution or apply authorization granted
+- No sandbox or dry-run execution performed
+- No simulation executed
+- No prohibited actions
+- All identity/timeline/working-memory side effects unchanged
+- `POST /chat` unchanged
+- `runtime.process_chat()` unchanged
+
+**Next recommended milestone:**
+- 81B — End-to-End Cognitive Loop Verification Tests Plan
+
+**81A complete. No commit made.**
