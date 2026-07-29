@@ -192,8 +192,8 @@ New in 76A:
 
 ## 7. Current Test Baseline
 
-As of Milestone 81C:
-- **Pytest:** 1368/1368 passed, 0 failures
+As of Milestone 81D:
+- **Pytest:** 1375/1375 passed, 0 failures
 - **Compile:** All modules compiled successfully
 - **Git safety:** Clean — no diffs on README.md, ARCHITECTURE.md, code_reviewer.py
 - **Trailing whitespace:** Clean
@@ -275,13 +275,16 @@ These invariants must hold at ALL times:
 
 ## 10. Next Recommended Milestone
 
-**Milestone 81C — Cognitive Runtime Boundary Phase 2 (`/chat` service extraction)**
+**Milestone 81E or higher — Cognitive Runtime Feature Development**
 
-The thin interface refactor series (80A–80M) and cognitive runtime boundary phase 1
-(81A) are complete. `/chat` remains the only thick endpoint (57-line response adapter
-with working-memory, timeline, and graph side effects). TBD: whether to extract `/chat`
-into a service module (following the 80A–80M pattern) or leave it as a thin adapter
-for the cognitive loop contract tests (81B) to lock behavior.
+The cognitive runtime boundary series (81A–81D) is complete:
+- 81A: Runtime awakening service extraction
+- 81B: Cognitive loop contract tests
+- 81C: Response-only loop_trace observability
+- 81D: Loop trace hardening tests
+
+Next milestones should focus on higher-level cognitive runtime features,
+performance baselines, or the next project priority area.
 
 ---
 
@@ -1456,3 +1459,58 @@ approval_request, approval_queue, timeline_recording, response_generation
 - 81D — Cognitive Loop Trace Review and Hardening Plan
 
 **81C complete. No commit made.**
+
+
+### 81D — Cognitive Loop Trace Hardening Tests
+
+**Status:** Complete
+
+**Description:**
+Added 7 hardening tests for the loop_trace object added in 81C. These tests
+verify that stage summaries do NOT leak user input text, perception normalized
+text, metadata values, session_id, or raw approval record content. Tests-only
+milestone — no source code modified.
+
+**Scope (7 hardening tests):**
+
+1. `test_loop_trace_does_not_include_user_text` — request text not in any summary
+2. `test_loop_trace_does_not_include_normalized_text` — perception normalized_text not in trace
+3. `test_loop_trace_does_not_include_metadata_values` — metadata values not in summaries
+4. `test_loop_trace_does_not_include_session_id` — session_id not in summaries
+5. `test_loop_trace_summaries_are_tightly_truncated` — each summary ≤ 120 chars
+6. `test_loop_trace_stage_count_matches_expected_minimum` — ≥ 12 stages present
+7. `test_loop_trace_high_risk_summary_does_not_dump_approval_record` — raw approval record not in trace
+
+**Files created (1):**
+- `tests/test_cognitive_loop_trace_hardening.py` — 7 hardening tests
+
+**Files modified:**
+- `PROGRESS.md` — added 81D entry, updated test baseline
+
+**Verification:**
+- New hardening tests: 7/7 passed
+- 81C observability tests: 10/10 passed
+- 81B contract tests: 11/11 passed
+- Full pytest: 1375/1375 passed, 0 failures, 0 errors
+- No source code modified
+
+**Not changed:**
+- `aether/core/loop_trace.py` — no code changes
+- `aether/core/loop.py` — no code changes
+- `aether/interface/api_server.py` — no code changes
+- `tests/test_cognitive_loop_contract.py` — no modifications
+- `tests/test_cognitive_loop_observability.py` — no modifications
+- All endpoint paths — unchanged
+- All response fields — unchanged
+- No new endpoints added
+- No trace persistence added
+
+**Safety invariants maintained:**
+- All safety invariants from 81C remain intact
+- No source code modified
+- No behavioral impact
+
+**Next recommended milestone:**
+- 81E or higher — cognitive runtime feature work (trace is now hardened and safe)
+
+**81D complete. No commit made.**
