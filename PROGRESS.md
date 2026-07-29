@@ -74,16 +74,26 @@ approval_record
                                     → apply_executor_contract
                                       → apply_executor_contract_record
                                         → approved_contract_intent
-                                          → apply_executor_plan
+                                           → apply_executor_plan
       → apply_executor_plan_record (Milestone 74A)
         → approved_plan_intent / rejected / cancelled
+          → apply_executor_evidence_contract
+            → apply_executor_evidence_contract_record (Milestone 76A)
+              → approved_evidence_contract_intent
+                → apply_executor_evidence_collection_plan (Milestone 77A)
+                  → apply_executor_evidence_collection_plan_record (Milestone 78A)
+                    → approved_collection_plan_intent
+                      → apply_executor_evidence_collector_contract (Milestone 79A)
 ```
+
+This chain remains **declarative and non-executing**. It does not collect evidence, execute tools, apply changes, or rollback changes.
 
 Important state:
 - All records persist as JSON files under `/home/aether/data/private/<record_type>/`
 - Every record has a unique ID, timestamps, and safety flags
 - `approved_intent`, `approved_execution_intent`, `approved_contract_intent` only **record intent** — they do NOT authorize execution or apply
 - `approved_plan_intent` only records plan review intent — it does NOT authorize execution, apply, evidence collection, or rollback plan attachment
+- `approved_evidence_contract_intent`, `approved_collection_plan_intent`, and `collector_contract_ready` are also declarative — they do NOT authorize evidence collection, tool execution, apply, or rollback
 - No real executor exists yet
 - No real apply exists yet
 - No rollback execution exists yet
@@ -199,6 +209,9 @@ As of Milestone 81F:
 - **Trailing whitespace:** Clean
 - **Private/runtime paths:** Not tracked by git
 - **Test modules:**
+  - `tests/test_cognitive_loop_contract.py` — 11 end-to-end contract tests (Milestone 81B)
+  - `tests/test_cognitive_loop_observability.py` — 10 loop_trace observability tests (Milestone 81C)
+  - `tests/test_cognitive_loop_trace_hardening.py` — 7 loop_trace hardening tests (Milestone 81D)
   - `tests/test_apply_executor_evidence_contract.py` — 60 unit tests (Milestone 75A)
   - `tests/test_apply_executor_evidence_contract_queue.py` — ~50 unit tests (Milestone 76A)
   - `tests/test_apply_executor_plan.py` — 56 unit tests
@@ -275,20 +288,14 @@ These invariants must hold at ALL times:
 
 ## 10. Next Recommended Milestone
 
-**Milestone 81F — Project Ledger and Architecture Reconciliation (current)**
+**Status after 81F:** Complete — project ledger and architecture reconciliation committed as `761c1eff`.
 
-The cognitive runtime boundary series (81A–81E) is complete:
-- 81A: Runtime awakening service extraction
-- 81B: Cognitive loop contract tests
-- 81C: Response-only loop_trace observability
-- 81D: Loop trace hardening tests
-- 81E: Cognitive loop trace documentation
+**Next:** TBD — directed by the project owner.
 
-81F is the current milestone — Project Ledger and Architecture Reconciliation.
-The loop_trace is implemented, hardened, documented, and declared stable.
-No further trace-specific milestones are planned.
-
-Next milestone after 81F is TBD — to be directed by the project owner.
+**Current guidance:**
+81A–81E cognitive runtime boundary and loop_trace work are stable.
+No further trace-only milestones are planned unless explicitly requested.
+82A has not started.
 
 ---
 
@@ -301,7 +308,15 @@ Also:
 
 ---
 
-## 12. File Summary (Git Status)
+## 12. Current Snapshot as of Milestone 81F
+
+**Current snapshot (81F reconciliation committed as `761c1eff`):**
+- README.md and docs/ARCHITECTURE.md — reconciled in 81F to reflect persistent approval queue
+- 80B–80M thin interface refactor phases — complete
+- 81A–81E cognitive runtime boundary / loop_trace phases — complete
+- 81F ledger reconciliation — complete
+- 82A — not started
+- Historical milestone notes below this section are snapshots from their respective milestones and should not override the current snapshot.
 
 **New files added across milestones:**
 - `aether/action/apply_executor_evidence_contract.py` — evidence contract builder (Milestone 75A)
@@ -319,17 +334,21 @@ Also:
 - `tests/test_apply_executor_contract.py` — 44 unit tests
 - `tests/test_apply_execution_gate_queue.py` — 41 unit tests
 - `tests/test_apply_execution_gate_request.py` — 35 unit tests
+- `tests/test_cognitive_loop_contract.py` — 11 end-to-end contract tests (Milestone 81B)
+- `tests/test_cognitive_loop_observability.py` — 10 loop_trace observability tests (Milestone 81C)
+- `tests/test_cognitive_loop_trace_hardening.py` — 7 loop_trace hardening tests (Milestone 81D)
 
 **Modified files:**
 - `aether/interface/api_server.py` — API endpoints for all CRUD operations (updated with evidence-contract persistence and new record store endpoints)
 - `tests/test_chat_api.py` — API integration tests for each milestone (+34 tests for Milestone 76A)
-- `PROGRESS.md` — updated with Milestone 80A entry, test baseline, and next recommended milestone
+- `aether/core/loop.py` — added loop_trace construction (Milestone 81C)
+- `aether/core/loop_trace.py` — new: loop_trace helper (Milestone 81C)
+- `PROGRESS.md` — updated with each milestone entry, test baseline, and next recommendation
+- `README.md` — reconciled in Milestone 81F
+- `docs/ARCHITECTURE.md` — reconciled in Milestone 81F; §12.4 added in Milestone 81E
 
-**No changes to:**
-- `README.md`
-- `docs/ARCHITECTURE.md`
+**No changes to (as of 81F):**
 - `docs/CONSTITUTION.md`
-- `docs/THIN_INTERFACE_REFACTOR_PLAN.md` — this is the plan document itself, not a source code change
 - `aether/action/code_reviewer.py`
 - Any self-repair chain modules
 - `identity_seed.md`
@@ -1643,4 +1662,4 @@ docs/THIN_INTERFACE_REFACTOR_PLAN.md:
 **Next recommended milestone:**
 - TBD — directed by project owner
 
-**81F complete. No commit made.**
+**81F reconciliation committed as `761c1eff`. Post-commit consistency patch pending.**
