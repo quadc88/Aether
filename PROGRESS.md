@@ -2175,5 +2175,29 @@ Extracted 18 endpoint handlers (6 proposal-review-console, 6 proposal-revision-c
   - No apply/rollback
   - No Observation Record Store
   - Not committed
-- 82M — File Router Extraction Plan
-  82M not started
+- 82N — File Router Extraction
+  - Created aether/interface/routers/file_routes.py (111 lines, 3210 bytes)
+  - Moved 15 file/self-inspection route definitions from api_server.py to file_routes.py
+  - Added app.include_router(file_router, prefix="")
+  - Removed file_service handler imports from api_server.py
+  - OpenAPI exact match
+  - OpenAPI path count unchanged: 300
+  - OpenAPI schema count unchanged: 103
+  - All 15 moved file/self-inspection paths present
+  - Full pytest 1401/1401 passed
+  - Raw len(app.routes) may change due to include_router representation and is not the contract gate
+  - No /chat changes
+  - No /awaken changes
+  - No api_models.py changes
+  - No file_service.py changes
+  - No service module changes
+  - No action module changes
+  - No test file changes
+  - No file access behavior changes
+  - No side-effect behavior changes
+  - No source mutation
+  - No apply/rollback
+  - No Observation Record Store
+  - Not committed
+- 82O — Patch Router Extraction Plan
+  82O not started

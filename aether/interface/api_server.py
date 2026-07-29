@@ -160,23 +160,6 @@ from aether.action.services.tool_execution_service import (
 from aether.action.services.verification_plan_service import (
     handle_create_verification_plan,
 )
-from aether.action.services.file_service import (
-    handle_file_read,
-    handle_file_allowed_roots,
-    handle_file_access_status,
-    handle_list_file_accesses,
-    handle_get_file_access,
-    handle_file_browse,
-    handle_file_search,
-    handle_file_browser_allowed_roots,
-    handle_file_browser_status,
-    handle_list_file_browses,
-    handle_get_file_browse,
-    handle_self_inspection_create,
-    handle_self_inspection_status,
-    handle_list_self_inspections,
-    handle_get_self_inspection,
-)
 from aether.action.services.runtime_lifecycle_service import (
     handle_awaken,
 )
@@ -231,6 +214,7 @@ from aether.action.repair_workflow_exporter import export_workflow_report, expor
 from aether.interface.routers.code_review_routes import code_review_router
 from aether.interface.routers.mutation_log_routes import mutation_log_router
 from aether.interface.routers.proposal_console_routes import proposal_console_router
+from aether.interface.routers.file_routes import file_router
 from aether.action.approved_dry_run_gate import open_approved_dry_run_gate,execute_approved_dry_run,get_approved_dry_run_gate_record,list_approved_dry_run_gate_records,approved_dry_run_gate_status,summarize_approved_dry_run_gate
 from aether.action.dry_run_review_gate import open_dry_run_review_gate,submit_dry_run_review,get_dry_run_review_gate_record,list_dry_run_review_gate_records,dry_run_review_gate_status,summarize_dry_run_review_gate
 from aether.action.real_apply_approval_gate import open_real_apply_approval_gate,submit_real_apply_final_decision,get_real_apply_approval_gate_record,list_real_apply_approval_gate_records,real_apply_approval_gate_status,summarize_real_apply_approval_gate
@@ -254,6 +238,7 @@ app = FastAPI(
 app.include_router(code_review_router, prefix="")
 app.include_router(mutation_log_router, prefix="")
 app.include_router(proposal_console_router, prefix="")
+app.include_router(file_router, prefix="")
 
 
 # ---- Identity Integrity Endpoints (Milestone 48A) ----
@@ -1348,81 +1333,6 @@ def list_action_tool_executions(limit: int = 50):
 @app.get("/action/tool-executor/{execution_id}")
 def get_action_tool_execution(execution_id: str):
     return _handle_get_execution(execution_id)
-
-
-@app.post("/action/file/read")
-def read_action_file(request: RestrictedFileReadRequest):
-    return handle_file_read(request.path, request.max_chars, request.metadata)
-
-
-@app.get("/action/file/allowed-roots")
-def get_action_file_allowed_roots():
-    return handle_file_allowed_roots()
-
-
-@app.get("/action/file/access/status")
-def get_action_file_access_status():
-    return handle_file_access_status()
-
-
-@app.get("/action/file/access/list")
-def list_action_file_accesses(limit: int = 50):
-    return handle_list_file_accesses(limit)
-
-
-@app.get("/action/file/access/{access_id}")
-def get_action_file_access(access_id: str):
-    return handle_get_file_access(access_id)
-
-
-@app.post("/action/file/browse")
-def browse_action_file(request: RestrictedFileBrowseRequest):
-    return handle_file_browse(request.path, request.max_depth, request.max_entries, request.include_files, request.include_dirs, request.metadata)
-
-
-@app.post("/action/file/search")
-def search_action_file(request: RestrictedFileSearchRequest):
-    return handle_file_search(request.query, request.root, request.max_results, request.metadata)
-
-
-@app.get("/action/file/browser/allowed-roots")
-def get_action_file_browser_allowed_roots():
-    return handle_file_browser_allowed_roots()
-
-
-@app.get("/action/file/browser/status")
-def get_action_file_browser_status():
-    return handle_file_browser_status()
-
-
-@app.get("/action/file/browser/list")
-def list_action_file_browses(limit: int = 50):
-    return handle_list_file_browses(limit)
-
-
-@app.get("/action/file/browser/{browse_id}")
-def get_action_file_browse(browse_id: str):
-    return handle_get_file_browse(browse_id)
-
-
-@app.post("/action/self-inspection/create")
-def create_action_self_inspection(request: SelfInspectionRequest):
-    return handle_self_inspection_create(request.root, request.max_files_to_read, request.max_chars_per_file, request.metadata)
-
-
-@app.get("/action/self-inspection/status")
-def get_action_self_inspection_status():
-    return handle_self_inspection_status()
-
-
-@app.get("/action/self-inspection/list")
-def list_action_self_inspections(limit: int = 20):
-    return handle_list_self_inspections(limit)
-
-
-@app.get("/action/self-inspection/{report_id}")
-def get_action_self_inspection(report_id: str):
-    return handle_get_self_inspection(report_id)
 
 
 @app.post("/action/patch-proposal/create")
