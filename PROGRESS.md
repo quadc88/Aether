@@ -2112,3 +2112,26 @@ Extracted 18 endpoint handlers (6 proposal-review-console, 6 proposal-revision-c
   - Not committed
 - 82I — Interface Router Extraction Plan
   82I not started
+- 82J — Code Review Router Extraction
+  - Created aether/interface/routers/__init__.py
+  - Created aether/interface/routers/code_review_routes.py (84 lines, 2617 bytes)
+  - Moved 10 code-review / review-bridge route definitions from api_server.py to code_review_routes.py
+  - Added app.include_router(code_review_router, prefix="")
+  - Removed code_review_service handler imports from api_server.py
+  - OpenAPI exact match: 300 paths / 103 schemas
+  - raw len(app.routes): 304→295 (10 APIRoute entries replaced by 1 _IncludedRouter container — FastAPI internal representation, not route loss)
+  - effective API routes unchanged by OpenAPI contract: yes
+  - Full pytest 1401/1401 passed
+  - py_compile passed
+  - No /chat changes
+  - No /awaken changes
+  - No api_models.py changes
+  - No service module changes
+  - No action module changes
+  - No test file changes
+  - No source mutation
+  - No apply/rollback
+  - No Observation Record Store
+  - Not committed
+- 82K — Mutation Log Router Extraction
+  82K not started

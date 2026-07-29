@@ -232,22 +232,11 @@ from aether.action.services.mutation_log_service import (
 )
 from aether.action.self_modification_cycle import create_self_modification_session, review_self_modification_session, dry_run_self_modification_session, apply_self_modification_session, rollback_self_modification_session, self_modification_status, list_self_modification_sessions, get_self_modification_session, summarize_self_modification_session
 from aether.action.changelog_exporter import export_public_changelog, export_milestone_report, export_private_changelog_report, changelog_export_status
-from aether.action.services.code_review_service import (
-    handle_code_review_create,
-    handle_code_review_status,
-    handle_list_code_reviews,
-    handle_summarize_code_review,
-    handle_get_code_review,
-    handle_create_review_bridge,
-    handle_review_bridge_status,
-    handle_list_review_bridges,
-    handle_summarize_review_bridge,
-    handle_get_review_bridge,
-)
 from aether.action.repair_planner import create_repair_plan, get_repair_plan, list_repair_plans, repair_plan_status, summarize_repair_plan
 from aether.action.repair_bridge_selector import create_bridge_from_repair_plan, get_repair_bridge_selection, list_repair_bridge_selections, repair_bridge_selection_status, summarize_repair_bridge_selection
 from aether.action.repair_workflow_tracker import trace_repair_workflow, get_repair_workflow_report, list_repair_workflow_reports, repair_workflow_status, summarize_repair_workflow
 from aether.action.repair_workflow_exporter import export_workflow_report, export_workflow_index, export_private_workflow_report, repair_workflow_export_status
+from aether.interface.routers.code_review_routes import code_review_router
 from aether.action.services.proposal_console_service import (
     handle_open_proposal_review_console,
     handle_submit_proposal_review,
@@ -287,6 +276,8 @@ app = FastAPI(
     description="First Awakening API with Working Memory for Aether",
     version="0.2.0",
 )
+
+app.include_router(code_review_router, prefix="")
 
 
 # ---- Identity Integrity Endpoints (Milestone 48A) ----
@@ -1545,26 +1536,6 @@ def export_milestone_changelog_action(request:MilestoneReportExportRequest):retu
 def export_private_changelog_action(request:ChangelogExportRequest):return export_private_changelog_report(request.milestone,request.limit,request.metadata)
 @app.get("/action/changelog/status")
 def get_changelog_status():return changelog_export_status()
-@app.post("/action/code-review/create")
-def create_code_review_action(request:CodeReviewCreateRequest):return handle_code_review_create(request.scope,request.target_paths,request.max_files,request.max_chars_per_file,request.include_tests,request.metadata)
-@app.get("/action/code-review/status")
-def get_code_review_status_action():return handle_code_review_status()
-@app.get("/action/code-review/list")
-def list_code_review_action(status:str|None=None,limit:int=50):return handle_list_code_reviews(status,limit)
-@app.get("/action/code-review/{report_id}/summary")
-def summarize_code_review_action(report_id:str):return handle_summarize_code_review(report_id)
-@app.get("/action/code-review/{report_id}")
-def get_code_review_action(report_id:str):return handle_get_code_review(report_id)
-@app.post("/action/review-bridge/create")
-def create_review_bridge_action(request:ReviewBridgeCreateRequest):return handle_create_review_bridge(request.report_id,request.finding_id,request.proposed_excerpt,request.original_excerpt,request.proposed_change_summary,request.reason,request.create_approval_if_required,request.metadata)
-@app.get("/action/review-bridge/status")
-def get_review_bridge_status_action():return handle_review_bridge_status()
-@app.get("/action/review-bridge/list")
-def list_review_bridge_action(status:str|None=None,review_report_id:str|None=None,limit:int=50):return handle_list_review_bridges(status,review_report_id,limit)
-@app.get("/action/review-bridge/{record_id}/summary")
-def summarize_review_bridge_action(record_id:str):return handle_summarize_review_bridge(record_id)
-@app.get("/action/review-bridge/{record_id}")
-def get_review_bridge_action(record_id:str):return handle_get_review_bridge(record_id)
 @app.post("/action/repair-plan/create")
 def create_repair_plan_action(request:RepairPlanCreateRequest):return {"name":"Aether","plan":create_repair_plan(request.review_report_id,request.scope,request.include_deferred,request.max_findings,request.metadata)}
 @app.get("/action/repair-plan/status")
