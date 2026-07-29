@@ -2,8 +2,6 @@ from fastapi import FastAPI
 from aether.interface.api_models import (
     ActionValidationBody,
     ApplyExecGateDecisionBody,
-    ApplyGateContextBody,
-    ApplyGateDecisionBody,
     ApprovalCreateRequest,
     ApprovalDecisionBody,
     ApprovalDecisionRequest,
@@ -108,8 +106,6 @@ from aether.interface.api_models import (
     ToolPolicyUpdateRequest,
     ToolRegisterRequest,
     ToolSearchRequest,
-    VerdictContextBody,
-    VerdictDecisionBody,
     VerificationRequest,
     VerifyIdentityIntegrityResponse,
 )
@@ -192,6 +188,7 @@ from aether.interface.routers.patch_routes import patch_router
 from aether.interface.routers.approval_routes import approval_router
 from aether.interface.routers.dry_run_routes import dry_run_router
 from aether.interface.routers.simulation_routes import simulation_router
+from aether.interface.routers.verification_apply_gate_routes import verification_apply_gate_router
 from aether.action.approved_dry_run_gate import open_approved_dry_run_gate,execute_approved_dry_run,get_approved_dry_run_gate_record,list_approved_dry_run_gate_records,approved_dry_run_gate_status,summarize_approved_dry_run_gate
 from aether.action.dry_run_review_gate import open_dry_run_review_gate,submit_dry_run_review,get_dry_run_review_gate_record,list_dry_run_review_gate_records,dry_run_review_gate_status,summarize_dry_run_review_gate
 from aether.action.real_apply_approval_gate import open_real_apply_approval_gate,submit_real_apply_final_decision,get_real_apply_approval_gate_record,list_real_apply_approval_gate_records,real_apply_approval_gate_status,summarize_real_apply_approval_gate
@@ -220,6 +217,7 @@ app.include_router(patch_router, prefix="")
 app.include_router(approval_router, prefix="")
 app.include_router(dry_run_router, prefix="")
 app.include_router(simulation_router, prefix="")
+app.include_router(verification_apply_gate_router, prefix="")
 
 
 # ---- Identity Integrity Endpoints (Milestone 48A) ----
@@ -539,76 +537,6 @@ def create_verification_plan(request: VerificationRequest):
 
 
 
-
-
-# ===================================================================== #
-# Simulation Verification Verdict Endpoint (Milestone 63A, 64A)
-# ===================================================================== #
-
-from aether.action.services.verification_verdict_service import (
-    handle_verification_verdict_create,
-    handle_list_verification_verdicts,
-    handle_get_verification_verdict,
-    handle_cancel_verification_verdict,
-)
-
-
-@app.post("/simulation-results/{simulation_result_id}/verification-verdict")
-def simulation_verification_verdict_endpoint(simulation_result_id: str, request: VerdictContextBody | None = None):
-    context = request.context if request else None
-    return handle_verification_verdict_create(simulation_result_id, context)
-
-
-@app.get("/verification-verdicts")
-def list_verification_verdicts(status: str | None = None, decision: str | None = None, limit: int = 50):
-    return handle_list_verification_verdicts(status, decision, limit)
-
-
-@app.get("/verification-verdicts/{verification_verdict_id}")
-def get_verification_verdict(verification_verdict_id: str):
-    return handle_get_verification_verdict(verification_verdict_id)
-
-
-@app.post("/verification-verdicts/{verification_verdict_id}/cancel")
-def cancel_verification_verdict(verification_verdict_id: str, request: VerdictDecisionBody | None = None):
-    reviewer = request.reviewer if request else None
-    reason = request.reason if request else None
-    return handle_cancel_verification_verdict(verification_verdict_id, reviewer, reason)
-
-
-# ===================================================================== #
-# Apply Gate Request Endpoint (Milestone 65A, 66A)
-# ===================================================================== #
-
-from aether.action.services.apply_gate_service import (
-    handle_apply_gate_create,
-    handle_list_apply_gates,
-    handle_get_apply_gate,
-    handle_cancel_apply_gate,
-)
-
-
-@app.post("/verification-verdicts/{verification_verdict_id}/apply-gate-request")
-def verification_verdict_apply_gate_request_endpoint(verification_verdict_id: str, request: ApplyGateContextBody | None = None):
-    context = request.context if request else None
-    return handle_apply_gate_create(verification_verdict_id, context)
-
-
-@app.get("/apply-gates")
-def list_apply_gates(status: str | None = None, decision: str | None = None, limit: int = 50):
-    return handle_list_apply_gates(status, decision, limit)
-
-
-@app.get("/apply-gates/{apply_gate_id}")
-def get_apply_gate(apply_gate_id: str):
-    return handle_get_apply_gate(apply_gate_id)
-
-
-@app.post("/apply-gates/{apply_gate_id}/cancel")
-def cancel_apply_gate(apply_gate_id: str, request: ApplyGateDecisionBody | None = None):
-    reviewer = request.reviewer if request else None
-    reason = request.reason if request else None
-    return handle_cancel_apply_gate(apply_gate_id, reviewer, reason)
 
 
 # ===================================================================== #

@@ -1,15 +1,15 @@
 # Aether Project Progress Ledger
 
-**Last updated:** Milestone 82R Build — Simulation Plan + Simulation Result Router Extraction (complete locally, not committed)
+**Last updated:** Milestone 82S Build — Verification Verdict + Apply Gate Router Extraction (complete locally, not committed)
 **Aether version:** 0.2.0  
-**Current completed local milestone:** 82R Build — Simulation Plan + Simulation Result Router Extraction (not committed)
-**Current active milestone/module:** None; 82R validation complete and 82S has not started
-**Current status:** 82R Build complete locally, not committed, tagged, or pushed
-**Next milestone:** 82S — Remaining Router Extraction Plan
+**Current completed local milestone:** 82S Build — Verification Verdict + Apply Gate Router Extraction (not committed)
+**Current active milestone/module:** None; 82S validation complete and 82T has not started
+**Current status:** 82S Build complete locally, not committed, tagged, or pushed
+**Next milestone:** 82T — Remaining Router Extraction Plan
 **Test baseline:** 1401/1401 passed, 0 failures, 0 errors
-**Latest local tag:** `milestone-82Q-dry-run-router` at `1accb52`
-**Latest pushed GitHub/origin status:** `origin/main` at `1accb52` (`milestone-82Q-dry-run-router`); 82R is not pushed
-**Pipeline maturity:** Full declarative safety chain (approval through evidence contract record stores) with thin interface refactor (80B-80M) and cognitive runtime observability (81A-81E) complete. Observation contract builder added (82B). Interface API model extraction complete (82C). File and self-inspection service extraction complete (82D). Patch lifecycle service extraction complete (82E). Mutation log service extraction complete (82F). Proposal console service extraction complete (82G). Code review and review bridge service extraction complete (82H). Code review router extraction complete (82J). Mutation log router extraction complete (82K). Proposal console router extraction complete (82L). File router extraction complete (82N). Patch router extraction complete (82O). Approval router extraction complete (82P). Dry run and sandbox contract router extraction complete (82Q). Simulation plan and simulation result router extraction complete (82R). No real tool execution, apply, evidence collection, rollback, or observation yet.
+**Latest local tag:** `milestone-82R-simulation-router` at `1b6b0d7`
+**Latest pushed GitHub/origin status:** `origin/main` at `1b6b0d7` (`milestone-82R-simulation-router`); 82S is not pushed
+**Pipeline maturity:** Full declarative safety chain (approval through evidence contract record stores) with thin interface refactor (80B-80M) and cognitive runtime observability (81A-81E) complete. Observation contract builder added (82B). Interface API model extraction complete (82C). File and self-inspection service extraction complete (82D). Patch lifecycle service extraction complete (82E). Mutation log service extraction complete (82F). Proposal console service extraction complete (82G). Code review and review bridge service extraction complete (82H). Code review router extraction complete (82J). Mutation log router extraction complete (82K). Proposal console router extraction complete (82L). File router extraction complete (82N). Patch router extraction complete (82O). Approval router extraction complete (82P). Dry run and sandbox contract router extraction complete (82Q). Simulation plan and simulation result router extraction complete (82R). Verification verdict and apply gate router extraction complete (82S). No real tool execution, apply, evidence collection, rollback, or observation yet.
 
 ---
 
@@ -2322,5 +2322,38 @@ Extracted 18 endpoint handlers (6 proposal-review-console, 6 proposal-revision-c
   - No apply/rollback
   - No Observation Record Store
   - Complete locally; not committed, tagged, or pushed
-  - Next: 82S — Remaining Router Extraction Plan
-  - 82S not started
+  - Superseded next-step status: 82S Build completed locally after the 82S planning artifact
+- 82S Build — Verification Verdict + Apply Gate Router Extraction
+  - Created aether/interface/routers/verification_apply_gate_routes.py (68 lines, 2889 bytes)
+  - Moved 8 verification-verdict/apply-gate route definitions from api_server.py to verification_apply_gate_routes.py
+  - Added app.include_router(verification_apply_gate_router, prefix="")
+  - Removed verification_verdict_service import block from api_server.py
+  - Removed apply_gate_service import block from api_server.py
+  - OpenAPI exact match
+  - OpenAPI path count unchanged: 300
+  - OpenAPI schema count unchanged: 103
+  - All 8 moved paths present
+  - Operation IDs unchanged
+  - Full pytest 1401/1401 passed
+  - Raw len(app.routes) changed 220→213 due to include_router representation and is not the contract gate
+  - No /chat changes
+  - No /awaken changes
+  - No api_models.py changes
+  - No verification_verdict_service.py changes
+  - No apply_gate_service.py changes
+  - No service module changes
+  - No action module changes
+  - No test file changes
+  - No verification-verdict behavior changes
+  - No apply-gate behavior changes
+  - No persistence behavior changes
+  - No side-effect behavior changes
+  - No manual verification-verdict endpoint invocation
+  - No manual apply-gate endpoint invocation
+  - No source mutation
+  - No tool execution
+  - No apply/rollback
+  - No Observation Record Store
+  - Complete locally; not committed, tagged, or pushed
+  - Next: 82T — Remaining Router Extraction Plan
+  - 82T not started
