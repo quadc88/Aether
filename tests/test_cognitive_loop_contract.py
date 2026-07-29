@@ -55,6 +55,7 @@ CHAT_RESPONSE_CONTRACT_FIELDS = [
     "approval_type",
     "approval_record",
     "approval_id",
+    "loop_trace",
 ]
 
 SAFETY_INVARIANTS = [
@@ -177,6 +178,11 @@ class TestCognitiveLoopContract:
         assert data["execution_allowed"] is False
         assert data["memory_recorded"] is True
         assert data["timeline_recorded"] is True
+
+        assert data["loop_trace"] is not None
+        assert isinstance(data["loop_trace"], dict)
+        assert "trace_id" in data["loop_trace"]
+        assert data["loop_trace"]["trace_id"].startswith("chat_")
 
     # ------------------------------------------------------------------ #
     # 2. Empty input error contract

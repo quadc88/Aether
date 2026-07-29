@@ -7,7 +7,14 @@ timeline. Does NOT execute tools or call external models.
 
 from __future__ import annotations
 
+import time as _time
+
 from aether.core.config import get_project_root
+from aether.core.loop_trace import (
+    build_loop_trace,
+    build_stage,
+    generate_trace_id,
+)
 from aether.identity.guard import verify_identity_integrity
 from aether.memory.timeline.recorder import record_event
 from aether.memory.working.store import WorkingMemory
@@ -37,34 +44,71 @@ def run_core_chat_loop(
     Returns:
         Response dict with all loop stage results.
     """
+    trace_id = generate_trace_id("chat")
+    trace_start_wall = _time.time()
+    trace_start_iso = now_iso()
+    stages: list[dict] = []
     warnings: list[str] = []
 
     # --- Step 1: Validate ---
     if not text or not text.strip():
-        return _error_response("Input text is empty.", warnings)
+        return _error_response("Input text is empty.", warnings, trace_id, trace_start_wall, trace_start_iso)
 
     # --- Step 2: Perceive ---
     perception = perceive_text_input(text, metadata=metadata)
+    perception_warnings = len(perception.get("warnings", []))
     if perception.get("warnings"):
         warnings.extend(perception["warnings"])
+    stages.append(build_stage(
+        "perception",
+        summary=f"Input classified as {perception['type']}, {perception['language_hint']}, {perception['original_length']} chars",
+        warnings_count=perception_warnings,
+    ))
 
     # --- Step 3: Verify identity integrity ---
     identity_status: dict | None = None
+    identity_stage_warnings = 0
+    identity_stage_status = "completed"
+    identity_stage_summary = ""
     try:
         identity_status = verify_identity_integrity()
+        if identity_status and identity_status.get("changed"):
+            identity_stage_summary = "Identity checksum changed"
+        elif identity_status and identity_status.get("status") == "failed":
+            identity_stage_summary = "Identity verification failed"
+            identity_stage_status = "warning"
+        else:
+            identity_stage_summary = "Identity verified"
     except FileNotFoundError:
         warnings.append(
             "Identity guard not initialized. Call POST /identity/integrity/initialize first."
         )
+        identity_stage_status = "warning"
+        identity_stage_summary = "Identity guard not initialized"
+        identity_stage_warnings = 1
     except Exception as exc:
         warnings.append(f"Identity verification error: {exc}")
+        identity_stage_status = "error"
+        identity_stage_summary = f"Identity verification error"
+        identity_stage_warnings = 1
+    stages.append(build_stage(
+        "identity_integrity",
+        status=identity_stage_status,
+        summary=identity_stage_summary,
+        warnings_count=identity_stage_warnings,
+    ))
 
     # --- Step 4: Get current time ---
     ts = now_iso()
     current_time = time_state()
+    stages.append(build_stage(
+        "time_state",
+        summary=f"Time state captured ({current_time.get('timezone', 'unknown')})",
+    ))
 
     # --- Step 5: Record input to working memory ---
     memory_recorded = False
+    wm_event_count = 0
     if working_memory is not None:
         working_memory.add_event(
             role="user",
@@ -82,13 +126,26 @@ def run_core_chat_loop(
             metadata={"session_id": session_id},
         )
         memory_recorded = True
+        wm_event_count = 2
+    stages.append(build_stage(
+        "working_memory",
+        summary=f"Recorded {wm_event_count} events" if memory_recorded else "Working memory unavailable",
+    ))
 
     # --- Step 6: Classify risk ---
     from aether.verification.risk import classify_risk
     risk = classify_risk(text)
+    stages.append(build_stage(
+        "risk_classification",
+        summary=f"Classified as {risk['risk_level']} ({risk['action_type']})",
+    ))
 
     # --- Step 7: Suggest tool (read-only suggestion, no execution) ---
     suggested_tool = _suggest_tool(text, risk)
+    stages.append(build_stage(
+        "tool_suggestion",
+        summary=f"Tool suggested: {suggested_tool['tool_id']} ({suggested_tool.get('match_confidence', 'unknown')})" if suggested_tool else "No tool matched",
+    ))
 
     # --- Step 7b: Thinking policy decision ---
     from aether.thinking.policy import decide_chat_policy
@@ -100,6 +157,11 @@ def run_core_chat_loop(
         identity_integrity_status=identity_status,
         metadata=metadata,
     )
+    stages.append(build_stage(
+        "thinking_policy",
+        summary=f"Decision: {thinking_policy.get('decision_type', 'unknown')}",
+        warnings_count=len(thinking_policy.get("warnings", [])),
+    ))
 
     # --- Step 7c: Policy Enforcement Gate ---
     from aether.action.policy_gate import enforce_policy_gate
@@ -111,6 +173,11 @@ def run_core_chat_loop(
     execution_allowed = policy_gate_result.get("allowed", False)
     execution_decision = policy_gate_result.get("decision", "invalid_policy")
     execution_reason = policy_gate_result.get("reason", "")
+    stages.append(build_stage(
+        "policy_gate",
+        summary=f"Decision: {execution_decision}",
+        warnings_count=len(policy_gate_result.get("warnings", [])),
+    ))
 
     # --- Step 7d: Approval Request Builder (Milestone 52A) ---
     from aether.action.approval_request import build_approval_request
@@ -123,6 +190,11 @@ def run_core_chat_loop(
         context={"session_id": session_id},
     )
 
+    stages.append(build_stage(
+        "approval_request",
+        summary=f"Approval {'required' if (approval_request and approval_request.get('approval_required')) else 'not required'}",
+    ))
+
     # --- Step 7e: Persist to approval queue (Milestone 54A) ---
     approval_record = None
     approval_id = None
@@ -133,6 +205,16 @@ def run_core_chat_loop(
             context={"session_id": session_id},
         )
         approval_id = approval_record["approval_id"]
+        stages.append(build_stage(
+            "approval_queue",
+            summary=f"Approval record created (id: {approval_id[:16]}...)",
+        ))
+    else:
+        stages.append(build_stage(
+            "approval_queue",
+            status="skipped",
+            summary="No approval record needed",
+        ))
 
     # --- Step 8: Tool execution is NEVER performed in this milestone ---
     tool_executed = False
@@ -140,8 +222,9 @@ def run_core_chat_loop(
 
     # --- Step 9: Record timeline event ---
     timeline_recorded = False
+    timeline_event_id = None
     try:
-        record_event(
+        timeline_event = record_event(
             event_type="chat_input",
             title=f"Chat input ({risk['risk_level']})",
             description=text[:200],
@@ -149,14 +232,49 @@ def run_core_chat_loop(
             related_files=["aether/interface/api_server.py"],
         )
         timeline_recorded = True
+        if timeline_event and isinstance(timeline_event, dict):
+            timeline_event_id = timeline_event.get("id")
     except Exception as exc:
         warnings.append(f"Timeline recording failed: {exc}")
+    stages.append(build_stage(
+        "timeline_recording",
+        summary=f"Timeline event recorded" if timeline_recorded else "Timeline recording failed",
+    ))
 
     # --- Step 10: Build response ---
     response_text = _build_response(text, risk, perception, suggested_tool, thinking_policy)
+    stages.append(build_stage("response_generation", summary="Response generated"))
+
+    # --- Build loop trace ---
+    trace_end_wall = _time.time()
+    trace_end_iso = now_iso()
+    duration_ms = int((trace_end_wall - trace_start_wall) * 1000)
+
+    loop_trace = build_loop_trace(
+        trace_id=trace_id,
+        loop_version=LOOP_VERSION,
+        started_at=trace_start_iso,
+        completed_at=trace_end_iso,
+        duration_ms=duration_ms,
+        status="completed",
+        stages=stages,
+        safety={
+            "tool_execution_allowed": False,
+            "tool_executed": False,
+            "execution_allowed": execution_allowed,
+            "approval_required": approval_request.get("approval_required", False) if approval_request else False,
+        },
+        records={
+            "working_memory_event_ids": [],
+            "timeline_event_id": timeline_event_id,
+            "approval_id": approval_id,
+        },
+        warnings=warnings,
+    )
 
     return {
         "status": "completed",
+        "loop_trace": loop_trace,
         "session_id": session_id,
         "loop_version": LOOP_VERSION,
         "time": current_time,
@@ -200,9 +318,46 @@ def run_core_chat_loop(
     }
 
 
-def _error_response(error_msg: str, warnings: list[str]) -> dict:
+def _error_response(
+    error_msg: str,
+    warnings: list[str],
+    trace_id: str | None = None,
+    trace_start_wall: float | None = None,
+    trace_start_iso: str | None = None,
+) -> dict:
+    error_warnings = [*warnings, error_msg]
+    loop_trace = None
+    if trace_id and trace_start_wall is not None and trace_start_iso:
+        trace_end_wall = _time.time()
+        trace_end_iso = now_iso()
+        duration_ms = int((trace_end_wall - trace_start_wall) * 1000)
+        loop_trace = build_loop_trace(
+            trace_id=trace_id,
+            loop_version=LOOP_VERSION,
+            started_at=trace_start_iso,
+            completed_at=trace_end_iso,
+            duration_ms=duration_ms,
+            status="error",
+            stages=[
+                build_stage("input_validation", status="error", summary=error_msg),
+                build_stage("response_generation", summary="Response generated"),
+            ],
+            safety={
+                "tool_execution_allowed": False,
+                "tool_executed": False,
+                "execution_allowed": False,
+                "approval_required": False,
+            },
+            records={
+                "working_memory_event_ids": [],
+                "timeline_event_id": None,
+                "approval_id": None,
+            },
+            warnings=error_warnings,
+        )
     return {
         "status": "error",
+        "loop_trace": loop_trace,
         "session_id": None,
         "loop_version": LOOP_VERSION,
         "time": time_state(),
@@ -215,7 +370,7 @@ def _error_response(error_msg: str, warnings: list[str]) -> dict:
         "response_text": f"Aether received nothing. {error_msg}",
         "memory_recorded": False,
         "timeline_recorded": False,
-        "warnings": [*warnings, error_msg],
+        "warnings": error_warnings,
         "thinking_policy": {
             "decision_type": "ask_clarification",
             "confidence": "high",

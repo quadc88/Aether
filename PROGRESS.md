@@ -1,6 +1,6 @@
 # Aether Project Progress Ledger
 
-**Last updated:** Milestone 81B — End-to-End Cognitive Loop Contract Tests
+**Last updated:** Milestone 81C — Cognitive Loop Observability
 **Aether version:** 0.2.0  
 **Pipeline maturity:** Declarative Apply Executor Evidence Contract (prepared/blocked, no collection or execution)
 
@@ -192,8 +192,8 @@ New in 76A:
 
 ## 7. Current Test Baseline
 
-As of Milestone 81B:
-- **Pytest:** 1358/1358 passed, 0 failures
+As of Milestone 81C:
+- **Pytest:** 1368/1368 passed, 0 failures
 - **Compile:** All modules compiled successfully
 - **Git safety:** Clean — no diffs on README.md, ARCHITECTURE.md, code_reviewer.py
 - **Trailing whitespace:** Clean
@@ -1351,3 +1351,108 @@ modified.
 - (TBD — cognitive runtime boundary series ongoing)
 
 **81B complete. No commit made.**
+
+
+### 81C — Cognitive Loop Observability
+
+**Status:** Complete
+
+**Description:**
+Added a response-only `loop_trace` object to `POST /chat` that provides
+structured observability of the cognitive loop execution without exposing
+chain-of-thought, raw model reasoning, secrets, or private data. The trace
+is ephemeral (returned in the response only) and is NOT persisted to disk.
+
+**Scope:**
+
+1. Created `aether/core/loop_trace.py` — deterministic helper functions:
+   - `generate_trace_id()` — unique per-execution identifier
+   - `build_stage()` — single stage entry factory
+   - `sanitize_summary()` — safe summary truncation
+   - `build_loop_trace()` — assemble complete trace dict
+
+2. Modified `aether/core/loop.py` — added trace generation, stage recording
+   after each loop step, and loop_trace construction in the result dict.
+   Added `loop_trace` to `_error_response` for direct-loop error cases.
+
+3. Modified `aether/interface/api_server.py` — added optional `loop_trace`
+   field to `ChatResponse` model and pass-through from loop result.
+   Added `loop_trace` to the direct empty-input error response.
+
+4. Updated `tests/test_cognitive_loop_contract.py` — added `"loop_trace"`
+   to the 33-field `CHAT_RESPONSE_CONTRACT_FIELDS` list with assertions
+   that it exists and has a valid `trace_id`.
+
+5. Created `tests/test_cognitive_loop_observability.py` — 10 tests covering
+   trace structure, stage names, summary safety, high-risk approval records,
+   safety flag mirroring, records structure, hidden-reasoning protection,
+   empty input error trace, and awaken/memory endpoint isolation.
+
+**Loop trace fields:**
+- `trace_id` — unique per execution
+- `loop_version` — loop version string
+- `started_at`, `completed_at` — ISO timestamps
+- `duration_ms` — wall-clock elapsed time
+- `status` — overall trace status
+- `stages` — list of `{name, status, summary, warnings_count}`
+- `safety` — `{tool_execution_allowed, tool_executed, execution_allowed, approval_required}`
+- `records` — `{working_memory_event_ids, timeline_event_id, approval_id}`
+- `warnings` — aggregated warnings
+
+**Stage names recorded:**
+perception, identity_integrity, time_state, working_memory,
+risk_classification, tool_suggestion, thinking_policy, policy_gate,
+approval_request, approval_queue, timeline_recording, response_generation
+
+**Stage summaries are safe:**
+- Structured, deterministic, derived from already-public data
+- Max 120 chars (truncated via sanitize_summary)
+- No newlines, no raw dict dumps, no secrets, no file paths
+- No chain-of-thought, no hidden reasoning, no system prompt exposure
+
+**Files created (2):**
+- `aether/core/loop_trace.py` — ~80 lines
+- `tests/test_cognitive_loop_observability.py` — 10 tests
+
+**Files modified (3):**
+- `aether/core/loop.py` — added trace construction (~+60 lines)
+- `aether/interface/api_server.py` — added ChatResponse.loop_trace (~+15 lines)
+- `tests/test_cognitive_loop_contract.py` — added loop_trace to contract field list (~+5 lines)
+
+**Verification:**
+- New observability tests: 10/10 passed
+- Updated contract tests: 11/11 passed
+- Full pytest: 1368/1368 passed, 0 failures, 0 errors
+- All modules compiled successfully (5 modules)
+- Git diff clean: no whitespace errors, no private/runtime files tracked
+
+**Not changed:**
+- `aether/core/runtime.py` — `process_chat()` signature unchanged
+- `aether/action/services/*.py` — all service modules untouched
+- `aether/identity/*.py`, `aether/perception/*.py` — untouched
+- `aether/verification/*.py`, `aether/thinking/*.py` — untouched
+- `aether/action/policy_gate.py`, `aether/action/approval_request.py` — untouched
+- `aether/action/approval_queue.py`, `aether/action/tool_planner.py` — untouched
+- `aether/memory/*.py`, `aether/time/clock.py` — untouched
+- `tests/test_chat_api.py`, `tests/test_risk_expansion.py` — untouched
+- `POST /awaken` — unchanged
+- `POST /chat` endpoint path — unchanged
+- All endpoint response fields except additive `loop_trace` — unchanged
+- No persistent trace storage added
+- No new endpoints added
+
+**Safety invariants maintained:**
+- No evidence collection performed
+- No apply or rollback executed
+- No tool execution invoked
+- No execution or apply authorization granted
+- No prohibited actions
+- `loop_trace` is a read-only summary built after loop completion
+- `loop_trace` does not influence loop behavior
+- `loop_trace` does not expose chain-of-thought or hidden reasoning
+- `loop_trace` is not persisted to disk
+
+**Next recommended milestone:**
+- 81D — Cognitive Loop Trace Review and Hardening Plan
+
+**81C complete. No commit made.**

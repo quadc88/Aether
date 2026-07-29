@@ -169,6 +169,8 @@ class ChatResponse(BaseModel):
     # --- Approval Queue (Milestone 54A) ---
     approval_record: dict | None = None
     approval_id: str | None = None
+    # --- Loop Trace (Milestone 81C) ---
+    loop_trace: dict | None = None
 
 
 class GoalRequest(BaseModel):
@@ -590,10 +592,37 @@ def chat(request: ChatRequest):
     # Resolve input: prefer 'text', fall back to legacy 'message'
     input_text = (request.text or "").strip() or (request.message or "").strip()
     if not input_text:
+        from aether.time.clock import now_iso, time_state
+        from aether.core.loop_trace import build_loop_trace, build_stage, generate_trace_id
+        error_trace = build_loop_trace(
+            trace_id=generate_trace_id("chat"),
+            loop_version="0.1.0",
+            started_at=now_iso(),
+            completed_at=now_iso(),
+            duration_ms=0,
+            status="error",
+            stages=[
+                build_stage("input_validation", status="error", summary="Input text is empty"),
+                build_stage("response_generation", summary="Response generated"),
+            ],
+            safety={
+                "tool_execution_allowed": False,
+                "tool_executed": False,
+                "execution_allowed": False,
+                "approval_required": False,
+            },
+            records={
+                "working_memory_event_ids": [],
+                "timeline_event_id": None,
+                "approval_id": None,
+            },
+            warnings=["No input text provided."],
+        )
         return ChatResponse(
             status="error",
             response="Input text is empty. Provide 'text' or legacy 'message'.",
             warnings=["No input text provided."],
+            loop_trace=error_trace,
         )
 
     # Force tool execution to false for this milestone
@@ -642,6 +671,8 @@ def chat(request: ChatRequest):
         # --- Approval Queue (Milestone 54A) ---
         approval_record=result.get("approval_record"),
         approval_id=result.get("approval_id"),
+        # --- Loop Trace (Milestone 81C) ---
+        loop_trace=result.get("loop_trace"),
     )
 
 
