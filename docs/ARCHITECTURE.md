@@ -1256,6 +1256,18 @@ Think → Plan → Act → Observe → Verify → Critic → Repair → (back to
 
 This is the loop that will eventually connect to actual executor, observation, verification, critic, repair, learning, and reporting stages.
 
+### 12.4 Cognitive Loop Trace
+
+The `/chat` endpoint returns a `loop_trace` object in its JSON response (added in Milestone 81C, hardened in 81D). This is a **safe, structured, response-only** summary of the cognitive loop execution. It reports which stages ran, their status, timing metadata, safety flags, and record IDs.
+
+`loop_trace` is:
+- **Deterministic** — derived from already-public response fields
+- **Safe** — does not expose chain-of-thought, hidden reasoning, user text, metadata, session_id, secrets, or raw records
+- **Response-only** — not persisted to disk, timeline, memory, graph, or files
+- **Read-only** — does not influence loop behavior, grant permissions, or control execution
+
+See [`docs/COGNITIVE_LOOP_TRACE.md`](COGNITIVE_LOOP_TRACE.md) for the full reference.
+
 ---
 
 ## Verification and Safety Stack

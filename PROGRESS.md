@@ -192,7 +192,7 @@ New in 76A:
 
 ## 7. Current Test Baseline
 
-As of Milestone 81D:
+As of Milestone 81E:
 - **Pytest:** 1375/1375 passed, 0 failures
 - **Compile:** All modules compiled successfully
 - **Git safety:** Clean — no diffs on README.md, ARCHITECTURE.md, code_reviewer.py
@@ -275,13 +275,14 @@ These invariants must hold at ALL times:
 
 ## 10. Next Recommended Milestone
 
-**Milestone 81E or higher — Cognitive Runtime Feature Development**
+**Milestone 81F or higher — Cognitive Runtime Feature Development**
 
-The cognitive runtime boundary series (81A–81D) is complete:
+The cognitive runtime boundary series (81A–81E) is complete:
 - 81A: Runtime awakening service extraction
 - 81B: Cognitive loop contract tests
 - 81C: Response-only loop_trace observability
 - 81D: Loop trace hardening tests
+- 81E: Cognitive loop trace documentation
 
 Next milestones should focus on higher-level cognitive runtime features,
 performance baselines, or the next project priority area.
@@ -1514,3 +1515,66 @@ milestone — no source code modified.
 - 81E or higher — cognitive runtime feature work (trace is now hardened and safe)
 
 **81D complete. No commit made.**
+
+
+### 81E — Cognitive Loop Trace Documentation
+
+**Status:** Complete
+
+**Description:**
+Created comprehensive documentation for the `loop_trace` object added in 81C
+and hardened in 81D. Docs-only milestone — no source code or tests modified.
+
+**Scope:**
+1. Created `docs/COGNITIVE_LOOP_TRACE.md` — full reference document covering:
+   - Purpose, scope, safety/privacy/chain-of-thought boundaries
+   - Current contract (all fields, types, meanings)
+   - Current stage names (12 stages with descriptions)
+   - Storage decision (response-only, not persisted)
+   - Relationship to Aether execution loop
+   - Developer extension rules
+   - Test coverage
+   - Future work
+2. Added `§12.4 Cognitive Loop Trace` reference section to `docs/ARCHITECTURE.md`
+   linking to the new document
+
+**Files created (1):**
+- `docs/COGNITIVE_LOOP_TRACE.md` — ~300 lines
+
+**Files modified (2):**
+- `docs/ARCHITECTURE.md` — added §12.4 reference section
+- `PROGRESS.md` — added 81E entry, updated test baseline
+
+**Documentation assertions:**
+- `loop_trace` is not chain-of-thought
+- `loop_trace` is not hidden reasoning
+- `loop_trace` is response-only, not persisted
+- Full Act/Observe/Verify/Critic/Repair/Learn cycle is NOT implemented
+- Future work section lists only hypothetical possibilities
+
+**Verification:**
+- 81D hardening tests: 7/7 passed
+- 81C observability tests: 10/10 passed
+- 81B contract tests: 11/11 passed
+- Full pytest: 1375/1375 passed, 0 failures, 0 errors
+- All modules compiled successfully
+
+**Not changed:**
+- No source files modified
+- No test files modified
+- No endpoint paths changed
+- No response fields changed
+- No trace contract changed
+- No trace persistence added
+- No chain-of-thought exposure claimed
+
+**Safety invariants maintained:**
+- All safety invariants from 81C-81D remain intact
+- No source code modified
+- No behavioral impact
+- Documentation is accurate and does not claim unimplemented capabilities
+
+**Next recommended milestone:**
+- 81F — Cognitive Loop Trace Usage Review Plan (or higher-level cognitive runtime feature work)
+
+**81E complete. No commit made.**
