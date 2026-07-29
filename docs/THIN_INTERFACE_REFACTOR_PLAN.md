@@ -2,7 +2,7 @@
 
 **Milestone:** 80A  
 **Status:** Plan completed — no code refactor yet  
-**Next:** Milestone 80B — Thin Interface Refactor Phase 1 (move Milestone 77-79 orchestration only)
+**Next:** All 80B-80M refactor phases complete. See PROGRESS.md for full status.
 
 ---
 

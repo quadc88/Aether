@@ -88,7 +88,7 @@ Current safety constraints:
 - The policy gate blocks execution by default.
 - The approval request object is a pending review object only — it does not execute anything.
 - No real approval workflow is active yet.
-- No persistent approval queue exists yet.
+- A persistent JSON-backed approval queue exists (`aether/action/approval_queue.py`), but no automatic tool execution triggers from it yet.
 - No automatic tool execution occurs.
 
 Tools, models, and plugins are resources or organs Aether may use. They are not Aether itself. Aether maintains identity, memory, time, verification, policy, and action safety.

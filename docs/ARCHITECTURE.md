@@ -1243,7 +1243,7 @@ Implemented via `aether/core/loop.py::run_core_chat_loop`:
 - The policy gate denies execution by default.
 - The approval request object is a pending review struct only — it does not approve anything or execute anything.
 - No real approval workflow is active yet.
-- No persistent approval queue exists yet.
+- A persistent JSON-backed approval queue exists (`aether/action/approval_queue.py`), but no automatic tool execution triggers from it yet.
 - No automatic tool execution occurs through `/chat`.
 
 ### 12.3 True Repeated Internal Loop
@@ -1323,7 +1323,7 @@ Important: the approval request is only a structured pending request. It does no
 ## Current Limitations
 
 - No real tool execution through `/chat` yet.
-- No persistent approval queue — approval requests are transient objects only.
+- A persistent JSON-backed approval queue exists (`aether/action/approval_queue.py`), but standalone approval requests (`aether/action/approval_request.py`) are transient response-only structs — they do not persist or execute.
 - No Observe/Verify/Critic/Repair full runtime loop for arbitrary external actions yet.
 - The current loop is deterministic and rule-based.
 - Future milestones must connect approved actions to an actual executor, observation mechanism, verification stage, critic analysis, repair planning, learning recording, and reporting.

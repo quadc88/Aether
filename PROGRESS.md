@@ -1,8 +1,8 @@
 # Aether Project Progress Ledger
 
-**Last updated:** Milestone 81C — Cognitive Loop Observability
+**Last updated:** Milestone 81F — Project Ledger and Architecture Reconciliation
 **Aether version:** 0.2.0  
-**Pipeline maturity:** Declarative Apply Executor Evidence Contract (prepared/blocked, no collection or execution)
+**Pipeline maturity:** Full declarative safety chain (approval through evidence contract record stores) with thin interface refactor (80B-80M) and cognitive runtime observability (81A-81E) complete. No real tool execution, apply, evidence collection, or rollback yet.
 
 ---
 
@@ -140,7 +140,7 @@ Important state:
 | 70A | Apply execution gate record store | 807 tests | Complete |
 | 70B | Live API apply execution gate record validation | 16/16 cases | Complete |
 
-### 71-75: Executor Contract, Plan, Record Store, and Evidence Contract
+### 71-76: Executor Contract, Plan, Record Store, Evidence Contract, and Evidence Contract Record Store
 | Milestone | Description | Tests | Status |
 |-----------|-------------|-------|--------|
 | 71A | Apply executor contract object | 867 tests | Complete |
@@ -153,7 +153,7 @@ Important state:
 | **74A** | **Apply executor plan record store core** | **1095 tests** | **Complete** |
 | **75A** | **Apply executor evidence contract object** | **1166 tests** | **Complete** |
 | **75B** | **Live API apply executor evidence contract validation** | **1166 tests** | **Complete** |
-| **76A** | **Apply executor evidence contract record store** | **~146 tests** | **In Progress** |
+| **76A** | **Apply executor evidence contract record store** | **~84 tests** | **Complete** |
 
 New in 74A:
 - `aether/action/apply_executor_plan_queue.py` — create/read/list/update records
@@ -174,8 +174,8 @@ Each recent milestone (67-74):
 
 ### 76A — Apply Executor Evidence Contract Record Store Core
 
-**Status:** In Progress
-**Expected tests:** ~146 (50 queue unit tests + 34 API tests)
+**Status:** Complete
+**Tests:** ~84 (50 queue unit tests + 34 API tests)
 **Storage path:** `/home/aether/data/private/apply_executor_evidence_contracts/`
 
 New in 76A:
@@ -192,7 +192,7 @@ New in 76A:
 
 ## 7. Current Test Baseline
 
-As of Milestone 81E:
+As of Milestone 81F:
 - **Pytest:** 1375/1375 passed, 0 failures
 - **Compile:** All modules compiled successfully
 - **Git safety:** Clean — no diffs on README.md, ARCHITECTURE.md, code_reviewer.py
@@ -275,7 +275,7 @@ These invariants must hold at ALL times:
 
 ## 10. Next Recommended Milestone
 
-**Milestone 81F or higher — Cognitive Runtime Feature Development**
+**Milestone 81F — Project Ledger and Architecture Reconciliation (current)**
 
 The cognitive runtime boundary series (81A–81E) is complete:
 - 81A: Runtime awakening service extraction
@@ -284,8 +284,11 @@ The cognitive runtime boundary series (81A–81E) is complete:
 - 81D: Loop trace hardening tests
 - 81E: Cognitive loop trace documentation
 
-Next milestones should focus on higher-level cognitive runtime features,
-performance baselines, or the next project priority area.
+81F is the current milestone — Project Ledger and Architecture Reconciliation.
+The loop_trace is implemented, hardened, documented, and declared stable.
+No further trace-specific milestones are planned.
+
+Next milestone after 81F is TBD — to be directed by the project owner.
 
 ---
 
@@ -1578,3 +1581,66 @@ and hardened in 81D. Docs-only milestone — no source code or tests modified.
 - 81F — Cognitive Loop Trace Usage Review Plan (or higher-level cognitive runtime feature work)
 
 **81E complete. No commit made.**
+
+
+### 81F — Project Ledger and Architecture Reconciliation
+
+**Status:** Complete
+
+**Type:** Documentation reconciliation — no source code or tests modified.
+
+**Description:**
+Reconciled PROGRESS.md, README.md, docs/ARCHITECTURE.md, and
+docs/THIN_INTERFACE_REFACTOR_PLAN.md to match actual Git/tag/test state.
+Fixed stale metadata, incorrect milestone statuses, arithmetic errors, and
+contradictions about the persistent approval queue.
+
+**Fixes applied:**
+
+PROGRESS.md:
+- "Last updated" header: 81C → 81F
+- Pipeline maturity description updated to reflect thin interface refactor
+  and cognitive runtime boundary completion
+- Section header "71-75" → "71-76" (76A was listed but excluded from range)
+- 76A status: "In Progress" → "Complete" (confirmed by tag
+  `milestone-76-apply-executor-evidence-contract-record-store`)
+- 76A test count: "~146 (50 + 34)" → "~84 (50 + 34)" (corrected arithmetic)
+- "Next Recommended Milestone": removed 82A reference (not yet authorized);
+  set to TBD
+
+README.md:
+- "No persistent approval queue exists yet" → clarified that persistent
+  approval queue exists via `aether/action/approval_queue.py` and
+  `aether/action/services/approval_service.py`
+
+docs/ARCHITECTURE.md:
+- Two stale "No persistent approval queue" statements corrected to
+  describe the existing persistent queue
+
+docs/THIN_INTERFACE_REFACTOR_PLAN.md:
+- "Next: Milestone 80B" → "All 80B-80M refactor phases complete"
+
+**Verification:**
+- 81D hardening tests: 7/7 passed
+- 81C observability tests: 10/10 passed
+- 81B contract tests: 11/11 passed
+- Full pytest: 1375/1375 passed, 0 failures, 0 errors
+
+**Not changed:**
+- No source files modified
+- No test files modified
+- No docs modified beyond the four reconciled files
+- No endpoint paths changed
+- No response fields changed
+- No trace persistence added
+- No chain-of-thought exposure
+
+**Safety invariants maintained:**
+- All safety invariants from 81C–81E remain intact
+- No source code modified
+- No behavioral impact
+
+**Next recommended milestone:**
+- TBD — directed by project owner
+
+**81F complete. No commit made.**
