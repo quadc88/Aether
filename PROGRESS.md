@@ -1,8 +1,8 @@
 # Aether Project Progress Ledger
 
-**Last updated:** Milestone 82D — File and Self-Inspection Service Extraction
+**Last updated:** Milestone 82E — Patch Lifecycle Service Extraction
 **Aether version:** 0.2.0  
-**Pipeline maturity:** Full declarative safety chain (approval through evidence contract record stores) with thin interface refactor (80B-80M) and cognitive runtime observability (81A-81E) complete. Observation contract builder added (82B). Interface API model extraction complete (82C). File and self-inspection service extraction complete (82D). No real tool execution, apply, evidence collection, rollback, or observation yet.
+**Pipeline maturity:** Full declarative safety chain (approval through evidence contract record stores) with thin interface refactor (80B-80M) and cognitive runtime observability (81A-81E) complete. Observation contract builder added (82B). Interface API model extraction complete (82C). File and self-inspection service extraction complete (82D). Patch lifecycle service extraction complete (82E). No real tool execution, apply, evidence collection, rollback, or observation yet.
 
 ---
 
@@ -295,14 +295,14 @@ These invariants must hold at ALL times:
 
 **Status after 82C:** Interface API model extraction complete — 121 BaseModel classes moved from api_server.py to api_models.py.
 
-**Next:** 82E — Patch Lifecycle Service Plan (not started)
+**Next:** 82F — Remaining Interface Action Import Audit / Mutation Log Extraction Plan (not started)
 
 **Current guidance:**
 81A–81E cognitive runtime boundary and loop_trace work are stable.
 82A /chat interface boundary analysis complete (keep-as-is, plan-only closure).
 82B Observation Contract builder added — Observe stage schema defined, no real observation yet.
 82C Interface API model extraction complete — all Pydantic models moved to dedicated module.
-82D File and self-inspection service extraction complete. 82E should plan patch lifecycle service extraction. Observation Record Store remains deferred.
+82D File and self-inspection service extraction complete. 82E Patch lifecycle service extraction complete. 82F should plan remaining interface action import audit / mutation log extraction. Observation Record Store remains deferred.
 No further trace-only milestones are planned unless explicitly requested.
 
 ---
@@ -1830,8 +1830,8 @@ This is a **pure declarative builder** — it does NOT observe, collect evidence
 - No external actions performed
 - No prohibited actions
 
-**Next recommended milestone:** 82E — Patch Lifecycle Service Plan
-**82D complete. Observation Record Store deferred.**
+**Next recommended milestone:** 82F — Remaining Interface Action Import Audit / Mutation Log Extraction Plan
+**82E complete. Observation Record Store deferred.**
 
 
 ### 82C — Interface API Model Extraction
@@ -1915,5 +1915,68 @@ Extracted 15 endpoint handlers (5 file-read, 3 file-browse, 2 file-browser statu
 - Full pytest: 1401/1401 passed, 0 failures, 0 errors
 - Size reduction: api_server.py 1816 lines (99280 bytes) → 1764 lines (95332 bytes); 52 lines / 3948 bytes removed
 - No test files modified
+- No runtime/private data modified
+- No commit made
+
+
+### 82E — Patch Lifecycle Service Extraction
+
+**Status:** Complete
+
+**Type:** structure-only refactor — 17 patch lifecycle endpoint handlers extracted from `aether/interface/api_server.py` into `aether/action/services/patch_service.py`. Four direct action-module imports (`patch_proposal`, `patch_review`, `patch_apply`, `patch_rollback`) removed from `api_server.py`. Zero endpoint, contract, or runtime behavior changes.
+
+**Description:**
+Extracted 17 endpoint handlers (5 patch-proposal, 4 patch-review, 4 patch-apply, 4 patch-rollback) into `aether/action/services/patch_service.py`. Each handler body reduced to a single-line `handle_*` call. All 4 direct action-module `import` statements removed. The `handle_*` functions in `patch_service.py` preserve the exact orchestration logic (working memory events, response dict shape, metadata handling, dry_run values, exception behavior).
+
+**Real mutation safety verified:**
+- `patch_apply` writes source files only after approval & governance checks inside action module
+- `patch_rollback` restores files from backup only after eligibility checks inside action module
+- Service wrapper CANNOT bypass any safety gate — all gates are inside action modules
+- `dry_run` default `True` preserved
+- Backup/restore behavior unchanged
+- Approval/safety gate behavior unchanged
+
+**Mutation log endpoints deferred** — cross-cutting concern; will be extracted in a future milestone.
+
+**Files created (1):**
+- `aether/action/services/patch_service.py` — service module with 17 `handle_*` functions (196 lines, 6819 bytes)
+
+**Files modified (1):**
+- `aether/interface/api_server.py` — replaced 17 handler bodies with thin service calls; removed 4 direct action-module imports; added import from `patch_service`
+
+**Handler migration (17):**
+- create_action_patch_proposal → handle_patch_proposal_create
+- get_action_patch_proposal_status → handle_patch_proposal_status
+- list_action_patch_proposals → handle_list_patch_proposals
+- get_action_patch_proposal → handle_get_patch_proposal
+- mark_action_patch_proposal_status → handle_mark_patch_proposal_status
+- review_action_patch_proposal → handle_patch_review
+- get_action_patch_review_status → handle_patch_review_status
+- list_action_patch_reviews → handle_list_patch_reviews
+- get_action_patch_review → handle_get_patch_review
+- apply_action_patch → handle_patch_apply
+- get_action_patch_apply_status → handle_patch_apply_status
+- list_action_patch_applies → handle_list_patch_applies
+- get_action_patch_apply → handle_get_patch_apply
+- rollback_action_patch → handle_patch_rollback
+- get_action_patch_rollback_status → handle_patch_rollback_status
+- list_action_patch_rollbacks → handle_list_patch_rollbacks
+- get_action_patch_rollback → handle_get_patch_rollback
+
+**Verification:**
+- Compile: `patch_service.py` and `api_server.py` both compile successfully (`py_compile`)
+- FastAPI app import: 304 routes, 300 paths, 103 schemas — unchanged
+- OpenAPI comparison: exact match before/after
+- Import scan: zero remaining direct imports from `patch_proposal`, `patch_review`, `patch_apply`, or `patch_rollback` in api_server.py
+- Full pytest: 1401/1401 passed, 0 failures, 0 errors
+- Size: api_server.py 1764 lines (95332 bytes) → 1773 lines (93220 bytes); +9 lines, -2112 bytes
+- No test files modified
+- No action module files modified
+- No api_models.py changes
+- No /chat or /awaken changes
+- No dry_run behavior changes
+- No approval/safety gate changes
+- No backup/rollback behavior changes
+- No Observation Record Store added
 - No runtime/private data modified
 - No commit made

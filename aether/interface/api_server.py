@@ -203,10 +203,25 @@ from aether.action.services.memory_service import (
     handle_timeline_status as _handle_timeline_status,
     handle_write_episodic_memory as _handle_write_episodic,
 )
-from aether.action.patch_proposal import create_patch_proposal, get_patch_proposal, list_patch_proposals, mark_patch_proposal_status, patch_proposal_status
-from aether.action.patch_review import get_patch_review, list_patch_reviews, patch_review_status, review_patch_proposal
-from aether.action.patch_apply import apply_patch_proposal, get_patch_apply, list_patch_applies, patch_apply_status
-from aether.action.patch_rollback import rollback_patch_apply, get_patch_rollback, list_patch_rollbacks, patch_rollback_status
+from aether.action.services.patch_service import (
+    handle_patch_proposal_create,
+    handle_patch_proposal_status,
+    handle_list_patch_proposals,
+    handle_get_patch_proposal,
+    handle_mark_patch_proposal_status,
+    handle_patch_review,
+    handle_patch_review_status,
+    handle_list_patch_reviews,
+    handle_get_patch_review,
+    handle_patch_apply,
+    handle_patch_apply_status,
+    handle_list_patch_applies,
+    handle_get_patch_apply,
+    handle_patch_rollback,
+    handle_patch_rollback_status,
+    handle_list_patch_rollbacks,
+    handle_get_patch_rollback,
+)
 from aether.action.mutation_log import record_mutation, record_milestone_completed, mutation_log_status, list_mutations, summarize_mutations, get_mutation
 from aether.action.self_modification_cycle import create_self_modification_session, review_self_modification_session, dry_run_self_modification_session, apply_self_modification_session, rollback_self_modification_session, self_modification_status, list_self_modification_sessions, get_self_modification_session, summarize_self_modification_session
 from aether.action.changelog_exporter import export_public_changelog, export_milestone_report, export_private_changelog_report, changelog_export_status
@@ -1411,59 +1426,53 @@ def get_action_self_inspection(report_id: str):
 
 @app.post("/action/patch-proposal/create")
 def create_action_patch_proposal(request: PatchProposalRequest):
-    proposal = create_patch_proposal(request.target_path, request.request_text, request.proposed_change_summary, request.proposed_excerpt, request.reason, request.original_excerpt, request.create_approval_if_required, request.metadata)
-    runtime.working_memory.add_event(role="aether", content=f"Patch proposal created: {proposal['target_path']}", event_type="patch_proposal_created", metadata={key: proposal.get(key) for key in ("id", "target_path", "status", "risk_level", "requires_user_approval", "approval_id")})
-    return {"name": "Aether", "status": runtime.status(), "proposal": proposal}
+    return handle_patch_proposal_create(request.target_path, request.request_text, request.proposed_change_summary, request.proposed_excerpt, request.reason, request.original_excerpt, request.create_approval_if_required, request.metadata)
 
 @app.get("/action/patch-proposal/status")
 def get_action_patch_proposal_status():
-    return {"name": "Aether", "status": runtime.status(), "patch_proposals": patch_proposal_status()}
+    return handle_patch_proposal_status()
 
 @app.get("/action/patch-proposal/list")
 def list_action_patch_proposals(status: str | None = None, limit: int = 50):
-    return {"name": "Aether", "status": runtime.status(), "proposals": list_patch_proposals(status, limit)}
+    return handle_list_patch_proposals(status, limit)
 
 @app.get("/action/patch-proposal/{proposal_id}")
 def get_action_patch_proposal(proposal_id: str):
-    return {"name": "Aether", "status": runtime.status(), "proposal": get_patch_proposal(proposal_id)}
+    return handle_get_patch_proposal(proposal_id)
 
 @app.post("/action/patch-proposal/mark-status")
 def mark_action_patch_proposal_status(request: PatchProposalStatusUpdateRequest):
-    return {"name": "Aether", "status": runtime.status(), "proposal": mark_patch_proposal_status(request.proposal_id, request.status, request.reason)}
+    return handle_mark_patch_proposal_status(request.proposal_id, request.status, request.reason)
 
 @app.post("/action/patch-review/review")
 def review_action_patch_proposal(request: PatchReviewRequest):
-    review = review_patch_proposal(request.proposal_id, request.decision, request.review_reason, request.reviewer, request.metadata)
-    runtime.working_memory.add_event(role="aether", content=f"Patch review created: {request.decision}", event_type="patch_review_created", metadata={"review_id": review.get("id"), "proposal_id": request.proposal_id, "decision": request.decision, "status": review.get("status"), "proposal_status_after": review.get("proposal_status_after"), "risk_level": review.get("risk_level"), "approval_status": review.get("approval_status")})
-    return {"name":"Aether","status":runtime.status(),"review":review}
+    return handle_patch_review(request.proposal_id, request.decision, request.review_reason, request.reviewer, request.metadata)
 
 @app.get("/action/patch-review/status")
-def get_action_patch_review_status(): return {"name":"Aether","status":runtime.status(),"patch_reviews":patch_review_status()}
+def get_action_patch_review_status(): return handle_patch_review_status()
 @app.get("/action/patch-review/list")
-def list_action_patch_reviews(proposal_id: str | None = None, limit: int = 50): return {"name":"Aether","status":runtime.status(),"reviews":list_patch_reviews(proposal_id,limit)}
+def list_action_patch_reviews(proposal_id: str | None = None, limit: int = 50): return handle_list_patch_reviews(proposal_id, limit)
 @app.get("/action/patch-review/{review_id}")
-def get_action_patch_review(review_id: str): return {"name":"Aether","status":runtime.status(),"review":get_patch_review(review_id)}
+def get_action_patch_review(review_id: str): return handle_get_patch_review(review_id)
 
 @app.post("/action/patch-apply/apply")
 def apply_action_patch(request: PatchApplyRequest):
-    result=apply_patch_proposal(request.proposal_id,request.dry_run,request.metadata)
-    runtime.working_memory.add_event(role="aether",content=f"Patch apply attempted: {result['status']}",event_type="patch_apply_attempted",metadata={k:result.get(k) for k in ("id","proposal_id","target_path","status","dry_run","applied","changed","risk_level")})
-    return {"name":"Aether","status":runtime.status(),"apply":result}
+    return handle_patch_apply(request.proposal_id, request.dry_run, request.metadata)
 @app.get("/action/patch-apply/status")
-def get_action_patch_apply_status():return {"name":"Aether","status":runtime.status(),"patch_applies":patch_apply_status()}
+def get_action_patch_apply_status():return handle_patch_apply_status()
 @app.get("/action/patch-apply/list")
-def list_action_patch_applies(proposal_id: str|None=None,limit:int=50):return {"name":"Aether","status":runtime.status(),"applies":list_patch_applies(proposal_id,limit)}
+def list_action_patch_applies(proposal_id: str|None=None,limit:int=50):return handle_list_patch_applies(proposal_id,limit)
 @app.get("/action/patch-apply/{apply_id}")
-def get_action_patch_apply(apply_id:str):return {"name":"Aether","status":runtime.status(),"apply":get_patch_apply(apply_id)}
+def get_action_patch_apply(apply_id:str):return handle_get_patch_apply(apply_id)
 @app.post("/action/patch-rollback/rollback")
 def rollback_action_patch(request: PatchRollbackRequest):
- r=rollback_patch_apply(request.apply_id,request.dry_run,request.metadata);runtime.working_memory.add_event(role="aether",content=f"Patch rollback attempted: {r['status']}",event_type="patch_rollback_attempted",metadata={k:r.get(k) for k in ("id","apply_id","proposal_id","target_path","status","dry_run","rolled_back","changed")});return {"name":"Aether","status":runtime.status(),"rollback":r}
+    return handle_patch_rollback(request.apply_id, request.dry_run, request.metadata)
 @app.get("/action/patch-rollback/status")
-def get_action_patch_rollback_status():return {"name":"Aether","status":runtime.status(),"patch_rollbacks":patch_rollback_status()}
+def get_action_patch_rollback_status():return handle_patch_rollback_status()
 @app.get("/action/patch-rollback/list")
-def list_action_patch_rollbacks(apply_id:str|None=None,limit:int=50):return {"name":"Aether","status":runtime.status(),"rollbacks":list_patch_rollbacks(apply_id,limit)}
+def list_action_patch_rollbacks(apply_id:str|None=None,limit:int=50):return handle_list_patch_rollbacks(apply_id,limit)
 @app.get("/action/patch-rollback/{rollback_id}")
-def get_action_patch_rollback(rollback_id:str):return {"name":"Aether","status":runtime.status(),"rollback":get_patch_rollback(rollback_id)}
+def get_action_patch_rollback(rollback_id:str):return handle_get_patch_rollback(rollback_id)
 @app.post("/action/mutation-log/record")
 def record_action_mutation(request:MutationRecordRequest):return {"name":"Aether","mutation":record_mutation(request.mutation_type,request.title,request.summary,milestone=request.milestone,target_path=request.target_path,metadata=request.metadata,source="manual")}
 @app.post("/action/mutation-log/milestone-completed")
