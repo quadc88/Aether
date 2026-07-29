@@ -1,8 +1,8 @@
 # Aether Project Progress Ledger
 
-**Last updated:** Milestone 82F — Mutation Log Service Extraction
+**Last updated:** Milestone 82G — Proposal Console Service Extraction
 **Aether version:** 0.2.0  
-**Pipeline maturity:** Full declarative safety chain (approval through evidence contract record stores) with thin interface refactor (80B-80M) and cognitive runtime observability (81A-81E) complete. Observation contract builder added (82B). Interface API model extraction complete (82C). File and self-inspection service extraction complete (82D). Patch lifecycle service extraction complete (82E). Mutation log service extraction complete (82F). No real tool execution, apply, evidence collection, rollback, or observation yet.
+**Pipeline maturity:** Full declarative safety chain (approval through evidence contract record stores) with thin interface refactor (80B-80M) and cognitive runtime observability (81A-81E) complete. Observation contract builder added (82B). Interface API model extraction complete (82C). File and self-inspection service extraction complete (82D). Patch lifecycle service extraction complete (82E). Mutation log service extraction complete (82F). Proposal console service extraction complete (82G). No real tool execution, apply, evidence collection, rollback, or observation yet.
 
 ---
 
@@ -295,14 +295,14 @@ These invariants must hold at ALL times:
 
 **Status after 82C:** Interface API model extraction complete — 121 BaseModel classes moved from api_server.py to api_models.py.
 
-**Next:** 82G — Code Review and Repair Workflow Service Plan (not started)
+**Next:** 82H — Code Review and Review Bridge Service Plan (not started)
 
 **Current guidance:**
 81A–81E cognitive runtime boundary and loop_trace work are stable.
 82A /chat interface boundary analysis complete (keep-as-is, plan-only closure).
 82B Observation Contract builder added — Observe stage schema defined, no real observation yet.
 82C Interface API model extraction complete — all Pydantic models moved to dedicated module.
-82D File and self-inspection service extraction complete. 82E Patch lifecycle service extraction complete. 82F Mutation log service extraction complete. 82G should plan code review and repair workflow service extraction. Observation Record Store remains deferred.
+82D File and self-inspection service extraction complete. 82E Patch lifecycle service extraction complete. 82F Mutation log service extraction complete. 82G Proposal console service extraction complete. 82H should plan code review and review bridge service extraction. Observation Record Store remains deferred.
 No further trace-only milestones are planned unless explicitly requested.
 
 ---
@@ -1830,8 +1830,8 @@ This is a **pure declarative builder** — it does NOT observe, collect evidence
 - No external actions performed
 - No prohibited actions
 
-**Next recommended milestone:** 82G — Code Review and Repair Workflow Service Plan
-**82F complete. Observation Record Store deferred.**
+**Next recommended milestone:** 82H — Code Review and Review Bridge Service Plan
+**82G complete. Observation Record Store deferred.**
 
 
 ### 82C — Interface API Model Extraction
@@ -2030,3 +2030,66 @@ Extracted 6 endpoint handlers (record, milestone-completed, status, list, summar
 - No runtime/private data modified (same mutation log format/path)
 - No commit made
 - 82G not started
+
+### 82G — Proposal Console Service Extraction
+
+**Status:** Complete
+
+**Type:** structure-only refactor — 18 proposal-console endpoint handlers extracted from `aether/interface/api_server.py` into `aether/action/services/proposal_console_service.py`. Three direct action-module imports (`proposal_review_console`, `proposal_revision_console`, `revised_proposal_review_loop`) removed from `api_server.py`. Zero endpoint, contract, or runtime behavior changes.
+
+**Description:**
+Extracted 18 endpoint handlers (6 proposal-review-console, 6 proposal-revision-console, 6 revised-proposal-review) into `aether/action/services/proposal_console_service.py`. Each handler body reduced to a single-line `handle_*` call. Three direct `from aether.action.* import` statements replaced with a single import from `proposal_console_service`. The `handle_*` functions preserve exact orchestration logic (response dict shape, parameter names/defaults, metadata handling).
+
+**Safety:**
+- Low risk — all three modules are review/proposal-creation only
+- `submit_proposal_review` calls `review_patch_proposal` (review-only, never applies)
+- `create_proposal_revision` calls `create_patch_proposal` (creates draft proposals, never applies)
+- `open_revised_proposal_review` calls `open_proposal_review_console` (opens console, never applies)
+- No source mutation capability
+- No apply/rollback calls
+- No real tool execution
+- No subprocess or network
+
+**Files created (1):**
+- `aether/action/services/proposal_console_service.py` — service module with 18 `handle_*` functions (176 lines, 6038 bytes)
+
+**Files modified (1):**
+- `aether/interface/api_server.py` — replaced 18 handler bodies with thin service calls; removed 3 direct action-module imports; added import from `proposal_console_service`
+
+**Handler migration (18):**
+- open_proposal_review_console_action → handle_open_proposal_review_console
+- submit_proposal_review_action → handle_submit_proposal_review
+- get_proposal_review_console_status_action → handle_proposal_review_console_status
+- list_proposal_review_console_action → handle_list_proposal_review_console
+- summarize_proposal_review_console_action → handle_summarize_proposal_review_console
+- get_proposal_review_console_action → handle_get_proposal_review_console
+- open_proposal_revision_console_action → handle_open_proposal_revision_console
+- create_proposal_revision_action → handle_create_proposal_revision
+- get_proposal_revision_console_status_action → handle_proposal_revision_console_status
+- list_proposal_revision_console_action → handle_list_proposal_revision_console
+- summarize_proposal_revision_console_action → handle_summarize_proposal_revision_console
+- get_proposal_revision_console_action → handle_get_proposal_revision_console
+- open_revised_proposal_review_action → handle_open_revised_proposal_review
+- submit_revised_proposal_review_action → handle_submit_revised_proposal_review
+- get_revised_proposal_review_status_action → handle_revised_proposal_review_status
+- list_revised_proposal_review_action → handle_list_revised_proposal_review
+- summarize_revised_proposal_review_action → handle_summarize_revised_proposal_review
+- get_revised_proposal_review_action → handle_get_revised_proposal_review
+
+**Verification:**
+- Compile: `proposal_console_service.py` and `api_server.py` both compile successfully (`py_compile`)
+- FastAPI app import: 304 routes, 300 paths, 103 schemas — unchanged
+- OpenAPI comparison: exact match before/after
+- Import scan: zero remaining direct imports from `proposal_review_console`, `proposal_revision_console`, or `revised_proposal_review_loop` in api_server.py
+- Full pytest: 1401/1401 passed, 0 failures, 0 errors
+- Size: api_server.py 1780 lines (93136 bytes) → 1797 lines (92695 bytes); +17 lines, -441 bytes
+- No test files modified
+- No action module files modified
+- No api_models.py changes
+- No /chat or /awaken changes
+- No source mutation changes
+- No apply/rollback changes
+- No real tool execution added
+- No Observation Record Store added
+- No commit made
+- 82H not started
