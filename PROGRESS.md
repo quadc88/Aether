@@ -1,8 +1,8 @@
 # Aether Project Progress Ledger
 
-**Last updated:** Milestone 82G — Proposal Console Service Extraction
+**Last updated:** Milestone 82H — Code Review and Review Bridge Service Extraction
 **Aether version:** 0.2.0  
-**Pipeline maturity:** Full declarative safety chain (approval through evidence contract record stores) with thin interface refactor (80B-80M) and cognitive runtime observability (81A-81E) complete. Observation contract builder added (82B). Interface API model extraction complete (82C). File and self-inspection service extraction complete (82D). Patch lifecycle service extraction complete (82E). Mutation log service extraction complete (82F). Proposal console service extraction complete (82G). No real tool execution, apply, evidence collection, rollback, or observation yet.
+**Pipeline maturity:** Full declarative safety chain (approval through evidence contract record stores) with thin interface refactor (80B-80M) and cognitive runtime observability (81A-81E) complete. Observation contract builder added (82B). Interface API model extraction complete (82C). File and self-inspection service extraction complete (82D). Patch lifecycle service extraction complete (82E). Mutation log service extraction complete (82F). Proposal console service extraction complete (82G). Code review and review bridge service extraction complete (82H). No real tool execution, apply, evidence collection, rollback, or observation yet.
 
 ---
 
@@ -295,14 +295,14 @@ These invariants must hold at ALL times:
 
 **Status after 82C:** Interface API model extraction complete — 121 BaseModel classes moved from api_server.py to api_models.py.
 
-**Next:** 82H — Code Review and Review Bridge Service Plan (not started)
+**Next:** 82I — Interface Router Extraction Plan (not started)
 
 **Current guidance:**
 81A–81E cognitive runtime boundary and loop_trace work are stable.
 82A /chat interface boundary analysis complete (keep-as-is, plan-only closure).
 82B Observation Contract builder added — Observe stage schema defined, no real observation yet.
 82C Interface API model extraction complete — all Pydantic models moved to dedicated module.
-82D File and self-inspection service extraction complete. 82E Patch lifecycle service extraction complete. 82F Mutation log service extraction complete. 82G Proposal console service extraction complete. 82H should plan code review and review bridge service extraction. Observation Record Store remains deferred.
+82D File and self-inspection service extraction complete. 82E Patch lifecycle service extraction complete. 82F Mutation log service extraction complete. 82G Proposal console service extraction complete. 82H Code review and review bridge service extraction complete. Observation Record Store remains deferred.
 No further trace-only milestones are planned unless explicitly requested.
 
 ---
@@ -1829,9 +1829,9 @@ This is a **pure declarative builder** — it does NOT observe, collect evidence
 - No execution permission granted
 - No external actions performed
 - No prohibited actions
+**Next recommended milestone:** 82I — Interface Router Extraction Plan
 
-**Next recommended milestone:** 82H — Code Review and Review Bridge Service Plan
-**82G complete. Observation Record Store deferred.**
+**82H complete. Observation Record Store deferred.**
 
 
 ### 82C — Interface API Model Extraction
@@ -2092,4 +2092,23 @@ Extracted 18 endpoint handlers (6 proposal-review-console, 6 proposal-revision-c
 - No real tool execution added
 - No Observation Record Store added
 - No commit made
-- 82H not started
+- 82H — Code Review and Review Bridge Service Extraction
+  - Created code_review_service.py (100 lines, 3086 bytes)
+  - Extracted 10 endpoints (5 code-review + 5 review-bridge)
+  - OpenAPI exact match: 304 routes / 300 paths / 103 schemas
+  - pytest 1401/1401 passed
+  - py_compile passed
+  - import scan passed (no direct code_reviewer/review_bridge imports remain)
+  - git diff --check clean
+  - No /chat changes
+  - No /awaken changes
+  - No api_models.py changes
+  - No action module changes
+  - No test file changes
+  - No source mutation
+  - No apply/rollback
+  - No self_modification execution
+  - Observation Record Store deferred
+  - Not committed
+- 82I — Interface Router Extraction Plan
+  82I not started

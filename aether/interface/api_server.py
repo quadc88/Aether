@@ -232,8 +232,18 @@ from aether.action.services.mutation_log_service import (
 )
 from aether.action.self_modification_cycle import create_self_modification_session, review_self_modification_session, dry_run_self_modification_session, apply_self_modification_session, rollback_self_modification_session, self_modification_status, list_self_modification_sessions, get_self_modification_session, summarize_self_modification_session
 from aether.action.changelog_exporter import export_public_changelog, export_milestone_report, export_private_changelog_report, changelog_export_status
-from aether.action.code_reviewer import create_code_review, get_code_review, list_code_reviews, code_review_status, summarize_code_review
-from aether.action.review_bridge import create_bridge_from_finding, get_review_bridge_record, list_review_bridge_records, review_bridge_status, summarize_review_bridge_record
+from aether.action.services.code_review_service import (
+    handle_code_review_create,
+    handle_code_review_status,
+    handle_list_code_reviews,
+    handle_summarize_code_review,
+    handle_get_code_review,
+    handle_create_review_bridge,
+    handle_review_bridge_status,
+    handle_list_review_bridges,
+    handle_summarize_review_bridge,
+    handle_get_review_bridge,
+)
 from aether.action.repair_planner import create_repair_plan, get_repair_plan, list_repair_plans, repair_plan_status, summarize_repair_plan
 from aether.action.repair_bridge_selector import create_bridge_from_repair_plan, get_repair_bridge_selection, list_repair_bridge_selections, repair_bridge_selection_status, summarize_repair_bridge_selection
 from aether.action.repair_workflow_tracker import trace_repair_workflow, get_repair_workflow_report, list_repair_workflow_reports, repair_workflow_status, summarize_repair_workflow
@@ -1536,25 +1546,25 @@ def export_private_changelog_action(request:ChangelogExportRequest):return expor
 @app.get("/action/changelog/status")
 def get_changelog_status():return changelog_export_status()
 @app.post("/action/code-review/create")
-def create_code_review_action(request:CodeReviewCreateRequest):return {"name":"Aether","report":create_code_review(request.scope,request.target_paths,request.max_files,request.max_chars_per_file,request.include_tests,request.metadata)}
+def create_code_review_action(request:CodeReviewCreateRequest):return handle_code_review_create(request.scope,request.target_paths,request.max_files,request.max_chars_per_file,request.include_tests,request.metadata)
 @app.get("/action/code-review/status")
-def get_code_review_status_action():return {"name":"Aether","code_review":code_review_status()}
+def get_code_review_status_action():return handle_code_review_status()
 @app.get("/action/code-review/list")
-def list_code_review_action(status:str|None=None,limit:int=50):return {"name":"Aether","reports":list_code_reviews(status,limit)}
+def list_code_review_action(status:str|None=None,limit:int=50):return handle_list_code_reviews(status,limit)
 @app.get("/action/code-review/{report_id}/summary")
-def summarize_code_review_action(report_id:str):return {"name":"Aether","summary":summarize_code_review(report_id)}
+def summarize_code_review_action(report_id:str):return handle_summarize_code_review(report_id)
 @app.get("/action/code-review/{report_id}")
-def get_code_review_action(report_id:str):return {"name":"Aether","report":get_code_review(report_id)}
+def get_code_review_action(report_id:str):return handle_get_code_review(report_id)
 @app.post("/action/review-bridge/create")
-def create_review_bridge_action(request:ReviewBridgeCreateRequest):return {"name":"Aether","record":create_bridge_from_finding(request.report_id,request.finding_id,request.proposed_excerpt,request.original_excerpt,request.proposed_change_summary,request.reason,request.create_approval_if_required,request.metadata)}
+def create_review_bridge_action(request:ReviewBridgeCreateRequest):return handle_create_review_bridge(request.report_id,request.finding_id,request.proposed_excerpt,request.original_excerpt,request.proposed_change_summary,request.reason,request.create_approval_if_required,request.metadata)
 @app.get("/action/review-bridge/status")
-def get_review_bridge_status_action():return {"name":"Aether","review_bridge":review_bridge_status()}
+def get_review_bridge_status_action():return handle_review_bridge_status()
 @app.get("/action/review-bridge/list")
-def list_review_bridge_action(status:str|None=None,review_report_id:str|None=None,limit:int=50):return {"name":"Aether","records":list_review_bridge_records(status,review_report_id,limit)}
+def list_review_bridge_action(status:str|None=None,review_report_id:str|None=None,limit:int=50):return handle_list_review_bridges(status,review_report_id,limit)
 @app.get("/action/review-bridge/{record_id}/summary")
-def summarize_review_bridge_action(record_id:str):return {"name":"Aether","summary":summarize_review_bridge_record(record_id)}
+def summarize_review_bridge_action(record_id:str):return handle_summarize_review_bridge(record_id)
 @app.get("/action/review-bridge/{record_id}")
-def get_review_bridge_action(record_id:str):return {"name":"Aether","record":get_review_bridge_record(record_id)}
+def get_review_bridge_action(record_id:str):return handle_get_review_bridge(record_id)
 @app.post("/action/repair-plan/create")
 def create_repair_plan_action(request:RepairPlanCreateRequest):return {"name":"Aether","plan":create_repair_plan(request.review_report_id,request.scope,request.include_deferred,request.max_findings,request.metadata)}
 @app.get("/action/repair-plan/status")
