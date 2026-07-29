@@ -156,11 +156,26 @@ from aether.action.services.tool_execution_service import (
     handle_get_tool_executor_status as _handle_tool_executor_status,
     handle_list_action_tool_executions as _handle_list_executions,
     handle_seed_action_sandbox_tools as _handle_seed_sandbox_tools,
-    record_restricted_file_access as _record_restricted_file_access,
-    record_self_inspection_report as _record_self_inspection_report,
 )
 from aether.action.services.verification_plan_service import (
     handle_create_verification_plan,
+)
+from aether.action.services.file_service import (
+    handle_file_read,
+    handle_file_allowed_roots,
+    handle_file_access_status,
+    handle_list_file_accesses,
+    handle_get_file_access,
+    handle_file_browse,
+    handle_file_search,
+    handle_file_browser_allowed_roots,
+    handle_file_browser_status,
+    handle_list_file_browses,
+    handle_get_file_browse,
+    handle_self_inspection_create,
+    handle_self_inspection_status,
+    handle_list_self_inspections,
+    handle_get_self_inspection,
 )
 from aether.action.services.runtime_lifecycle_service import (
     handle_awaken,
@@ -187,27 +202,6 @@ from aether.action.services.memory_service import (
     handle_set_working_milestone as _handle_set_wm_milestone,
     handle_timeline_status as _handle_timeline_status,
     handle_write_episodic_memory as _handle_write_episodic,
-)
-from aether.action.restricted_file_reader import (
-    file_access_status,
-    get_file_access,
-    list_allowed_roots,
-    list_file_accesses,
-    read_restricted_file,
-)
-from aether.action.restricted_file_browser import (
-    browse_restricted_path,
-    file_browser_status,
-    get_file_browse,
-    list_browser_allowed_roots,
-    list_file_browses,
-    search_restricted_files,
-)
-from aether.action.self_inspector import (
-    create_project_self_inspection,
-    get_self_inspection_report,
-    list_self_inspection_reports,
-    self_inspection_status,
 )
 from aether.action.patch_proposal import create_patch_proposal, get_patch_proposal, list_patch_proposals, mark_patch_proposal_status, patch_proposal_status
 from aether.action.patch_review import get_patch_review, list_patch_reviews, patch_review_status, review_patch_proposal
@@ -1342,123 +1336,77 @@ def get_action_tool_execution(execution_id: str):
 
 @app.post("/action/file/read")
 def read_action_file(request: RestrictedFileReadRequest):
-    access = read_restricted_file(request.path, request.max_chars, request.metadata)
-    timeline_event, graph_relationships, warnings = _record_restricted_file_access(access)
-    return {"name": "Aether", "status": runtime.status(), "access": access, "timeline_event": timeline_event, "graph_relationships": graph_relationships, "warnings": warnings}
+    return handle_file_read(request.path, request.max_chars, request.metadata)
 
 
 @app.get("/action/file/allowed-roots")
 def get_action_file_allowed_roots():
-    return {"name": "Aether", "status": runtime.status(), "allowed_roots": list_allowed_roots()}
+    return handle_file_allowed_roots()
 
 
 @app.get("/action/file/access/status")
 def get_action_file_access_status():
-    return {"name": "Aether", "status": runtime.status(), "file_access": file_access_status()}
+    return handle_file_access_status()
 
 
 @app.get("/action/file/access/list")
 def list_action_file_accesses(limit: int = 50):
-    return {"name": "Aether", "status": runtime.status(), "accesses": list_file_accesses(limit)}
+    return handle_list_file_accesses(limit)
 
 
 @app.get("/action/file/access/{access_id}")
 def get_action_file_access(access_id: str):
-    return {"name": "Aether", "status": runtime.status(), "access": get_file_access(access_id)}
-
-
-def _record_restricted_file_browse(browse: dict) -> tuple[dict, list[dict], list[str]]:
-    is_search = browse.get("operation") == "search"
-    target = browse.get("root") if is_search else browse.get("path")
-    normalized_target = browse.get("normalized_root") if is_search else browse.get("normalized_path")
-    count = browse.get("result_count") if is_search else browse.get("entry_count")
-    runtime.working_memory.add_event(
-        role="aether",
-        content=f"Restricted file {'search' if is_search else 'browse'} attempted: {target} ({browse['status']}).",
-        event_type="restricted_file_search_attempted" if is_search else "restricted_file_browse_attempted",
-        metadata={
-            "browse_id": browse["id"], "path": target, "status": browse["status"],
-            "allowed": browse["allowed"], "reason": browse["reason"], "count": count,
-        },
-    )
-    timeline_event = record_event(
-        event_type="file_browser",
-        title=f"Restricted file {'search' if is_search else 'browse'}: {browse['status']}",
-        description=f"Aether attempted restricted file {'search' if is_search else 'browse'} for {target} with status {browse['status']}.",
-        importance="high" if browse["status"] == "blocked" else "normal",
-    )
-    warnings = []
-    graph_relationships = []
-    try:
-        graph_relationships.append(add_edge("Aether", "attempted_file_search" if is_search else "attempted_file_browse", browse["id"]))
-        if is_search:
-            graph_relationships.append(add_edge(browse["id"], "has_query", browse["query"]))
-        else:
-            graph_relationships.append(add_edge(browse["id"], "target_path", normalized_target))
-        graph_relationships.append(add_edge(browse["id"], "has_status", browse["status"]))
-        for relationship in graph_relationships:
-            relationship.pop("created_new", None)
-    except Exception as error:
-        warnings.append(f"Graph Memory integration was unavailable: {error}")
-    return timeline_event, graph_relationships, warnings
+    return handle_get_file_access(access_id)
 
 
 @app.post("/action/file/browse")
 def browse_action_file(request: RestrictedFileBrowseRequest):
-    browse = browse_restricted_path(
-        request.path, request.max_depth, request.max_entries, request.include_files, request.include_dirs, request.metadata
-    )
-    timeline_event, graph_relationships, warnings = _record_restricted_file_browse(browse)
-    return {"name": "Aether", "status": runtime.status(), "browse": browse, "timeline_event": timeline_event, "graph_relationships": graph_relationships, "warnings": warnings}
+    return handle_file_browse(request.path, request.max_depth, request.max_entries, request.include_files, request.include_dirs, request.metadata)
 
 
 @app.post("/action/file/search")
 def search_action_file(request: RestrictedFileSearchRequest):
-    browse = search_restricted_files(request.query, request.root, request.max_results, request.metadata)
-    timeline_event, graph_relationships, warnings = _record_restricted_file_browse(browse)
-    return {"name": "Aether", "status": runtime.status(), "search": browse, "timeline_event": timeline_event, "graph_relationships": graph_relationships, "warnings": warnings}
+    return handle_file_search(request.query, request.root, request.max_results, request.metadata)
 
 
 @app.get("/action/file/browser/allowed-roots")
 def get_action_file_browser_allowed_roots():
-    return {"name": "Aether", "status": runtime.status(), "allowed_roots": list_browser_allowed_roots()}
+    return handle_file_browser_allowed_roots()
 
 
 @app.get("/action/file/browser/status")
 def get_action_file_browser_status():
-    return {"name": "Aether", "status": runtime.status(), "file_browser": file_browser_status()}
+    return handle_file_browser_status()
 
 
 @app.get("/action/file/browser/list")
 def list_action_file_browses(limit: int = 50):
-    return {"name": "Aether", "status": runtime.status(), "browses": list_file_browses(limit)}
+    return handle_list_file_browses(limit)
 
 
 @app.get("/action/file/browser/{browse_id}")
 def get_action_file_browse(browse_id: str):
-    return {"name": "Aether", "status": runtime.status(), "browse": get_file_browse(browse_id)}
+    return handle_get_file_browse(browse_id)
 
 
 @app.post("/action/self-inspection/create")
 def create_action_self_inspection(request: SelfInspectionRequest):
-    report = create_project_self_inspection(request.root, request.max_files_to_read, request.max_chars_per_file, request.metadata)
-    timeline_event, graph_relationships, warnings = _record_self_inspection_report(report)
-    return {"name": "Aether", "status": runtime.status(), "report": report, "timeline_event": timeline_event, "graph_relationships": graph_relationships, "warnings": warnings}
+    return handle_self_inspection_create(request.root, request.max_files_to_read, request.max_chars_per_file, request.metadata)
 
 
 @app.get("/action/self-inspection/status")
 def get_action_self_inspection_status():
-    return {"name": "Aether", "status": runtime.status(), "self_inspection": self_inspection_status()}
+    return handle_self_inspection_status()
 
 
 @app.get("/action/self-inspection/list")
 def list_action_self_inspections(limit: int = 20):
-    return {"name": "Aether", "status": runtime.status(), "reports": list_self_inspection_reports(limit)}
+    return handle_list_self_inspections(limit)
 
 
 @app.get("/action/self-inspection/{report_id}")
 def get_action_self_inspection(report_id: str):
-    return {"name": "Aether", "status": runtime.status(), "report": get_self_inspection_report(report_id)}
+    return handle_get_self_inspection(report_id)
 
 
 @app.post("/action/patch-proposal/create")

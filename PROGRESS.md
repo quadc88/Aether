@@ -1,8 +1,8 @@
 # Aether Project Progress Ledger
 
-**Last updated:** Milestone 82C — Interface API Model Extraction
+**Last updated:** Milestone 82D — File and Self-Inspection Service Extraction
 **Aether version:** 0.2.0  
-**Pipeline maturity:** Full declarative safety chain (approval through evidence contract record stores) with thin interface refactor (80B-80M) and cognitive runtime observability (81A-81E) complete. Observation contract builder added (82B). Interface API model extraction complete (82C). No real tool execution, apply, evidence collection, rollback, or observation yet.
+**Pipeline maturity:** Full declarative safety chain (approval through evidence contract record stores) with thin interface refactor (80B-80M) and cognitive runtime observability (81A-81E) complete. Observation contract builder added (82B). Interface API model extraction complete (82C). File and self-inspection service extraction complete (82D). No real tool execution, apply, evidence collection, rollback, or observation yet.
 
 ---
 
@@ -295,14 +295,14 @@ These invariants must hold at ALL times:
 
 **Status after 82C:** Interface API model extraction complete — 121 BaseModel classes moved from api_server.py to api_models.py.
 
-**Next:** 82D — Remaining Interface Action Import and Workflow Audit (not started)
+**Next:** 82E — Patch Lifecycle Service Plan (not started)
 
 **Current guidance:**
 81A–81E cognitive runtime boundary and loop_trace work are stable.
 82A /chat interface boundary analysis complete (keep-as-is, plan-only closure).
 82B Observation Contract builder added — Observe stage schema defined, no real observation yet.
 82C Interface API model extraction complete — all Pydantic models moved to dedicated module.
-82D should audit the remaining direct action imports and patch/repair/guided workflow orchestration still located in api_server.py. Observation Record Store remains deferred to a later milestone.
+82D File and self-inspection service extraction complete. 82E should plan patch lifecycle service extraction. Observation Record Store remains deferred.
 No further trace-only milestones are planned unless explicitly requested.
 
 ---
@@ -1830,8 +1830,8 @@ This is a **pure declarative builder** — it does NOT observe, collect evidence
 - No external actions performed
 - No prohibited actions
 
-**Next recommended milestone:** 82D — Remaining Interface Action Import and Workflow Audit
-**82D not started. Observation Record Store deferred.**
+**Next recommended milestone:** 82E — Patch Lifecycle Service Plan
+**82D complete. Observation Record Store deferred.**
 
 
 ### 82C — Interface API Model Extraction
@@ -1869,6 +1869,51 @@ Extracted all 121 `BaseModel` class definitions from `aether/interface/api_serve
 - Full pytest: 1401/1401 passed, 0 failures, 0 errors
 - AST verification: 0 BaseModel classes remaining in api_server.py
 - Size reduction: api_server.py 2186 lines (113058 bytes) → 1694 lines (99158 bytes); 492 lines / 13900 bytes removed
+- No test files modified
+- No runtime/private data modified
+- No commit made
+
+
+### 82D — File and Self-Inspection Service Extraction
+
+**Status:** Complete
+
+**Type:** structure-only refactor — 15 endpoint handlers + 1 helper (`_record_restricted_file_browse`) extracted from `aether/interface/api_server.py` into `aether/action/services/file_service.py`. Three direct action-module imports (`restricted_file_reader`, `restricted_file_browser`, `self_inspector`) removed from `api_server.py`. Zero endpoint, contract, or runtime behavior changes.
+
+**Description:**
+Extracted 15 endpoint handlers (5 file-read, 3 file-browse, 2 file-browser status, 3 file-browser list/get, 1 self-inspection create, 1 self-inspection status, 1 self-inspection list, 1 self-inspection get) plus the `_record_restricted_file_browse` helper into `aether/action/services/file_service.py`. Each handler body reduced to a single-line `handle_*` call. All 3 direct action-module `import` statements removed. `_record_restricted_file_access` and `_record_self_inspection_report` aliases removed from `tool_execution_service` import. The `handle_*` functions in `file_service.py` preserve the exact orchestration logic (working memory events, timeline events, graph relationships, warnings, response dict shape).
+
+**Files created (1):**
+- `aether/action/services/file_service.py` — service module with 15 `handle_*` functions + `_record_restricted_file_browse` helper
+
+**Files modified (1):**
+- `aether/interface/api_server.py` — replaced 15 handler bodies with thin service calls; removed 3 direct action-module imports; removed `_record_restricted_file_browse` helper; removed `_record_restricted_file_access` and `_record_self_inspection_report` from tool_execution_service import
+
+**Handler migration (15+1):**
+- read_action_file → handle_file_read
+- get_action_file_allowed_roots → handle_file_allowed_roots
+- get_action_file_access_status → handle_file_access_status
+- list_action_file_accesses → handle_list_file_accesses
+- get_action_file_access → handle_get_file_access
+- browse_action_file → handle_file_browse
+- search_action_file → handle_file_search
+- get_action_file_browser_allowed_roots → handle_file_browser_allowed_roots
+- get_action_file_browser_status → handle_file_browser_status
+- list_action_file_browses → handle_list_file_browses
+- get_action_file_browse → handle_get_file_browse
+- create_action_self_inspection → handle_self_inspection_create
+- get_action_self_inspection_status → handle_self_inspection_status
+- list_action_self_inspections → handle_list_self_inspections
+- get_action_self_inspection → handle_get_self_inspection
+- _record_restricted_file_browse (helper, ~34 lines) → moved to file_service.py
+
+**Verification:**
+- Compile: `file_service.py` and `api_server.py` both compile successfully (`py_compile`)
+- FastAPI app import: 304 routes, 300 paths, 103 schemas — unchanged
+- OpenAPI comparison: exact match before/after (excluding info metadata)
+- Import scan: zero remaining direct imports from `restricted_file_reader`, `restricted_file_browser`, or `self_inspector` in api_server.py
+- Full pytest: 1401/1401 passed, 0 failures, 0 errors
+- Size reduction: api_server.py 1816 lines (99280 bytes) → 1764 lines (95332 bytes); 52 lines / 3948 bytes removed
 - No test files modified
 - No runtime/private data modified
 - No commit made
