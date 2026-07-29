@@ -290,12 +290,12 @@ These invariants must hold at ALL times:
 
 **Status after 81F:** Complete — project ledger and architecture reconciliation committed as `761c1eff`.
 
-**Next:** TBD — directed by the project owner.
+**Next:** 82B — Cognitive Loop Stage Coverage Plan (not started)
 
 **Current guidance:**
 81A–81E cognitive runtime boundary and loop_trace work are stable.
 No further trace-only milestones are planned unless explicitly requested.
-82A has not started.
+82A complete (plan-only closure — no Build needed).
 
 ---
 
@@ -1662,4 +1662,67 @@ docs/THIN_INTERFACE_REFACTOR_PLAN.md:
 **Next recommended milestone:**
 - TBD — directed by project owner
 
-**81F reconciliation committed as `761c1eff`. Post-commit consistency patch pending.**
+**81F reconciliation committed as `761c1eff`. Consistency patch committed as `f169a98`.**
+
+
+### 82A — /chat Interface Boundary and Service Extraction Plan
+
+**Status:** Complete
+
+**Type:** Architectural decision / plan-only closure — no source code or tests modified.
+
+**Description:**
+Analyzed whether POST /chat should remain in `aether/interface/api_server.py`
+as an interface adapter, or be extracted into a dedicated service/module.
+
+**Decision:** Keep `/chat` in `api_server.py` as an intentional interface adapter.
+No source refactor needed.
+
+**Reason:**
+- `/chat` is mostly request/response adaptation (87 lines: input validation,
+  one call to `runtime.process_chat()`, response mapping).
+- `runtime.process_chat()` is already the true cognitive boundary — the endpoint
+  performs no cognitive logic.
+- `loop.run_core_chat_loop()` is the real core loop boundary — all reasoning,
+  perception, identity, risk, policy, and approval orchestration lives there.
+- Extracting `/chat` would add indirection (new service file, new import, new
+  call chain) without meaningful benefit — the endpoint is already thin.
+- `ChatRequest` and `ChatResponse` remain interface-layer models colocated
+  with their single endpoint.
+
+**Options evaluated:**
+- Option A: Keep as-is (recommended and adopted)
+- Option B: Extract response mapping into `aether/action/services/chat_service.py`
+- Option C: Extract response mapping into `aether/interface/services/chat_response_service.py`
+- Option D: Move into separate APIRouter module `aether/interface/cognitive_api.py`
+- Option E: Extract schemas into `aether/interface/schemas/chat.py`
+- Option F: Skip refactor, move to next cognitive capability
+
+**Not changed:**
+- No source files modified
+- No test files modified
+- No endpoint paths changed
+- No response contract changed
+- No `loop_trace` behavior changed
+- No trace persistence added
+- No tool execution added
+- No evidence collection added
+- No apply/rollback added
+
+**Verification:**
+- 81B contract tests: 11/11 passed
+- 81C observability tests: 10/10 passed
+- 81D hardening tests: 7/7 passed
+- Full pytest: 1375/1375 passed, 0 failures, 0 errors
+
+**Safety invariants maintained:**
+- All safety invariants from 81C–81E remain intact
+- No source code modified
+- No behavioral impact
+
+**Next recommended milestone:**
+- 82B — Cognitive Loop Stage Coverage Plan
+
+**82B status:** Not started
+
+**82A complete. No commit made.**
