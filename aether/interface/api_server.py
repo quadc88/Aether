@@ -222,14 +222,6 @@ from aether.action.services.patch_service import (
     handle_list_patch_rollbacks,
     handle_get_patch_rollback,
 )
-from aether.action.services.mutation_log_service import (
-    handle_record_mutation,
-    handle_record_milestone,
-    handle_mutation_log_status,
-    handle_list_mutations,
-    handle_summarize_mutations,
-    handle_get_mutation,
-)
 from aether.action.self_modification_cycle import create_self_modification_session, review_self_modification_session, dry_run_self_modification_session, apply_self_modification_session, rollback_self_modification_session, self_modification_status, list_self_modification_sessions, get_self_modification_session, summarize_self_modification_session
 from aether.action.changelog_exporter import export_public_changelog, export_milestone_report, export_private_changelog_report, changelog_export_status
 from aether.action.repair_planner import create_repair_plan, get_repair_plan, list_repair_plans, repair_plan_status, summarize_repair_plan
@@ -237,6 +229,7 @@ from aether.action.repair_bridge_selector import create_bridge_from_repair_plan,
 from aether.action.repair_workflow_tracker import trace_repair_workflow, get_repair_workflow_report, list_repair_workflow_reports, repair_workflow_status, summarize_repair_workflow
 from aether.action.repair_workflow_exporter import export_workflow_report, export_workflow_index, export_private_workflow_report, repair_workflow_export_status
 from aether.interface.routers.code_review_routes import code_review_router
+from aether.interface.routers.mutation_log_routes import mutation_log_router
 from aether.action.services.proposal_console_service import (
     handle_open_proposal_review_console,
     handle_submit_proposal_review,
@@ -278,6 +271,7 @@ app = FastAPI(
 )
 
 app.include_router(code_review_router, prefix="")
+app.include_router(mutation_log_router, prefix="")
 
 
 # ---- Identity Integrity Endpoints (Milestone 48A) ----
@@ -1498,18 +1492,6 @@ def get_action_patch_rollback_status():return handle_patch_rollback_status()
 def list_action_patch_rollbacks(apply_id:str|None=None,limit:int=50):return handle_list_patch_rollbacks(apply_id,limit)
 @app.get("/action/patch-rollback/{rollback_id}")
 def get_action_patch_rollback(rollback_id:str):return handle_get_patch_rollback(rollback_id)
-@app.post("/action/mutation-log/record")
-def record_action_mutation(request:MutationRecordRequest):return handle_record_mutation(request.mutation_type,request.title,request.summary,milestone=request.milestone,target_path=request.target_path,metadata=request.metadata)
-@app.post("/action/mutation-log/milestone-completed")
-def record_action_milestone(request:MilestoneCompletedRequest):return handle_record_milestone(request.milestone,request.summary,request.metadata)
-@app.get("/action/mutation-log/status")
-def get_action_mutation_status():return handle_mutation_log_status()
-@app.get("/action/mutation-log/list")
-def list_action_mutations(mutation_type:str|None=None,milestone:str|None=None,target_path:str|None=None,limit:int=50):return handle_list_mutations(mutation_type,milestone,target_path,limit)
-@app.get("/action/mutation-log/summary")
-def summarize_action_mutations(limit:int=100):return handle_summarize_mutations(limit)
-@app.get("/action/mutation-log/{mutation_id}")
-def get_action_mutation(mutation_id:str):return handle_get_mutation(mutation_id)
 @app.post("/action/self-modification/create")
 def create_self_modification(request:SelfModificationCreateRequest):return {"name":"Aether","session":create_self_modification_session(request.goal,request.target_path,request.proposed_change_summary,request.proposed_excerpt,request.reason,request.original_excerpt,request.create_approval_if_required,request.metadata)}
 @app.post("/action/self-modification/review")
