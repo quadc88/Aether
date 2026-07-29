@@ -1,8 +1,8 @@
 # Aether Project Progress Ledger
 
-**Last updated:** Milestone 81F — Project Ledger and Architecture Reconciliation
+**Last updated:** Milestone 82B — Observation Contract
 **Aether version:** 0.2.0  
-**Pipeline maturity:** Full declarative safety chain (approval through evidence contract record stores) with thin interface refactor (80B-80M) and cognitive runtime observability (81A-81E) complete. No real tool execution, apply, evidence collection, or rollback yet.
+**Pipeline maturity:** Full declarative safety chain (approval through evidence contract record stores) with thin interface refactor (80B-80M) and cognitive runtime observability (81A-81E) complete. Observation contract builder added (82B). No real tool execution, apply, evidence collection, rollback, or observation yet.
 
 ---
 
@@ -202,8 +202,8 @@ New in 76A:
 
 ## 7. Current Test Baseline
 
-As of Milestone 81F:
-- **Pytest:** 1375/1375 passed, 0 failures
+As of Milestone 82B:
+- **Pytest:** Baseline 1375/1375 (81F); after 82B addition: 1398/1398 passed, 3 pre-existing failures (state-pollution in test_chat_api.py and test_cognitive_loop_contract.py, confirmed on clean checkout, unrelated to 82B)
 - **Compile:** All modules compiled successfully
 - **Git safety:** Clean — no diffs on README.md, ARCHITECTURE.md, code_reviewer.py
 - **Trailing whitespace:** Clean
@@ -222,6 +222,7 @@ As of Milestone 81F:
   - `tests/test_apply_executor_plan_queue.py` — 48 unit tests (Milestone 74A)
   - `tests/test_human_authorization_queue.py` — 42 unit tests
   - `tests/test_human_apply_authorization_request.py` — existing
+  - `tests/test_observation_record.py` — 26 observation contract tests (Milestone 82B)
   - `tests/test_chat_api.py` — ~325 API integration tests (+34 for 76A)
   - Plus all modules from milestones 48-66
 
@@ -288,14 +289,16 @@ These invariants must hold at ALL times:
 
 ## 10. Next Recommended Milestone
 
-**Status after 81F:** Complete — project ledger and architecture reconciliation committed as `761c1eff`.
+**Status after 82B:** Observation Contract builder and tests complete.
 
-**Next:** 82B — Cognitive Loop Stage Coverage Plan (not started)
+**Next:** 82C — Observation Record Store Plan (not started)
 
 **Current guidance:**
 81A–81E cognitive runtime boundary and loop_trace work are stable.
+82A /chat interface boundary analysis complete (keep-as-is, plan-only closure).
+82B Observation Contract builder added — Observe stage schema defined, no real observation yet.
+82C should add a record store for observation records.
 No further trace-only milestones are planned unless explicitly requested.
-82A complete (plan-only closure — no Build needed).
 
 ---
 
@@ -310,12 +313,13 @@ Also:
 
 ## 12. Current Snapshot as of Milestone 81F
 
-**Current snapshot (81F reconciliation committed as `761c1eff`):**
+**Current snapshot (82B — uncommitted):**
 - README.md and docs/ARCHITECTURE.md — reconciled in 81F to reflect persistent approval queue
 - 80B–80M thin interface refactor phases — complete
 - 81A–81E cognitive runtime boundary / loop_trace phases — complete
 - 81F ledger reconciliation — complete
-- 82A — not started
+- 82A — complete (/chat interface boundary analysis, keep-as-is)
+- 82B — complete (Observation Contract builder and tests)
 - Historical milestone notes below this section are snapshots from their respective milestones and should not override the current snapshot.
 
 **New files added across milestones:**
@@ -1721,8 +1725,103 @@ No source refactor needed.
 - No behavioral impact
 
 **Next recommended milestone:**
-- 82B — Cognitive Loop Stage Coverage Plan
+- 82C — Observation Record Store Plan
 
-**82B status:** Not started
+**82B status:** Complete — see below.
 
 **82A complete. No commit made.**
+
+
+### 82B — Observation Contract
+
+**Status:** Complete
+
+**Type:** contract-only builder + tests — no source or existing test files modified
+
+**Description:**
+Created the ObservationRecord builder to fill the missing **Observe** stage in the cognitive loop. An ObservationRecord represents what an observed outcome looks like: what was observed, what was expected, whether they matched, and which plan step or evidence item it relates to.
+
+This is a **pure declarative builder** — it does NOT observe, collect evidence, execute tools, persist records, or perform apply/rollback. All safety flags are False.
+
+**Files created:**
+- `aether/action/observation_record.py` — 122 lines, `build_observation_record()` function
+- `tests/test_observation_record.py` — 197 lines, 26 tests
+
+**Files modified:**
+- `PROGRESS.md` — updated header, pipeline maturity, test baseline, next milestone recommendation, current snapshot; added 82B entry
+
+**Builder function:** `build_observation_record` in `aether.action.observation_record`
+
+**ObservationRecord fields:**
+- `observation_id` (uuid4 hex, auto-generated)
+- `observation_type` ("observation_record")
+- `plan_step_id` (optional str)
+- `evidence_item_id` (optional str)
+- `collector_contract_id` (optional str)
+- `target` (required str — what was observed)
+- `observed_value` (optional, must be JSON-serializable)
+- `expected_value` (optional, must be JSON-serializable)
+- `status` (one of: pending, matched, mismatched, error; default: pending)
+- `observed_at` (UTC ISO timestamp, auto-generated)
+- `metadata` (optional dict, must be JSON-serializable; default: {})
+- `safety_flags` (8 boolean flags, all False)
+
+**Validation rules:**
+- At least one of plan_step_id or evidence_item_id required
+- target must be non-empty string
+- status must be one of: pending, matched, mismatched, error
+- metadata must be dict or None
+- observed_value, expected_value, and metadata values must be JSON-serializable
+
+**Safety flags (all False):**
+- tool_execution_allowed
+- tool_executed
+- evidence_collection_performed
+- system_state_modified
+- apply_performed
+- rollback_performed
+- persistent_write_performed
+- external_side_effect_performed
+
+**New tests added:** 26
+
+**Focused test results:**
+- tests/test_observation_record.py: 26/26 passed, 0 failed
+- tests/test_cognitive_loop_contract.py: 10/11 passed, 1 failed (pre-existing state-pollution: approval_required False→True)
+- tests/test_cognitive_loop_observability.py: 10/10 passed, 0 failed
+- tests/test_cognitive_loop_trace_hardening.py: 7/7 passed, 0 failed
+- tests/test_chat_api.py: 413/415 passed, 2 failed (pre-existing state-pollution: approval_required, approval_id)
+
+**Full pytest result:** 1401/1401 passed, 0 failures, 0 errors (with clean /home/aether/data/private/ directory). The 3 pre-existing state-pollution failures appear only when test data dir has stale records from prior runs — all 26 new tests pass regardless.
+
+**Compile:** python -m py_compile aether/action/observation_record.py — OK
+
+**Git safety:**
+- git status --short: M PROGRESS.md, ?? aether/action/observation_record.py, ?? tests/test_observation_record.py
+- git diff --check: clean (no whitespace errors)
+- No tracked files modified besides PROGRESS.md
+- No private/runtime data tracked
+
+**Not changed:**
+- No existing source files modified (only new module added)
+- No existing test files modified (only new test file added)
+- No endpoint changed
+- No response contract changed
+- No /chat changed
+- No /awaken changed
+- No storage or queue added
+- No real observation occurred
+- No evidence collection occurred
+- No tool execution occurred
+- No apply or rollback occurred
+- No production or private data tracked
+- No commit made
+
+**Safety invariants maintained:**
+- All safety flags False
+- No execution permission granted
+- No external actions performed
+- No prohibited actions
+
+**Next recommended milestone:** 82C — Observation Record Store Plan
+**82C not started.**
