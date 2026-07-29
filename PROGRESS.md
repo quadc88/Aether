@@ -1,8 +1,8 @@
 # Aether Project Progress Ledger
 
-**Last updated:** Milestone 82B — Observation Contract
+**Last updated:** Milestone 82C — Interface API Model Extraction
 **Aether version:** 0.2.0  
-**Pipeline maturity:** Full declarative safety chain (approval through evidence contract record stores) with thin interface refactor (80B-80M) and cognitive runtime observability (81A-81E) complete. Observation contract builder added (82B). No real tool execution, apply, evidence collection, rollback, or observation yet.
+**Pipeline maturity:** Full declarative safety chain (approval through evidence contract record stores) with thin interface refactor (80B-80M) and cognitive runtime observability (81A-81E) complete. Observation contract builder added (82B). Interface API model extraction complete (82C). No real tool execution, apply, evidence collection, rollback, or observation yet.
 
 ---
 
@@ -202,9 +202,12 @@ New in 76A:
 
 ## 7. Current Test Baseline
 
-As of Milestone 82B:
-- **Pytest:** Baseline 1375/1375 (81F); after 82B addition: 1398/1398 passed, 3 pre-existing failures (state-pollution in test_chat_api.py and test_cognitive_loop_contract.py, confirmed on clean checkout, unrelated to 82B)
-- **Compile:** All modules compiled successfully
+As of Milestone 82C:
+- **Pytest:** Baseline 1401/1401 passed (82B); after 82C extraction: 1401/1401 passed, 0 failures, 0 errors
+- **Compile:** All modules compiled successfully (api_models.py + api_server.py)
+- **OpenAPI contract:** Exact match (300 paths, 103 schemas) before and after extraction
+- **Model count:** 121 BaseModel classes extracted from api_server.py to api_models.py
+- **File size:** api_server.py thinned from 2186 lines (113058 bytes) to 1694 lines (99158 bytes)
 - **Git safety:** Clean — no diffs on README.md, ARCHITECTURE.md, code_reviewer.py
 - **Trailing whitespace:** Clean
 - **Private/runtime paths:** Not tracked by git
@@ -224,6 +227,7 @@ As of Milestone 82B:
   - `tests/test_human_apply_authorization_request.py` — existing
   - `tests/test_observation_record.py` — 26 observation contract tests (Milestone 82B)
   - `tests/test_chat_api.py` — ~325 API integration tests (+34 for 76A)
+  - `aether/interface/api_models.py` — 121 extracted Pydantic models (Milestone 82C)
   - Plus all modules from milestones 48-66
 
 ---
@@ -289,15 +293,16 @@ These invariants must hold at ALL times:
 
 ## 10. Next Recommended Milestone
 
-**Status after 82B:** Observation Contract builder and tests complete.
+**Status after 82C:** Interface API model extraction complete — 121 BaseModel classes moved from api_server.py to api_models.py.
 
-**Next:** 82C — Observation Record Store Plan (not started)
+**Next:** 82D — Remaining Interface Action Import and Workflow Audit (not started)
 
 **Current guidance:**
 81A–81E cognitive runtime boundary and loop_trace work are stable.
 82A /chat interface boundary analysis complete (keep-as-is, plan-only closure).
 82B Observation Contract builder added — Observe stage schema defined, no real observation yet.
-82C should add a record store for observation records.
+82C Interface API model extraction complete — all Pydantic models moved to dedicated module.
+82D should audit the remaining direct action imports and patch/repair/guided workflow orchestration still located in api_server.py. Observation Record Store remains deferred to a later milestone.
 No further trace-only milestones are planned unless explicitly requested.
 
 ---
@@ -313,13 +318,14 @@ Also:
 
 ## 12. Current Snapshot as of Milestone 81F
 
-**Current snapshot (82B — uncommitted):**
+**Current snapshot (82C — uncommitted):**
 - README.md and docs/ARCHITECTURE.md — reconciled in 81F to reflect persistent approval queue
 - 80B–80M thin interface refactor phases — complete
 - 81A–81E cognitive runtime boundary / loop_trace phases — complete
 - 81F ledger reconciliation — complete
 - 82A — complete (/chat interface boundary analysis, keep-as-is)
 - 82B — complete (Observation Contract builder and tests)
+- 82C — complete (Interface API model extraction)
 - Historical milestone notes below this section are snapshots from their respective milestones and should not override the current snapshot.
 
 **New files added across milestones:**
@@ -343,7 +349,8 @@ Also:
 - `tests/test_cognitive_loop_trace_hardening.py` — 7 loop_trace hardening tests (Milestone 81D)
 
 **Modified files:**
-- `aether/interface/api_server.py` — API endpoints for all CRUD operations (updated with evidence-contract persistence and new record store endpoints)
+- `aether/interface/api_server.py` — API endpoints for all CRUD operations (thinned in 80B-80M, 81A, 82C); 121 models removed in 82C (2186→1694 lines)
+- `aether/interface/api_models.py` — new: 121 extracted Pydantic models (Milestone 82C)
 - `tests/test_chat_api.py` — API integration tests for each milestone (+34 tests for Milestone 76A)
 - `aether/core/loop.py` — added loop_trace construction (Milestone 81C)
 - `aether/core/loop_trace.py` — new: loop_trace helper (Milestone 81C)
@@ -1725,7 +1732,7 @@ No source refactor needed.
 - No behavioral impact
 
 **Next recommended milestone:**
-- 82C — Observation Record Store Plan
+- 82C — Interface API Model Extraction (supersedes original Observation Record Store plan)
 
 **82B status:** Complete — see below.
 
@@ -1823,5 +1830,45 @@ This is a **pure declarative builder** — it does NOT observe, collect evidence
 - No external actions performed
 - No prohibited actions
 
-**Next recommended milestone:** 82C — Observation Record Store Plan
-**82C not started.**
+**Next recommended milestone:** 82D — Remaining Interface Action Import and Workflow Audit
+**82D not started. Observation Record Store deferred.**
+
+
+### 82C — Interface API Model Extraction
+
+**Status:** Complete
+
+**Type:** structure-only refactor — all 121 inline Pydantic models extracted from `aether/interface/api_server.py` into `aether/interface/api_models.py`. Zero endpoint, contract, or runtime behavior changes.
+
+**Description:**
+Extracted all 121 `BaseModel` class definitions from `aether/interface/api_server.py` into a dedicated `aether/interface/api_models.py` module. This is a pure structural refactor — no field names, types, defaults, optionality, or order changed. The OpenAPI schema is identical before and after.
+
+**Files created (1):**
+- `aether/interface/api_models.py` — 121 Pydantic models (508 lines), organized by endpoint family with section comments, comma-style type annotations preserved identically to source
+
+**Files modified (1):**
+- `aether/interface/api_server.py` — removed all 121 `class X(BaseModel):` definitions; added explicit multi-line `from aether.interface.api_models import (...)` with all 121 model names sorted alphabetically
+
+**Models extracted:**
+121 total, organized into groups:
+- Chat & Core API: ChatRequest, ChatResponse
+- Working Memory: GoalRequest, MilestoneRequest, EpisodeWriteRequest
+- Memory & Search: SemanticSearchRequest, TimelineSearchRequest, GraphNodeRequest, GraphEdgeRequest, GraphSearchRequest, VerificationRequest
+- Approval: ApprovalCreateRequest, ApprovalDecisionRequest, ApprovalListRequest
+- Tool: ToolRegisterRequest, ToolSearchRequest, ToolPolicyUpdateRequest, ToolPlanRequest, ToolPlanListRequest, ToolExecutionRequest, ToolExecutionListRequest
+- Restricted File: RestrictedFileReadRequest, RestrictedFileAccessListRequest, RestrictedFileBrowseRequest, RestrictedFileSearchRequest, RestrictedFileBrowseListRequest, SelfInspectionRequest, SelfInspectionListRequest
+- Patch Proposal & Self-Modification: 87 models (PatchProposalRequest through MilestoneReportExportRequest)
+- Identity Integrity: InitializeIdentityGuardResponse, VerifyIdentityIntegrityResponse, IdentityIntegrityStatusResponse
+- Inline (scattered): ApprovalDecisionBody, ActionValidationBody, DryRunDecisionBody, SandboxContextBody, SimResultBody, SimResultDecisionBody, VerdictContextBody, VerdictDecisionBody, ApplyGateContextBody, ApplyGateDecisionBody, HumanAuthContextBody, HumanAuthDecisionBody, ApplyExecGateDecisionBody, EvidenceContractBody, EvidenceContractDecisionBody, EvidenceContractApproveBody, PlanDecisionBody, ApprovalIntentBody, SimPlanDecisionBody
+
+**Verification:**
+- Compile: `api_models.py` and `api_server.py` both compile successfully
+- FastAPI app import: 304 routes, load OK
+- OpenAPI comparison: exact match before/after (300 paths, 103 schemas)
+- Compatibility imports: `aether.interface.api_server` and `aether.interface.api_models` both import cleanly
+- Full pytest: 1401/1401 passed, 0 failures, 0 errors
+- AST verification: 0 BaseModel classes remaining in api_server.py
+- Size reduction: api_server.py 2186 lines (113058 bytes) → 1694 lines (99158 bytes); 492 lines / 13900 bytes removed
+- No test files modified
+- No runtime/private data modified
+- No commit made
