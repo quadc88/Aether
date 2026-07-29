@@ -193,6 +193,7 @@ from aether.interface.routers.mutation_log_routes import mutation_log_router
 from aether.interface.routers.proposal_console_routes import proposal_console_router
 from aether.interface.routers.file_routes import file_router
 from aether.interface.routers.patch_routes import patch_router
+from aether.interface.routers.approval_routes import approval_router
 from aether.action.approved_dry_run_gate import open_approved_dry_run_gate,execute_approved_dry_run,get_approved_dry_run_gate_record,list_approved_dry_run_gate_records,approved_dry_run_gate_status,summarize_approved_dry_run_gate
 from aether.action.dry_run_review_gate import open_dry_run_review_gate,submit_dry_run_review,get_dry_run_review_gate_record,list_dry_run_review_gate_records,dry_run_review_gate_status,summarize_dry_run_review_gate
 from aether.action.real_apply_approval_gate import open_real_apply_approval_gate,submit_real_apply_final_decision,get_real_apply_approval_gate_record,list_real_apply_approval_gate_records,real_apply_approval_gate_status,summarize_real_apply_approval_gate
@@ -218,6 +219,7 @@ app.include_router(mutation_log_router, prefix="")
 app.include_router(proposal_console_router, prefix="")
 app.include_router(file_router, prefix="")
 app.include_router(patch_router, prefix="")
+app.include_router(approval_router, prefix="")
 
 
 # ---- Identity Integrity Endpoints (Milestone 48A) ----
@@ -503,114 +505,24 @@ def create_verification_plan(request: VerificationRequest):
     return handle_create_verification_plan(request.text)
 
 
-from aether.action.services.approval_service import (
-    handle_action_approval_create,
-    handle_action_approval_status,
-    handle_list_action_approvals,
-    handle_get_action_approval,
-    handle_approve_action_approval,
-    handle_reject_action_approval,
-    handle_cancel_action_approval,
-)
 
 
-@app.post("/action/approval/create")
-def create_action_approval(request: ApprovalCreateRequest):
-    return handle_action_approval_create(
-        request_text=request.request_text,
-        proposed_action=request.proposed_action,
-        metadata=request.metadata,
-    )
-
-
-@app.get("/action/approval/status")
-def get_action_approval_status():
-    return handle_action_approval_status()
-
-
-@app.get("/action/approval/list")
-def list_action_approvals(status: str | None = None, limit: int = 50):
-    return handle_list_action_approvals(status=status, limit=limit)
-
-
-@app.get("/action/approval/{approval_id}")
-def get_action_approval(approval_id: str):
-    return handle_get_action_approval(approval_id)
-
-
-@app.post("/action/approval/approve")
-def approve_action_approval(request: ApprovalDecisionRequest):
-    return handle_approve_action_approval(request.approval_id, request.decision_reason)
-
-
-@app.post("/action/approval/reject")
-def reject_action_approval(request: ApprovalDecisionRequest):
-    return handle_reject_action_approval(request.approval_id, request.decision_reason)
-
-
-@app.post("/action/approval/cancel")
-def cancel_action_approval(request: ApprovalDecisionRequest):
-    return handle_cancel_action_approval(request.approval_id, request.decision_reason)
 
 
 # ===================================================================== #
 # Approval Queue Endpoints (Milestone 54A)
 # ===================================================================== #
 
-from aether.action.services.approval_service import (
-    handle_list_approvals,
-    handle_get_approval,
-    handle_approve_approval,
-    handle_reject_approval,
-    handle_cancel_approval,
-)
 
 
-@app.get("/approvals")
-def get_approvals(status: str | None = None, limit: int = 50):
-    return handle_list_approvals(status=status, limit=limit)
-
-
-@app.get("/approvals/{approval_id}")
-def get_approval(approval_id: str):
-    return handle_get_approval(approval_id)
-
-
-@app.post("/approvals/{approval_id}/approve")
-def approve_approval_record(approval_id: str, request: ApprovalDecisionBody | None = None):
-    reviewer = request.reviewer if request else None
-    reason = request.reason if request else None
-    return handle_approve_approval(approval_id, reviewer, reason)
-
-
-@app.post("/approvals/{approval_id}/reject")
-def reject_approval_record(approval_id: str, request: ApprovalDecisionBody | None = None):
-    reviewer = request.reviewer if request else None
-    reason = request.reason if request else None
-    return handle_reject_approval(approval_id, reviewer, reason)
-
-
-@app.post("/approvals/{approval_id}/cancel")
-def cancel_approval_record(approval_id: str, request: ApprovalDecisionBody | None = None):
-    reviewer = request.reviewer if request else None
-    reason = request.reason if request else None
-    return handle_cancel_approval(approval_id, reviewer, reason)
 
 
 # ===================================================================== #
 # Approval Decision Gate (Milestone 55A)
 # ===================================================================== #
 
-from aether.action.services.approval_service import (
-    handle_validate_action,
-)
 
 
-@app.post("/approvals/{approval_id}/validate-action")
-def validate_action_endpoint(approval_id: str, request: ActionValidationBody | None = None):
-    requested_action = request.requested_action if request else None
-    context = request.context if request else None
-    return handle_validate_action(approval_id, requested_action, context)
 
 
 # ===================================================================== #
