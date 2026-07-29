@@ -222,7 +222,14 @@ from aether.action.services.patch_service import (
     handle_list_patch_rollbacks,
     handle_get_patch_rollback,
 )
-from aether.action.mutation_log import record_mutation, record_milestone_completed, mutation_log_status, list_mutations, summarize_mutations, get_mutation
+from aether.action.services.mutation_log_service import (
+    handle_record_mutation,
+    handle_record_milestone,
+    handle_mutation_log_status,
+    handle_list_mutations,
+    handle_summarize_mutations,
+    handle_get_mutation,
+)
 from aether.action.self_modification_cycle import create_self_modification_session, review_self_modification_session, dry_run_self_modification_session, apply_self_modification_session, rollback_self_modification_session, self_modification_status, list_self_modification_sessions, get_self_modification_session, summarize_self_modification_session
 from aether.action.changelog_exporter import export_public_changelog, export_milestone_report, export_private_changelog_report, changelog_export_status
 from aether.action.code_reviewer import create_code_review, get_code_review, list_code_reviews, code_review_status, summarize_code_review
@@ -1474,17 +1481,17 @@ def list_action_patch_rollbacks(apply_id:str|None=None,limit:int=50):return hand
 @app.get("/action/patch-rollback/{rollback_id}")
 def get_action_patch_rollback(rollback_id:str):return handle_get_patch_rollback(rollback_id)
 @app.post("/action/mutation-log/record")
-def record_action_mutation(request:MutationRecordRequest):return {"name":"Aether","mutation":record_mutation(request.mutation_type,request.title,request.summary,milestone=request.milestone,target_path=request.target_path,metadata=request.metadata,source="manual")}
+def record_action_mutation(request:MutationRecordRequest):return handle_record_mutation(request.mutation_type,request.title,request.summary,milestone=request.milestone,target_path=request.target_path,metadata=request.metadata)
 @app.post("/action/mutation-log/milestone-completed")
-def record_action_milestone(request:MilestoneCompletedRequest):return {"name":"Aether","mutation":record_milestone_completed(request.milestone,request.summary,request.metadata)}
+def record_action_milestone(request:MilestoneCompletedRequest):return handle_record_milestone(request.milestone,request.summary,request.metadata)
 @app.get("/action/mutation-log/status")
-def get_action_mutation_status():return {"name":"Aether","mutation_log":mutation_log_status()}
+def get_action_mutation_status():return handle_mutation_log_status()
 @app.get("/action/mutation-log/list")
-def list_action_mutations(mutation_type:str|None=None,milestone:str|None=None,target_path:str|None=None,limit:int=50):return {"name":"Aether","mutations":list_mutations(mutation_type,milestone,target_path,limit)}
+def list_action_mutations(mutation_type:str|None=None,milestone:str|None=None,target_path:str|None=None,limit:int=50):return handle_list_mutations(mutation_type,milestone,target_path,limit)
 @app.get("/action/mutation-log/summary")
-def summarize_action_mutations(limit:int=100):return {"name":"Aether","summary":summarize_mutations(limit)}
+def summarize_action_mutations(limit:int=100):return handle_summarize_mutations(limit)
 @app.get("/action/mutation-log/{mutation_id}")
-def get_action_mutation(mutation_id:str):return {"name":"Aether","mutation":get_mutation(mutation_id)}
+def get_action_mutation(mutation_id:str):return handle_get_mutation(mutation_id)
 @app.post("/action/self-modification/create")
 def create_self_modification(request:SelfModificationCreateRequest):return {"name":"Aether","session":create_self_modification_session(request.goal,request.target_path,request.proposed_change_summary,request.proposed_excerpt,request.reason,request.original_excerpt,request.create_approval_if_required,request.metadata)}
 @app.post("/action/self-modification/review")

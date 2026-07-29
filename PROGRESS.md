@@ -1,8 +1,8 @@
 # Aether Project Progress Ledger
 
-**Last updated:** Milestone 82E — Patch Lifecycle Service Extraction
+**Last updated:** Milestone 82F — Mutation Log Service Extraction
 **Aether version:** 0.2.0  
-**Pipeline maturity:** Full declarative safety chain (approval through evidence contract record stores) with thin interface refactor (80B-80M) and cognitive runtime observability (81A-81E) complete. Observation contract builder added (82B). Interface API model extraction complete (82C). File and self-inspection service extraction complete (82D). Patch lifecycle service extraction complete (82E). No real tool execution, apply, evidence collection, rollback, or observation yet.
+**Pipeline maturity:** Full declarative safety chain (approval through evidence contract record stores) with thin interface refactor (80B-80M) and cognitive runtime observability (81A-81E) complete. Observation contract builder added (82B). Interface API model extraction complete (82C). File and self-inspection service extraction complete (82D). Patch lifecycle service extraction complete (82E). Mutation log service extraction complete (82F). No real tool execution, apply, evidence collection, rollback, or observation yet.
 
 ---
 
@@ -295,14 +295,14 @@ These invariants must hold at ALL times:
 
 **Status after 82C:** Interface API model extraction complete — 121 BaseModel classes moved from api_server.py to api_models.py.
 
-**Next:** 82F — Remaining Interface Action Import Audit / Mutation Log Extraction Plan (not started)
+**Next:** 82G — Code Review and Repair Workflow Service Plan (not started)
 
 **Current guidance:**
 81A–81E cognitive runtime boundary and loop_trace work are stable.
 82A /chat interface boundary analysis complete (keep-as-is, plan-only closure).
 82B Observation Contract builder added — Observe stage schema defined, no real observation yet.
 82C Interface API model extraction complete — all Pydantic models moved to dedicated module.
-82D File and self-inspection service extraction complete. 82E Patch lifecycle service extraction complete. 82F should plan remaining interface action import audit / mutation log extraction. Observation Record Store remains deferred.
+82D File and self-inspection service extraction complete. 82E Patch lifecycle service extraction complete. 82F Mutation log service extraction complete. 82G should plan code review and repair workflow service extraction. Observation Record Store remains deferred.
 No further trace-only milestones are planned unless explicitly requested.
 
 ---
@@ -1830,8 +1830,8 @@ This is a **pure declarative builder** — it does NOT observe, collect evidence
 - No external actions performed
 - No prohibited actions
 
-**Next recommended milestone:** 82F — Remaining Interface Action Import Audit / Mutation Log Extraction Plan
-**82E complete. Observation Record Store deferred.**
+**Next recommended milestone:** 82G — Code Review and Repair Workflow Service Plan
+**82F complete. Observation Record Store deferred.**
 
 
 ### 82C — Interface API Model Extraction
@@ -1980,3 +1980,53 @@ Extracted 17 endpoint handlers (5 patch-proposal, 4 patch-review, 4 patch-apply,
 - No Observation Record Store added
 - No runtime/private data modified
 - No commit made
+
+### 82F — Mutation Log Service Extraction
+
+**Status:** Complete
+
+**Type:** structure-only refactor — 6 mutation-log endpoint handlers extracted from `aether/interface/api_server.py` into `aether/action/services/mutation_log_service.py`. One direct action-module import (`mutation_log`) removed from `api_server.py`. Zero endpoint, contract, or runtime behavior changes.
+
+**Description:**
+Extracted 6 endpoint handlers (record, milestone-completed, status, list, summary, get) into `aether/action/services/mutation_log_service.py`. Each handler body reduced to a single-line `handle_*` call. The direct `from aether.action.mutation_log import` statement removed and replaced with import from `mutation_log_service`. The `handle_*` functions in `mutation_log_service.py` preserve the exact orchestration logic (response dict shape, parameter names/defaults, mutation log format).
+
+**Safety:**
+- Zero risk — mutation log writes only private data (`private/mutation_log/mutations.json`)
+- No source mutation capability
+- No apply/rollback calls
+- No real tool execution
+- 23 action modules that import `mutation_log` directly remain unaffected
+
+**Mutation log deferred from 82E** — cross-cutting concern now extracted in 82F.
+
+**Files created (1):**
+- `aether/action/services/mutation_log_service.py` — service module with 6 `handle_*` functions (59 lines, 1662 bytes)
+
+**Files modified (1):**
+- `aether/interface/api_server.py` — replaced 6 handler bodies with thin service calls; removed 1 direct action-module import; added import from `mutation_log_service`
+
+**Handler migration (6):**
+- record_action_mutation → handle_record_mutation
+- record_action_milestone → handle_record_milestone
+- get_action_mutation_status → handle_mutation_log_status
+- list_action_mutations → handle_list_mutations
+- summarize_action_mutations → handle_summarize_mutations
+- get_action_mutation → handle_get_mutation
+
+**Verification:**
+- Compile: `mutation_log_service.py` and `api_server.py` both compile successfully (`py_compile`)
+- FastAPI app import: 304 routes, 300 paths, 103 schemas — unchanged
+- OpenAPI comparison: exact match before/after
+- Import scan: zero remaining direct imports from `mutation_log` in api_server.py
+- Full pytest: 1401/1401 passed, 0 failures, 0 errors
+- Size: api_server.py 1773 lines (93220 bytes) → 1780 lines (93136 bytes); +7 lines, -84 bytes
+- No test files modified
+- No action module files modified
+- No api_models.py changes
+- No /chat or /awaken changes
+- No source mutation changes
+- No apply/rollback changes
+- No Observation Record Store added
+- No runtime/private data modified (same mutation log format/path)
+- No commit made
+- 82G not started
