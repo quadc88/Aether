@@ -1,6 +1,6 @@
 # Aether Project Progress Ledger
 
-**Last updated:** Milestone 81A — Cognitive Runtime Boundary Phase 1
+**Last updated:** Milestone 81B — End-to-End Cognitive Loop Contract Tests
 **Aether version:** 0.2.0  
 **Pipeline maturity:** Declarative Apply Executor Evidence Contract (prepared/blocked, no collection or execution)
 
@@ -192,8 +192,8 @@ New in 76A:
 
 ## 7. Current Test Baseline
 
-As of Milestone 80D:
-- **Pytest:** 1347/1347 passed, 0 failures
+As of Milestone 81B:
+- **Pytest:** 1358/1358 passed, 0 failures
 - **Compile:** All modules compiled successfully
 - **Git safety:** Clean — no diffs on README.md, ARCHITECTURE.md, code_reviewer.py
 - **Trailing whitespace:** Clean
@@ -275,13 +275,13 @@ These invariants must hold at ALL times:
 
 ## 10. Next Recommended Milestone
 
-**Milestone 80B — Thin Interface Refactor Phase 1 (Move Milestone 77-79 Orchestration)**
+**Milestone 81C — Cognitive Runtime Boundary Phase 2 (`/chat` service extraction)**
 
-Scope: Extract evidence_collection_plan endpoint, collection plan record CRUD, and collector_contract endpoint from `aether/interface/api_server.py` into a new `aether/action/services/collection_plan_service.py` module. Thin the route handlers to single service calls. No endpoint path, response shape, or behavior changes.
-
-No pipeline continuation under this refactor — this is structural only.
-
-**80B has NOT been started. 80A is plan-only.**
+The thin interface refactor series (80A–80M) and cognitive runtime boundary phase 1
+(81A) are complete. `/chat` remains the only thick endpoint (57-line response adapter
+with working-memory, timeline, and graph side effects). TBD: whether to extract `/chat`
+into a service module (following the 80A–80M pattern) or leave it as a thin adapter
+for the cognitive loop contract tests (81B) to lock behavior.
 
 ---
 
@@ -1287,3 +1287,67 @@ left untouched — it is already a thin response adapter.
 - 81B — End-to-End Cognitive Loop Verification Tests Plan
 
 **81A complete. No commit made.**
+
+
+### 81B — End-to-End Cognitive Loop Contract Tests
+
+**Status:** Complete
+
+**Description:**
+Created end-to-end contract tests for `POST /chat` to lock down the current
+response shape, observable side effects, and safety invariants before any
+future cognitive runtime changes. Tests-only milestone — no source code
+modified.
+
+**Scope (11 test methods / 10 test specifications):**
+
+1. `test_chat_safe_message_returns_full_contract` — verifies all 32 response
+   fields exist with correct types for safe input
+2. `test_chat_empty_input_returns_error_contract` — verifies error contract
+   (status="error", warnings populated, perception=None, memory/timeline not
+   recorded, response_text=None, response string present)
+3. `test_chat_high_risk_message_exposes_verification_and_approval_contract` —
+   verifies risk_level="high", approval_required=True, approval_id, approval_request,
+   approval_record present; verifies GET /approvals/{id} returns the record
+4. `test_chat_tool_like_request_suggests_tool_without_execution` — verifies
+   "search files" produces suggested_tool with tool_id while tool_execution_allowed
+   and tool_executed remain False
+5. `test_chat_safe_message_records_working_memory_events` — verifies
+   memory_recorded=True, working_memory_event_count>0, GET /memory/working has
+   chat_input and chat_response event types
+6. `test_chat_records_timeline_event` — verifies timeline_recorded=True,
+   GET /memory/timeline/list includes chat_input events
+7. `test_chat_accepts_session_id_and_metadata` — verifies session_id passthrough
+   in request/response
+8. `test_chat_safety_invariants_for_safe_input` — verifies tool_execution_allowed,
+   tool_executed, execution_allowed all False; no apply_id/rollback_id/execution_id
+9. `test_chat_safety_invariants_for_high_risk_input` — same safety invariants
+   for high-risk input
+10. `test_awaken_then_chat_preserves_identity_contract` — verifies POST /awaken
+    returns all 10 expected fields and subsequent POST /chat still has full contract
+11. `test_chat_no_apply_or_rollback_side_effects` — verifies tool_executed,
+    execution_allowed, tool_execution_allowed all False; no pipeline keys leaked
+
+**Files created (1):**
+- `tests/test_cognitive_loop_contract.py` — 11 test methods
+
+**Files modified:**
+- `PROGRESS.md` — added 81B entry, updated test baseline to 1358
+
+**Verification:**
+- New contract tests: 11/11 passed
+- Full pytest: 1358/1358 passed, 0 failures, 0 errors
+- No source code modified
+- No runtime/private data modified
+
+**Safety invariants maintained:**
+- No evidence collection performed
+- No apply or rollback executed
+- No tool execution invoked
+- No execution or apply authorization granted
+- No prohibited actions
+
+**Next recommended milestone:**
+- (TBD — cognitive runtime boundary series ongoing)
+
+**81B complete. No commit made.**
