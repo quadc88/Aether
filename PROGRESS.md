@@ -1,8 +1,15 @@
 # Aether Project Progress Ledger
 
-**Last updated:** Milestone 82Q Build — Dry Run + Sandbox Contract Router Extraction (not committed)
+**Last updated:** Milestone 82R Build — Simulation Plan + Simulation Result Router Extraction (complete locally, not committed)
 **Aether version:** 0.2.0  
-**Pipeline maturity:** Full declarative safety chain (approval through evidence contract record stores) with thin interface refactor (80B-80M) and cognitive runtime observability (81A-81E) complete. Observation contract builder added (82B). Interface API model extraction complete (82C). File and self-inspection service extraction complete (82D). Patch lifecycle service extraction complete (82E). Mutation log service extraction complete (82F). Proposal console service extraction complete (82G). Code review and review bridge service extraction complete (82H). Code review router extraction complete (82J). Mutation log router extraction complete (82K). Proposal console router extraction complete (82L). File router extraction complete (82N). Patch router extraction complete (82O). Approval router extraction complete (82P). Dry run and sandbox contract router extraction complete (82Q). No real tool execution, apply, evidence collection, rollback, or observation yet.
+**Current completed local milestone:** 82R Build — Simulation Plan + Simulation Result Router Extraction (not committed)
+**Current active milestone/module:** None; 82R validation complete and 82S has not started
+**Current status:** 82R Build complete locally, not committed, tagged, or pushed
+**Next milestone:** 82S — Remaining Router Extraction Plan
+**Test baseline:** 1401/1401 passed, 0 failures, 0 errors
+**Latest local tag:** `milestone-82Q-dry-run-router` at `1accb52`
+**Latest pushed GitHub/origin status:** `origin/main` at `1accb52` (`milestone-82Q-dry-run-router`); 82R is not pushed
+**Pipeline maturity:** Full declarative safety chain (approval through evidence contract record stores) with thin interface refactor (80B-80M) and cognitive runtime observability (81A-81E) complete. Observation contract builder added (82B). Interface API model extraction complete (82C). File and self-inspection service extraction complete (82D). Patch lifecycle service extraction complete (82E). Mutation log service extraction complete (82F). Proposal console service extraction complete (82G). Code review and review bridge service extraction complete (82H). Code review router extraction complete (82J). Mutation log router extraction complete (82K). Proposal console router extraction complete (82L). File router extraction complete (82N). Patch router extraction complete (82O). Approval router extraction complete (82P). Dry run and sandbox contract router extraction complete (82Q). Simulation plan and simulation result router extraction complete (82R). No real tool execution, apply, evidence collection, rollback, or observation yet.
 
 ---
 
@@ -2285,6 +2292,35 @@ Extracted 18 endpoint handlers (6 proposal-review-console, 6 proposal-revision-c
   - No apply behavior changes
   - No rollback behavior changes
   - No Observation Record Store
-  - Next: 82R — Remaining Router Extraction Plan
-  - 82R not started
-
+  - Superseded next-step status: 82R Build completed locally after the 82R planning artifact
+- 82R Build — Simulation Plan + Simulation Result Router Extraction
+  - Created aether/interface/routers/simulation_routes.py (69 lines, 2624 bytes)
+  - Moved 8 simulation-plan/result route definitions from api_server.py to simulation_routes.py
+  - Added app.include_router(simulation_router, prefix="")
+  - Removed both simulation_plan_service import blocks from api_server.py
+  - Removed simulation_result_service import block from api_server.py
+  - OpenAPI exact match
+  - OpenAPI path count unchanged: 300
+  - OpenAPI schema count unchanged: 103
+  - All 8 moved simulation paths present
+  - Operation IDs unchanged
+  - Full pytest 1401/1401 passed
+  - Raw len(app.routes) changed 227→220 due to include_router representation and is not the contract gate
+  - No /chat changes
+  - No /awaken changes
+  - No api_models.py changes
+  - No simulation_plan_service.py changes
+  - No simulation_result_service.py changes
+  - No service module changes
+  - No action module changes
+  - No test file changes
+  - No simulation behavior changes
+  - No side-effect behavior changes
+  - No manual simulation-plan endpoint invocation
+  - No manual simulation-result endpoint invocation
+  - No source mutation
+  - No apply/rollback
+  - No Observation Record Store
+  - Complete locally; not committed, tagged, or pushed
+  - Next: 82S — Remaining Router Extraction Plan
+  - 82S not started

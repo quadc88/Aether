@@ -94,16 +94,12 @@ from aether.interface.api_models import (
     RevisedProposalReviewLoopListRequest,
     RevisedProposalReviewOpenRequest,
     RevisedProposalReviewSubmitRequest,
-    SandboxContextBody,
     SelfInspectionListRequest,
     SelfInspectionRequest,
     SelfModificationActionRequest,
     SelfModificationCreateRequest,
     SelfModificationReviewRequest,
     SemanticSearchRequest,
-    SimPlanDecisionBody,
-    SimResultBody,
-    SimResultDecisionBody,
     TimelineSearchRequest,
     ToolExecutionListRequest,
     ToolExecutionRequest,
@@ -195,6 +191,7 @@ from aether.interface.routers.file_routes import file_router
 from aether.interface.routers.patch_routes import patch_router
 from aether.interface.routers.approval_routes import approval_router
 from aether.interface.routers.dry_run_routes import dry_run_router
+from aether.interface.routers.simulation_routes import simulation_router
 from aether.action.approved_dry_run_gate import open_approved_dry_run_gate,execute_approved_dry_run,get_approved_dry_run_gate_record,list_approved_dry_run_gate_records,approved_dry_run_gate_status,summarize_approved_dry_run_gate
 from aether.action.dry_run_review_gate import open_dry_run_review_gate,submit_dry_run_review,get_dry_run_review_gate_record,list_dry_run_review_gate_records,dry_run_review_gate_status,summarize_dry_run_review_gate
 from aether.action.real_apply_approval_gate import open_real_apply_approval_gate,submit_real_apply_final_decision,get_real_apply_approval_gate_record,list_real_apply_approval_gate_records,real_apply_approval_gate_status,summarize_real_apply_approval_gate
@@ -222,6 +219,7 @@ app.include_router(file_router, prefix="")
 app.include_router(patch_router, prefix="")
 app.include_router(approval_router, prefix="")
 app.include_router(dry_run_router, prefix="")
+app.include_router(simulation_router, prefix="")
 
 
 # ---- Identity Integrity Endpoints (Milestone 48A) ----
@@ -541,56 +539,6 @@ def create_verification_plan(request: VerificationRequest):
 
 
 
-
-
-# ===================================================================== #
-# Simulation Plan Endpoint (Milestone 59A)
-# ===================================================================== #
-
-from aether.action.services.simulation_plan_service import (
-    handle_simulation_plan_create,
-)
-
-
-@app.post("/dry-runs/{dry_run_id}/simulation-plan")
-def simulation_plan_endpoint(dry_run_id: str, request: SandboxContextBody | None = None):
-    context = request.context if request else None
-    return handle_simulation_plan_create(dry_run_id, context)
-
-
-# ===================================================================== #
-# Simulation Result Endpoints (Milestone 62A)
-# ===================================================================== #
-
-from aether.action.services.simulation_result_service import (
-    handle_simulation_result_create,
-    handle_list_simulation_results,
-    handle_get_simulation_result,
-    handle_cancel_simulation_result,
-)
-
-
-@app.post("/simulation-plans/{simulation_plan_id}/simulation-result")
-def simulation_result_endpoint(simulation_plan_id: str, request: SimResultBody | None = None):
-    context = request.context if request else None
-    return handle_simulation_result_create(simulation_plan_id, context)
-
-
-@app.get("/simulation-results")
-def list_simulation_results(status: str | None = None, limit: int = 50):
-    return handle_list_simulation_results(status=status, limit=limit)
-
-
-@app.get("/simulation-results/{simulation_result_id}")
-def get_simulation_result(simulation_result_id: str):
-    return handle_get_simulation_result(simulation_result_id)
-
-
-@app.post("/simulation-results/{simulation_result_id}/cancel")
-def cancel_simulation_result(simulation_result_id: str, request: SimResultDecisionBody | None = None):
-    reviewer = request.reviewer if request else None
-    reason = request.reason if request else None
-    return handle_cancel_simulation_result(simulation_result_id, reviewer, reason)
 
 
 # ===================================================================== #
@@ -1045,30 +993,6 @@ def approve_evidence_collection_plan_intent(id: str, request: ApprovalIntentBody
     reason = request.reason if request else None
     confirmations = request.confirmations if request else None
     return handle_approve_collection_plan_intent(id, reviewer, reason, confirmations)
-
-
-from aether.action.services.simulation_plan_service import (
-    handle_list_simulation_plans,
-    handle_get_simulation_plan,
-    handle_cancel_simulation_plan,
-)
-
-
-@app.get("/simulation-plans")
-def list_sim_plans(status: str | None = None, limit: int = 50):
-    return handle_list_simulation_plans(status=status, limit=limit)
-
-
-@app.get("/simulation-plans/{simulation_plan_id}")
-def get_sim_plan(simulation_plan_id: str):
-    return handle_get_simulation_plan(simulation_plan_id)
-
-
-@app.post("/simulation-plans/{simulation_plan_id}/cancel")
-def cancel_sim_plan(simulation_plan_id: str, request: SimPlanDecisionBody | None = None):
-    reviewer = request.reviewer if request else None
-    reason = request.reason if request else None
-    return handle_cancel_simulation_plan(simulation_plan_id, reviewer, reason)
 
 
 @app.get("/action/tools/status")
