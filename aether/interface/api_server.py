@@ -136,9 +136,6 @@ from aether.action.services.tool_execution_service import (
     handle_list_action_tool_executions as _handle_list_executions,
     handle_seed_action_sandbox_tools as _handle_seed_sandbox_tools,
 )
-from aether.action.services.verification_plan_service import (
-    handle_create_verification_plan,
-)
 from aether.action.services.runtime_lifecycle_service import (
     handle_awaken,
 )
@@ -184,6 +181,7 @@ from aether.interface.routers.verification_apply_gate_routes import verification
 from aether.interface.routers.authorization_execution_gate_routes import authorization_execution_gate_router
 from aether.interface.routers.executor_routes import executor_router
 from aether.interface.routers.evidence_routes import evidence_router
+from aether.interface.routers.verification_plan_routes import verification_plan_router
 from aether.action.approved_dry_run_gate import open_approved_dry_run_gate,execute_approved_dry_run,get_approved_dry_run_gate_record,list_approved_dry_run_gate_records,approved_dry_run_gate_status,summarize_approved_dry_run_gate
 from aether.action.dry_run_review_gate import open_dry_run_review_gate,submit_dry_run_review,get_dry_run_review_gate_record,list_dry_run_review_gate_records,dry_run_review_gate_status,summarize_dry_run_review_gate
 from aether.action.real_apply_approval_gate import open_real_apply_approval_gate,submit_real_apply_final_decision,get_real_apply_approval_gate_record,list_real_apply_approval_gate_records,real_apply_approval_gate_status,summarize_real_apply_approval_gate
@@ -216,6 +214,7 @@ app.include_router(verification_apply_gate_router, prefix="")
 app.include_router(authorization_execution_gate_router, prefix="")
 app.include_router(executor_router, prefix="")
 app.include_router(evidence_router, prefix="")
+app.include_router(verification_plan_router, prefix="")
 
 
 # ---- Identity Integrity Endpoints (Milestone 48A) ----
@@ -494,15 +493,6 @@ def seed_graph_memory():
 @app.post("/verification/classify")
 def classify_verification_risk(request: VerificationRequest):
     return {"name": "Aether", "status": runtime.status(), "classification": classify_risk(request.text)}
-
-
-@app.post("/verification/plan")
-def create_verification_plan(request: VerificationRequest):
-    return handle_create_verification_plan(request.text)
-
-
-
-
 
 
 # ===================================================================== #
