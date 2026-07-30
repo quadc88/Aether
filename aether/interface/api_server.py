@@ -40,8 +40,6 @@ from aether.interface.api_models import (
     GuidedRepairIntakeReportExportRequest,
     GuidedRepairPlanLaunchRequest,
     GuidedRepairPlanLauncherListRequest,
-    HumanAuthContextBody,
-    HumanAuthDecisionBody,
     IdentityIntegrityStatusResponse,
     InitializeIdentityGuardResponse,
     MilestoneCompletedRequest,
@@ -189,6 +187,7 @@ from aether.interface.routers.approval_routes import approval_router
 from aether.interface.routers.dry_run_routes import dry_run_router
 from aether.interface.routers.simulation_routes import simulation_router
 from aether.interface.routers.verification_apply_gate_routes import verification_apply_gate_router
+from aether.interface.routers.authorization_execution_gate_routes import authorization_execution_gate_router
 from aether.action.approved_dry_run_gate import open_approved_dry_run_gate,execute_approved_dry_run,get_approved_dry_run_gate_record,list_approved_dry_run_gate_records,approved_dry_run_gate_status,summarize_approved_dry_run_gate
 from aether.action.dry_run_review_gate import open_dry_run_review_gate,submit_dry_run_review,get_dry_run_review_gate_record,list_dry_run_review_gate_records,dry_run_review_gate_status,summarize_dry_run_review_gate
 from aether.action.real_apply_approval_gate import open_real_apply_approval_gate,submit_real_apply_final_decision,get_real_apply_approval_gate_record,list_real_apply_approval_gate_records,real_apply_approval_gate_status,summarize_real_apply_approval_gate
@@ -218,6 +217,7 @@ app.include_router(approval_router, prefix="")
 app.include_router(dry_run_router, prefix="")
 app.include_router(simulation_router, prefix="")
 app.include_router(verification_apply_gate_router, prefix="")
+app.include_router(authorization_execution_gate_router, prefix="")
 
 
 # ---- Identity Integrity Endpoints (Milestone 48A) ----
@@ -537,119 +537,6 @@ def create_verification_plan(request: VerificationRequest):
 
 
 
-
-
-# ===================================================================== #
-# Human Apply Authorization Request Endpoint (Milestone 67A, 68A)
-# ===================================================================== #
-
-from aether.action.services.human_authorization_service import (
-    handle_human_authorization_create,
-    handle_list_human_authorizations,
-    handle_get_human_authorization,
-    handle_cancel_human_authorization,
-    handle_reject_human_authorization,
-    handle_approve_intent_human_authorization,
-)
-
-
-@app.post("/apply-gates/{apply_gate_id}/human-authorization-request")
-def apply_gate_human_authorization_request_endpoint(apply_gate_id: str, request: HumanAuthContextBody | None = None):
-    context = request.context if request else None
-    return handle_human_authorization_create(apply_gate_id, context)
-
-
-@app.get("/human-authorizations")
-def list_human_authorizations(status: str | None = None, decision: str | None = None, limit: int = 50):
-    return handle_list_human_authorizations(status, decision, limit)
-
-
-@app.get("/human-authorizations/{human_authorization_id}")
-def get_human_authorization(human_authorization_id: str):
-    return handle_get_human_authorization(human_authorization_id)
-
-
-@app.post("/human-authorizations/{human_authorization_id}/cancel")
-def cancel_human_authorization(human_authorization_id: str, request: HumanAuthDecisionBody | None = None):
-    reviewer = request.reviewer if request else None
-    reason = request.reason if request else None
-    return handle_cancel_human_authorization(human_authorization_id, reviewer, reason)
-
-
-@app.post("/human-authorizations/{human_authorization_id}/reject")
-def reject_human_authorization(human_authorization_id: str, request: HumanAuthDecisionBody | None = None):
-    reviewer = request.reviewer if request else None
-    reason = request.reason if request else None
-    return handle_reject_human_authorization(human_authorization_id, reviewer, reason)
-
-
-@app.post("/human-authorizations/{human_authorization_id}/approve-intent")
-def approve_intent_human_authorization(human_authorization_id: str, request: HumanAuthDecisionBody | None = None):
-    reviewer = request.reviewer if request else None
-    reason = request.reason if request else None
-    confirmations = request.confirmations if request else None
-    return handle_approve_intent_human_authorization(human_authorization_id, reviewer, reason, confirmations)
-
-
-# ===================================================================== #
-# Apply Execution Gate Request Endpoint (Milestone 69A)
-# ===================================================================== #
-
-from aether.action.services.apply_execution_gate_service import (
-    handle_apply_execution_gate_create,
-    handle_list_apply_execution_gates,
-    handle_get_apply_execution_gate,
-    handle_cancel_apply_execution_gate,
-    handle_reject_apply_execution_gate,
-    handle_approve_execution_intent,
-)
-
-
-@app.post("/human-authorizations/{human_authorization_id}/apply-execution-gate-request")
-def human_auth_apply_execution_gate_request_endpoint(human_authorization_id: str, request: HumanAuthContextBody | None = None):
-    context = request.context if request else None
-    return handle_apply_execution_gate_create(human_authorization_id, context)
-
-
-# ===================================================================== #
-# Apply Execution Gate Record Store Endpoints (Milestone 70A)
-# ===================================================================== #
-
-
-@app.get("/apply-execution-gates")
-def list_apply_execution_gates(
-    status: str | None = None,
-    decision: str | None = None,
-    limit: int = 50,
-):
-    return handle_list_apply_execution_gates(status, decision, limit)
-
-
-@app.get("/apply-execution-gates/{apply_execution_gate_id}")
-def get_apply_execution_gate(apply_execution_gate_id: str):
-    return handle_get_apply_execution_gate(apply_execution_gate_id)
-
-
-@app.post("/apply-execution-gates/{apply_execution_gate_id}/cancel")
-def cancel_apply_execution_gate(apply_execution_gate_id: str, request: ApplyExecGateDecisionBody | None = None):
-    reviewer = request.reviewer if request else None
-    reason = request.reason if request else None
-    return handle_cancel_apply_execution_gate(apply_execution_gate_id, reviewer, reason)
-
-
-@app.post("/apply-execution-gates/{apply_execution_gate_id}/reject")
-def reject_apply_execution_gate(apply_execution_gate_id: str, request: ApplyExecGateDecisionBody | None = None):
-    reviewer = request.reviewer if request else None
-    reason = request.reason if request else None
-    return handle_reject_apply_execution_gate(apply_execution_gate_id, reviewer, reason)
-
-
-@app.post("/apply-execution-gates/{apply_execution_gate_id}/approve-execution-intent")
-def approve_execution_intent_apply_gate(apply_execution_gate_id: str, request: ApplyExecGateDecisionBody | None = None):
-    reviewer = request.reviewer if request else None
-    reason = request.reason if request else None
-    confirmations = request.confirmations if request else None
-    return handle_approve_execution_intent(apply_execution_gate_id, reviewer, reason, confirmations)
 
 
 # ===================================================================== #

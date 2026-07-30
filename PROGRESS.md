@@ -1,15 +1,15 @@
 # Aether Project Progress Ledger
 
-**Last updated:** Milestone 82S Build — Verification Verdict + Apply Gate Router Extraction (complete locally, not committed)
+**Last updated:** Milestone 82T Build — Human Authorization + Apply Execution Gate Router Extraction (complete locally, not committed)
 **Aether version:** 0.2.0  
-**Current completed local milestone:** 82S Build — Verification Verdict + Apply Gate Router Extraction (not committed)
-**Current active milestone/module:** None; 82S validation complete and 82T has not started
-**Current status:** 82S Build complete locally, not committed, tagged, or pushed
-**Next milestone:** 82T — Remaining Router Extraction Plan
+**Current completed local milestone:** 82T Build — Human Authorization + Apply Execution Gate Router Extraction (not committed)
+**Current active milestone/module:** None; 82T validation complete and 82U has not started
+**Current status:** 82T Build complete locally, not committed, tagged, or pushed
+**Next milestone:** 82U — Remaining Router Extraction Plan
 **Test baseline:** 1401/1401 passed, 0 failures, 0 errors
-**Latest local tag:** `milestone-82R-simulation-router` at `1b6b0d7`
-**Latest pushed GitHub/origin status:** `origin/main` at `1b6b0d7` (`milestone-82R-simulation-router`); 82S is not pushed
-**Pipeline maturity:** Full declarative safety chain (approval through evidence contract record stores) with thin interface refactor (80B-80M) and cognitive runtime observability (81A-81E) complete. Observation contract builder added (82B). Interface API model extraction complete (82C). File and self-inspection service extraction complete (82D). Patch lifecycle service extraction complete (82E). Mutation log service extraction complete (82F). Proposal console service extraction complete (82G). Code review and review bridge service extraction complete (82H). Code review router extraction complete (82J). Mutation log router extraction complete (82K). Proposal console router extraction complete (82L). File router extraction complete (82N). Patch router extraction complete (82O). Approval router extraction complete (82P). Dry run and sandbox contract router extraction complete (82Q). Simulation plan and simulation result router extraction complete (82R). Verification verdict and apply gate router extraction complete (82S). No real tool execution, apply, evidence collection, rollback, or observation yet.
+**Latest local tag:** `milestone-82S-verification-apply-gate-router` at `3f06269`
+**Latest pushed GitHub/origin status:** `origin/main` at `3f06269` (`milestone-82S-verification-apply-gate-router`); 82T is not pushed
+**Pipeline maturity:** Full declarative safety chain (approval through evidence contract record stores) with thin interface refactor (80B-80M) and cognitive runtime observability (81A-81E) complete. Observation contract builder added (82B). Interface API model extraction complete (82C). File and self-inspection service extraction complete (82D). Patch lifecycle service extraction complete (82E). Mutation log service extraction complete (82F). Proposal console service extraction complete (82G). Code review and review bridge service extraction complete (82H). Code review router extraction complete (82J). Mutation log router extraction complete (82K). Proposal console router extraction complete (82L). File router extraction complete (82N). Patch router extraction complete (82O). Approval router extraction complete (82P). Dry run and sandbox contract router extraction complete (82Q). Simulation plan and simulation result router extraction complete (82R). Verification verdict and apply gate router extraction complete (82S). Human authorization and apply execution gate router extraction complete (82T). No real tool execution, apply, evidence collection, rollback, or observation yet.
 
 ---
 
@@ -2354,6 +2354,41 @@ Extracted 18 endpoint handlers (6 proposal-review-console, 6 proposal-revision-c
   - No tool execution
   - No apply/rollback
   - No Observation Record Store
+  - Committed, tagged, and pushed as milestone-82S-verification-apply-gate-router at 3f06269
+  - Superseded next-step status: 82T Build completed locally after the 82T planning artifact
+- 82T Build — Human Authorization + Apply Execution Gate Router Extraction
+  - Created aether/interface/routers/authorization_execution_gate_routes.py (110 lines, 5107 bytes)
+  - Moved 12 human-authorization/apply-execution-gate route definitions from api_server.py to authorization_execution_gate_routes.py
+  - Added app.include_router(authorization_execution_gate_router, prefix="")
+  - Removed human_authorization_service import block from api_server.py
+  - Removed apply_execution_gate_service import block from api_server.py
+  - Removed HumanAuthContextBody and HumanAuthDecisionBody imports from api_server.py after confirming they were unused there
+  - Retained ApplyExecGateDecisionBody in api_server.py because executor contract and executor plan routes still require it
+  - OpenAPI exact match
+  - OpenAPI path count unchanged: 300
+  - OpenAPI schema count unchanged: 103
+  - All 12 moved paths present
+  - Operation IDs unchanged
+  - Full pytest 1401/1401 passed
+  - Raw len(app.routes) changed 213→202 due to include_router representation and is not the contract gate
+  - No /chat changes
+  - No /awaken changes
+  - No api_models.py changes
+  - No human_authorization_service.py changes
+  - No apply_execution_gate_service.py changes
+  - No service module changes
+  - No action module changes
+  - No test file changes
+  - No authorization behavior changes
+  - No apply-execution-gate behavior changes
+  - No persistence behavior changes
+  - No side-effect behavior changes
+  - No manual human-authorization endpoint invocation
+  - No manual apply-execution-gate endpoint invocation
+  - No source mutation
+  - No tool execution
+  - No apply/rollback
+  - No Observation Record Store
   - Complete locally; not committed, tagged, or pushed
-  - Next: 82T — Remaining Router Extraction Plan
-  - 82T not started
+  - Next: 82U — Remaining Router Extraction Plan
+  - 82U not started
