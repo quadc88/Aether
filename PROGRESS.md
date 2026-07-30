@@ -1,15 +1,15 @@
 # Aether Project Progress Ledger
 
-**Last updated:** Milestone 82U Build — Executor Contract + Executor Plan Router Extraction (complete locally, not committed)
+**Last updated:** Milestone 82V Build — Evidence Contract + Collection Plan Router Extraction (complete locally, not committed)
 **Aether version:** 0.2.0  
-**Current completed local milestone:** 82U Build — Executor Contract + Executor Plan Router Extraction (not committed)
-**Current active milestone/module:** None; 82U validation complete and 82V has not started
-**Current status:** 82U Build complete locally, not committed, tagged, or pushed
-**Next milestone:** 82V — Remaining Router Extraction Plan
+**Current completed local milestone:** 82V Build — Evidence Contract + Collection Plan Router Extraction (not committed)
+**Current active milestone/module:** None; 82V validation complete and 82W has not started
+**Current status:** 82V Build complete locally, not committed, tagged, or pushed
+**Next milestone:** 82W — Remaining Router Extraction Plan
 **Test baseline:** 1401/1401 passed, 0 failures, 0 errors
-**Latest local tag:** `milestone-82T-authorization-execution-gate-router` at `84d17b6`
-**Latest pushed GitHub/origin status:** `origin/main` at `84d17b6` (`milestone-82T-authorization-execution-gate-router`); 82U is not pushed
-**Pipeline maturity:** Full declarative safety chain (approval through evidence contract record stores) with thin interface refactor (80B-80M) and cognitive runtime observability (81A-81E) complete. Observation contract builder added (82B). Interface API model extraction complete (82C). File and self-inspection service extraction complete (82D). Patch lifecycle service extraction complete (82E). Mutation log service extraction complete (82F). Proposal console service extraction complete (82G). Code review and review bridge service extraction complete (82H). Code review router extraction complete (82J). Mutation log router extraction complete (82K). Proposal console router extraction complete (82L). File router extraction complete (82N). Patch router extraction complete (82O). Approval router extraction complete (82P). Dry run and sandbox contract router extraction complete (82Q). Simulation plan and simulation result router extraction complete (82R). Verification verdict and apply gate router extraction complete (82S). Human authorization and apply execution gate router extraction complete (82T). Executor contract and executor plan router extraction complete (82U). No real tool execution, apply, evidence collection, rollback, or observation yet.
+**Latest local tag:** `milestone-82U-executor-router` at `8864e27`
+**Latest pushed GitHub/origin status:** `origin/main` at `8864e27` (`milestone-82U-executor-router`); 82V is not pushed
+**Pipeline maturity:** Full declarative safety chain (approval through evidence contract record stores) with thin interface refactor (80B-80M) and cognitive runtime observability (81A-81E) complete. Observation contract builder added (82B). Interface API model extraction complete (82C). File and self-inspection service extraction complete (82D). Patch lifecycle service extraction complete (82E). Mutation log service extraction complete (82F). Proposal console service extraction complete (82G). Code review and review bridge service extraction complete (82H). Code review router extraction complete (82J). Mutation log router extraction complete (82K). Proposal console router extraction complete (82L). File router extraction complete (82N). Patch router extraction complete (82O). Approval router extraction complete (82P). Dry run and sandbox contract router extraction complete (82Q). Simulation plan and simulation result router extraction complete (82R). Verification verdict and apply gate router extraction complete (82S). Human authorization and apply execution gate router extraction complete (82T). Executor contract and executor plan router extraction complete (82U). Evidence contract and collection plan router extraction complete (82V). No real tool execution, apply, evidence collection, rollback, or observation yet.
 
 ---
 
@@ -2426,6 +2426,45 @@ Extracted 18 endpoint handlers (6 proposal-review-console, 6 proposal-revision-c
   - No tool execution
   - No apply/rollback
   - No Observation Record Store
+  - Committed, tagged, and pushed as milestone-82U-executor-router at 8864e27
+  - Superseded next-step status: 82V Build completed locally after the 82V planning artifact
+- 82V Build — Evidence Contract + Collection Plan Router Extraction
+  - Created aether/interface/routers/evidence_routes.py (145 lines, 5893 bytes)
+  - Moved 13 evidence-contract/collection-plan route definitions from api_server.py to evidence_routes.py
+  - Added app.include_router(evidence_router, prefix="")
+  - Removed evidence_contract_service import block from api_server.py
+  - Removed collection_plan_service import block from api_server.py
+  - Removed EvidenceContractBody, EvidenceContractDecisionBody, EvidenceContractApproveBody, PlanDecisionBody, and ApprovalIntentBody from api_server.py after confirming they were unused there
+  - Verification, tool, memory, self-modification, repair, /chat, and /awaken routes remain in api_server.py
+  - OpenAPI exact match
+  - OpenAPI path count unchanged: 300
+  - OpenAPI schema count unchanged: 103
+  - All 13 moved paths present
+  - Operation IDs unchanged
+  - Full pytest 1401/1401 passed
+  - Raw len(app.routes) changed 191→179 due to include_router representation and is not the contract gate
+  - api_server.py reduced from 1041 lines / 58461 bytes to 891 lines / 52468 bytes
+  - No /chat changes
+  - No /awaken changes
+  - No api_models.py changes
+  - No evidence_contract_service.py changes
+  - No collection_plan_service.py changes
+  - No service module changes
+  - No action module changes
+  - No test file changes
+  - No evidence-contract behavior changes
+  - No collection-plan behavior changes
+  - No collector-contract behavior changes
+  - No persistence behavior changes
+  - No side-effect behavior changes
+  - No evidence collection behavior changes
+  - No manual evidence-contract endpoint invocation
+  - No manual collection-plan endpoint invocation
+  - No manual collector-contract endpoint invocation
+  - No source mutation
+  - No tool execution
+  - No apply/rollback
+  - No Observation Record Store
   - Complete locally; not committed, tagged, or pushed
-  - Next: 82V — Remaining Router Extraction Plan
-  - 82V not started
+  - Next: 82W — Remaining Router Extraction Plan
+  - 82W not started

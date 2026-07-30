@@ -4,7 +4,6 @@ from aether.interface.api_models import (
     ApprovalCreateRequest,
     ApprovalDecisionBody,
     ApprovalDecisionRequest,
-    ApprovalIntentBody,
     ApprovalListRequest,
     ApprovedDryRunExecuteRequest,
     ApprovedDryRunGateOpenRequest,
@@ -16,9 +15,6 @@ from aether.interface.api_models import (
     DryRunReviewGateOpenRequest,
     DryRunReviewSubmitRequest,
     EpisodeWriteRequest,
-    EvidenceContractApproveBody,
-    EvidenceContractBody,
-    EvidenceContractDecisionBody,
     FinalRealApplyExecuteRequest,
     FinalRealApplyExecutorListRequest,
     FinalRealApplyExecutorOpenRequest,
@@ -45,7 +41,6 @@ from aether.interface.api_models import (
     MilestoneReportExportRequest,
     MilestoneRequest,
     MutationRecordRequest,
-    PlanDecisionBody,
     PostApplyVerificationGateListRequest,
     PostApplyVerificationGateOpenRequest,
     PostApplyVerificationSubmitRequest,
@@ -188,6 +183,7 @@ from aether.interface.routers.simulation_routes import simulation_router
 from aether.interface.routers.verification_apply_gate_routes import verification_apply_gate_router
 from aether.interface.routers.authorization_execution_gate_routes import authorization_execution_gate_router
 from aether.interface.routers.executor_routes import executor_router
+from aether.interface.routers.evidence_routes import evidence_router
 from aether.action.approved_dry_run_gate import open_approved_dry_run_gate,execute_approved_dry_run,get_approved_dry_run_gate_record,list_approved_dry_run_gate_records,approved_dry_run_gate_status,summarize_approved_dry_run_gate
 from aether.action.dry_run_review_gate import open_dry_run_review_gate,submit_dry_run_review,get_dry_run_review_gate_record,list_dry_run_review_gate_records,dry_run_review_gate_status,summarize_dry_run_review_gate
 from aether.action.real_apply_approval_gate import open_real_apply_approval_gate,submit_real_apply_final_decision,get_real_apply_approval_gate_record,list_real_apply_approval_gate_records,real_apply_approval_gate_status,summarize_real_apply_approval_gate
@@ -219,6 +215,7 @@ app.include_router(simulation_router, prefix="")
 app.include_router(verification_apply_gate_router, prefix="")
 app.include_router(authorization_execution_gate_router, prefix="")
 app.include_router(executor_router, prefix="")
+app.include_router(evidence_router, prefix="")
 
 
 # ---- Identity Integrity Endpoints (Milestone 48A) ----
@@ -538,153 +535,6 @@ def create_verification_plan(request: VerificationRequest):
 
 
 
-
-
-# ===================================================================== #
-# Apply Executor Evidence Contract (Milestone 75A)
-# ===================================================================== #
-from aether.action.services.collection_plan_service import (
-    handle_evidence_collection_plan_create,
-    handle_list_collection_plans,
-    handle_get_collection_plan,
-    handle_reject_collection_plan,
-    handle_cancel_collection_plan,
-    handle_approve_collection_plan_intent,
-    handle_collector_contract_create,
-)
-
-from aether.action.services.evidence_contract_service import (
-    handle_evidence_contract_create,
-    handle_list_evidence_contracts,
-    handle_get_evidence_contract,
-    handle_cancel_evidence_contract,
-    handle_reject_evidence_contract,
-    handle_approve_evidence_contract_intent,
-)
-
-
-@app.post("/apply-executor-plans/{apply_executor_plan_id}/evidence-contract")
-def apply_executor_evidence_contract(
-    apply_executor_plan_id: str, request: EvidenceContractBody | None = None,
-):
-    context = request.context if request and request.context else None
-    return handle_evidence_contract_create(apply_executor_plan_id, context)
-
-
-# ===================================================================== #
-# Apply Executor Evidence Contract Record Store (Milestone 76A)
-# ===================================================================== #
-
-
-@app.get("/apply-executor-evidence-contracts")
-def list_apply_executor_evidence_contracts(
-    status: str | None = None,
-    decision: str | None = None,
-    limit: int = 50,
-):
-    return handle_list_evidence_contracts(status, decision, limit)
-
-
-@app.get("/apply-executor-evidence-contracts/{apply_executor_evidence_contract_id}")
-def get_apply_executor_evidence_contract(apply_executor_evidence_contract_id: str):
-    return handle_get_evidence_contract(apply_executor_evidence_contract_id)
-
-
-@app.post("/apply-executor-evidence-contracts/{apply_executor_evidence_contract_id}/cancel")
-def cancel_apply_executor_evidence_contract(
-    apply_executor_evidence_contract_id: str,
-    request: EvidenceContractDecisionBody | None = None,
-):
-    reviewer = request.reviewer if request else None
-    reason = request.reason if request else None
-    return handle_cancel_evidence_contract(apply_executor_evidence_contract_id, reviewer, reason)
-
-
-@app.post("/apply-executor-evidence-contracts/{apply_executor_evidence_contract_id}/reject")
-def reject_apply_executor_evidence_contract(
-    apply_executor_evidence_contract_id: str,
-    request: EvidenceContractDecisionBody | None = None,
-):
-    reviewer = request.reviewer if request else None
-    reason = request.reason if request else None
-    return handle_reject_evidence_contract(apply_executor_evidence_contract_id, reviewer, reason)
-
-
-@app.post("/apply-executor-evidence-contracts/{apply_executor_evidence_contract_id}/approve-evidence-contract-intent")
-def approve_evidence_contract_intent(
-    apply_executor_evidence_contract_id: str,
-    request: EvidenceContractApproveBody,
-):
-    return handle_approve_evidence_contract_intent(
-        apply_executor_evidence_contract_id,
-        reviewer=request.reviewer,
-        reason=request.reason,
-        confirmations=request.confirmations,
-    )
-
-
-@app.post("/apply-executor-evidence-contracts/{apply_executor_evidence_contract_id}/evidence-collection-plan")
-def evidence_collection_plan(
-    apply_executor_evidence_contract_id: str,
-    request: EvidenceContractBody | None = None,
-):
-    """Build an apply executor evidence collection plan from an evidence contract record.
-
-    This endpoint creates a structured evidence collection plan object without
-    collecting evidence or authorizing execution per Milestone 77A safety.
-    """
-    context = request.context if request and request.context else None
-    return handle_evidence_collection_plan_create(apply_executor_evidence_contract_id, context)
-
-
-@app.post("/apply-executor-evidence-collection-plans/{id}/collector-contract")
-def collector_contract(id: str, request: dict | None = None):
-    """Build an apply executor evidence collector contract from a collection plan record.
-
-    This endpoint returns a structured collector contract without collecting evidence,
-    authorizing execution, or modifying state per Milestone 79A safety.
-    """
-    context = request.get("context") if request and request.get("context") else None
-    return handle_collector_contract_create(id, context)
-
-
-# New endpoints for evidence collection plan (Milestone 78A)
-
-
-@app.get("/apply-executor-evidence-collection-plans")
-def list_evidence_collection_plans(
-    status: str | None = None,
-    decision: str | None = None,
-    limit: int = 50,
-):
-    return handle_list_collection_plans(status, decision, limit)
-
-
-@app.get("/apply-executor-evidence-collection-plans/{id}")
-def get_evidence_collection_plan(id: str):
-    return handle_get_collection_plan(id)
-
-
-@app.post("/apply-executor-evidence-collection-plans/{id}/reject")
-def reject_evidence_collection_plan(id: str, request: PlanDecisionBody | None = None):
-    reviewer = request.reviewer if request else None
-    reason = request.reason if request else None
-    return handle_reject_collection_plan(id, reviewer, reason)
-
-
-@app.post("/apply-executor-evidence-collection-plans/{id}/cancel")
-def cancel_evidence_collection_plan(id: str, request: PlanDecisionBody | None = None):
-    reviewer = request.reviewer if request else None
-    reason = request.reason if request else None
-    return handle_cancel_collection_plan(id, reviewer, reason)
-
-
-@app.post("/apply-executor-evidence-collection-plans/{id}/approve-collection-plan-intent")
-def approve_evidence_collection_plan_intent(id: str, request: ApprovalIntentBody | None = None):
-    reviewer = request.reviewer if request else None
-    reason = request.reason if request else None
-    confirmations = request.confirmations if request else None
-    return handle_approve_collection_plan_intent(id, reviewer, reason, confirmations)
 
 
 @app.get("/action/tools/status")
