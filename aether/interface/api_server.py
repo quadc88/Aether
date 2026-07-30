@@ -1,7 +1,6 @@
 from fastapi import FastAPI
 from aether.interface.api_models import (
     ActionValidationBody,
-    ApplyExecGateDecisionBody,
     ApprovalCreateRequest,
     ApprovalDecisionBody,
     ApprovalDecisionRequest,
@@ -188,6 +187,7 @@ from aether.interface.routers.dry_run_routes import dry_run_router
 from aether.interface.routers.simulation_routes import simulation_router
 from aether.interface.routers.verification_apply_gate_routes import verification_apply_gate_router
 from aether.interface.routers.authorization_execution_gate_routes import authorization_execution_gate_router
+from aether.interface.routers.executor_routes import executor_router
 from aether.action.approved_dry_run_gate import open_approved_dry_run_gate,execute_approved_dry_run,get_approved_dry_run_gate_record,list_approved_dry_run_gate_records,approved_dry_run_gate_status,summarize_approved_dry_run_gate
 from aether.action.dry_run_review_gate import open_dry_run_review_gate,submit_dry_run_review,get_dry_run_review_gate_record,list_dry_run_review_gate_records,dry_run_review_gate_status,summarize_dry_run_review_gate
 from aether.action.real_apply_approval_gate import open_real_apply_approval_gate,submit_real_apply_final_decision,get_real_apply_approval_gate_record,list_real_apply_approval_gate_records,real_apply_approval_gate_status,summarize_real_apply_approval_gate
@@ -218,6 +218,7 @@ app.include_router(dry_run_router, prefix="")
 app.include_router(simulation_router, prefix="")
 app.include_router(verification_apply_gate_router, prefix="")
 app.include_router(authorization_execution_gate_router, prefix="")
+app.include_router(executor_router, prefix="")
 
 
 # ---- Identity Integrity Endpoints (Milestone 48A) ----
@@ -537,130 +538,6 @@ def create_verification_plan(request: VerificationRequest):
 
 
 
-
-
-# ===================================================================== #
-# Apply Executor Contract Endpoint (Milestone 71A, 72A)
-# ===================================================================== #
-
-from aether.action.services.executor_contract_service import (
-    handle_executor_contract_create,
-    handle_list_executor_contracts,
-    handle_get_executor_contract,
-    handle_cancel_executor_contract,
-    handle_reject_executor_contract,
-    handle_approve_contract_intent,
-)
-
-
-@app.post("/apply-execution-gates/{apply_execution_gate_id}/executor-contract")
-def apply_executor_contract_endpoint(
-    apply_execution_gate_id: str, request: ApplyExecGateDecisionBody | None = None
-):
-    return handle_executor_contract_create(apply_execution_gate_id)
-
-
-# ===================================================================== #
-# Apply Executor Contract Record Store Endpoints (Milestone 72A)
-# ===================================================================== #
-
-
-@app.get("/apply-executor-contracts")
-def list_apply_executor_contracts(
-    status: str | None = None,
-    decision: str | None = None,
-    limit: int = 50,
-):
-    return handle_list_executor_contracts(status, decision, limit)
-
-
-@app.get("/apply-executor-contracts/{apply_executor_contract_id}")
-def get_apply_executor_contract(apply_executor_contract_id: str):
-    return handle_get_executor_contract(apply_executor_contract_id)
-
-
-@app.post("/apply-executor-contracts/{apply_executor_contract_id}/cancel")
-def cancel_apply_executor_contract(apply_executor_contract_id: str, request: ApplyExecGateDecisionBody | None = None):
-    reviewer = request.reviewer if request else None
-    reason = request.reason if request else None
-    return handle_cancel_executor_contract(apply_executor_contract_id, reviewer, reason)
-
-
-@app.post("/apply-executor-contracts/{apply_executor_contract_id}/reject")
-def reject_apply_executor_contract(apply_executor_contract_id: str, request: ApplyExecGateDecisionBody | None = None):
-    reviewer = request.reviewer if request else None
-    reason = request.reason if request else None
-    return handle_reject_executor_contract(apply_executor_contract_id, reviewer, reason)
-
-
-@app.post("/apply-executor-contracts/{apply_executor_contract_id}/approve-contract-intent")
-def approve_contract_intent_executor(apply_executor_contract_id: str, request: ApplyExecGateDecisionBody | None = None):
-    reviewer = request.reviewer if request else None
-    reason = request.reason if request else None
-    confirmations = request.confirmations if request else None
-    return handle_approve_contract_intent(apply_executor_contract_id, reviewer, reason, confirmations)
-
-
-# ===================================================================== #
-# Apply Executor Plan Endpoint (Milestone 73A, 74A)
-# ===================================================================== #
-
-from aether.action.services.executor_plan_service import (
-    handle_executor_plan_create,
-    handle_list_executor_plans,
-    handle_get_executor_plan,
-    handle_cancel_executor_plan,
-    handle_reject_executor_plan,
-    handle_approve_executor_plan_intent,
-)
-
-
-@app.post("/apply-executor-contracts/{apply_executor_contract_id}/executor-plan")
-def apply_executor_plan_endpoint(
-    apply_executor_contract_id: str, request: ApplyExecGateDecisionBody | None = None
-):
-    return handle_executor_plan_create(apply_executor_contract_id)
-
-
-# ===================================================================== #
-# Apply Executor Plan Record Store Endpoints (Milestone 74A)
-# ===================================================================== #
-
-
-@app.get("/apply-executor-plans")
-def list_apply_executor_plans(
-    status: str | None = None,
-    decision: str | None = None,
-    limit: int = 50,
-):
-    return handle_list_executor_plans(status, decision, limit)
-
-
-@app.get("/apply-executor-plans/{apply_executor_plan_id}")
-def get_apply_executor_plan(apply_executor_plan_id: str):
-    return handle_get_executor_plan(apply_executor_plan_id)
-
-
-@app.post("/apply-executor-plans/{apply_executor_plan_id}/cancel")
-def cancel_apply_executor_plan(apply_executor_plan_id: str, request: ApplyExecGateDecisionBody | None = None):
-    reviewer = request.reviewer if request else None
-    reason = request.reason if request else None
-    return handle_cancel_executor_plan(apply_executor_plan_id, reviewer, reason)
-
-
-@app.post("/apply-executor-plans/{apply_executor_plan_id}/reject")
-def reject_apply_executor_plan(apply_executor_plan_id: str, request: ApplyExecGateDecisionBody | None = None):
-    reviewer = request.reviewer if request else None
-    reason = request.reason if request else None
-    return handle_reject_executor_plan(apply_executor_plan_id, reviewer, reason)
-
-
-@app.post("/apply-executor-plans/{apply_executor_plan_id}/approve-plan-intent")
-def approve_plan_intent_executor(apply_executor_plan_id: str, request: ApplyExecGateDecisionBody | None = None):
-    reviewer = request.reviewer if request else None
-    reason = request.reason if request else None
-    confirmations = request.confirmations if request else None
-    return handle_approve_executor_plan_intent(apply_executor_plan_id, reviewer, reason, confirmations)
 
 
 # ===================================================================== #
