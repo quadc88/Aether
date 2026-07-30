@@ -65,11 +65,14 @@ PROTECTED_FUNCTION_AST_HASHES = {
     "awaken": "63e5fc8835c9de844605461e424cd0b0a1322085f6009e79dd6af35b3e1f44a1",
     "chat": "e081ef96b52d98d803c86c5b3f48b19f6e6807f74a76e59a0af6faa5f6d00655",
     "classify_verification_risk": "ab41471ff78628c01e906ba92820ff14d7ea0f4d822f4b0760e628ac22548a2d",
-    "seed_action_sandbox_tools": "af1e124d6e098c9afddaa6386c047945042935ed107f293d929077ce9fceced8",
-    "execute_action_tool": "0a3f824e2ae9591b105803645850f81e636cbb6daec8bf03511f6c2181e91ad8",
-    "get_action_tool_executor_status": "17699873758d395926e0380af5f8e4a11abc4bd62a42a39c8665bf680c3240d0",
-    "list_action_tool_executions": "f24263d060ff1bf8e9864cba81f70c7efedc1ed313aa9e870a319ced939b86cc",
-    "get_action_tool_execution": "3e6aad21d9c14559d76edd1cef20fecef576ad6d1fe6da674961c272c3e963e8",
+}
+
+TOOL_EXECUTOR_ROUTER_FUNCTION_AST_HASHES = {
+    "execute_action_tool": "f30a174f29b4bc62285fead2cba4cb13e3413ca10603bcca3a5d30cfa6b2602c",
+    "get_action_tool_execution": "c030d7634357a70562309cf74454313ac8b950015ed95b7249cf785db994efd7",
+    "get_action_tool_executor_status": "bf5bc8544b74592a05f65fd64969eac8e701c08cdca246c881785afcf5d18534",
+    "list_action_tool_executions": "1f8bf57b6a95d80bd796115cc3dee2128550e3bcc30d520f65c1d1576de78e9d",
+    "seed_action_sandbox_tools": "785059afffefadf54cb1d7854fb00fe4ede4523266fe0aac4f182bee21439207",
 }
 
 
@@ -408,3 +411,15 @@ def test_protected_route_function_ast_is_locked():
                 normalized = ast.dump(node, include_attributes=False)
                 actual[node.name] = hashlib.sha256(normalized.encode("utf-8")).hexdigest()
     assert actual == PROTECTED_FUNCTION_AST_HASHES
+
+    source = (
+        PROJECT_ROOT / "aether/interface/routers/tool_executor_routes.py"
+    ).read_text(encoding="utf-8")
+    tree = ast.parse(source)
+    actual = {}
+    for node in tree.body:
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            if node.name in TOOL_EXECUTOR_ROUTER_FUNCTION_AST_HASHES:
+                normalized = ast.dump(node, include_attributes=False)
+                actual[node.name] = hashlib.sha256(normalized.encode("utf-8")).hexdigest()
+    assert actual == TOOL_EXECUTOR_ROUTER_FUNCTION_AST_HASHES

@@ -84,7 +84,6 @@ from aether.interface.api_models import (
     SelfModificationCreateRequest,
     SelfModificationReviewRequest,
     ToolExecutionListRequest,
-    ToolExecutionRequest,
     ToolPlanListRequest,
     VerificationRequest,
     VerifyIdentityIntegrityResponse,
@@ -100,13 +99,6 @@ from aether.memory.timeline.recorder import record_event, search_events
 from aether.core.runtime import runtime
 from aether.memory.graph.store import add_edge
 from aether.verification.risk import classify_risk
-from aether.action.services.tool_execution_service import (
-    handle_execute_action_tool as _handle_execute_tool,
-    handle_get_action_tool_execution as _handle_get_execution,
-    handle_get_tool_executor_status as _handle_tool_executor_status,
-    handle_list_action_tool_executions as _handle_list_executions,
-    handle_seed_action_sandbox_tools as _handle_seed_sandbox_tools,
-)
 from aether.action.services.runtime_lifecycle_service import (
     handle_awaken,
 )
@@ -131,6 +123,7 @@ from aether.interface.routers.evidence_routes import evidence_router
 from aether.interface.routers.verification_plan_routes import verification_plan_router
 from aether.interface.routers.tool_registry_plan_routes import tool_registry_plan_router
 from aether.interface.routers.memory_routes import memory_router
+from aether.interface.routers.tool_executor_routes import tool_executor_router
 from aether.action.approved_dry_run_gate import open_approved_dry_run_gate,execute_approved_dry_run,get_approved_dry_run_gate_record,list_approved_dry_run_gate_records,approved_dry_run_gate_status,summarize_approved_dry_run_gate
 from aether.action.dry_run_review_gate import open_dry_run_review_gate,submit_dry_run_review,get_dry_run_review_gate_record,list_dry_run_review_gate_records,dry_run_review_gate_status,summarize_dry_run_review_gate
 from aether.action.real_apply_approval_gate import open_real_apply_approval_gate,submit_real_apply_final_decision,get_real_apply_approval_gate_record,list_real_apply_approval_gate_records,real_apply_approval_gate_status,summarize_real_apply_approval_gate
@@ -166,6 +159,7 @@ app.include_router(evidence_router, prefix="")
 app.include_router(verification_plan_router, prefix="")
 app.include_router(tool_registry_plan_router, prefix="")
 app.include_router(memory_router, prefix="")
+app.include_router(tool_executor_router, prefix="")
 
 
 # ---- Identity Integrity Endpoints (Milestone 48A) ----
@@ -355,39 +349,6 @@ def classify_verification_risk(request: VerificationRequest):
 
 
 
-
-
-@app.post("/action/tool-executor/seed-sandbox-tools")
-def seed_action_sandbox_tools():
-    return _handle_seed_sandbox_tools()
-
-
-@app.post("/action/tool-executor/execute")
-def execute_action_tool(request: ToolExecutionRequest):
-    return _handle_execute_tool(
-        text=request.text,
-        tool_id=request.tool_id,
-        input_payload=request.input_payload,
-        proposed_action=request.proposed_action,
-        create_approval_if_required=request.create_approval_if_required,
-        dry_run=request.dry_run,
-        metadata=request.metadata,
-    )
-
-
-@app.get("/action/tool-executor/status")
-def get_action_tool_executor_status():
-    return _handle_tool_executor_status()
-
-
-@app.get("/action/tool-executor/list")
-def list_action_tool_executions(limit: int = 50):
-    return _handle_list_executions(limit)
-
-
-@app.get("/action/tool-executor/{execution_id}")
-def get_action_tool_execution(execution_id: str):
-    return _handle_get_execution(execution_id)
 
 
 @app.post("/action/self-modification/create")
