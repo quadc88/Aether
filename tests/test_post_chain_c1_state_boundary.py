@@ -203,6 +203,111 @@ C1_MODULE_PATHS = (
     PROJECT_ROOT / "aether/action/post_apply_verification_gate.py",
 )
 
+C1_ROUTE_TO_SERVICE_HANDLER = {
+    "open_approved_dry_run_gate_action":
+        "handle_open_approved_dry_run_gate",
+    "execute_approved_dry_run_gate_action":
+        "handle_execute_approved_dry_run",
+    "get_approved_dry_run_gate_status_action":
+        "handle_get_approved_dry_run_gate_status",
+    "list_approved_dry_run_gate_action":
+        "handle_list_approved_dry_run_gate_records",
+    "summarize_approved_dry_run_gate_action":
+        "handle_summarize_approved_dry_run_gate",
+    "get_approved_dry_run_gate_action":
+        "handle_get_approved_dry_run_gate_record",
+    "open_dry_run_review_gate_action":
+        "handle_open_dry_run_review_gate",
+    "submit_dry_run_review_action":
+        "handle_submit_dry_run_review",
+    "get_dry_run_review_gate_status_action":
+        "handle_get_dry_run_review_gate_status",
+    "list_dry_run_review_gate_action":
+        "handle_list_dry_run_review_gate_records",
+    "summarize_dry_run_review_gate_action":
+        "handle_summarize_dry_run_review_gate",
+    "get_dry_run_review_gate_action":
+        "handle_get_dry_run_review_gate_record",
+    "open_real_apply_approval_gate_action":
+        "handle_open_real_apply_approval_gate",
+    "submit_real_apply_final_decision_action":
+        "handle_submit_real_apply_final_decision",
+    "get_real_apply_approval_gate_status_action":
+        "handle_get_real_apply_approval_gate_status",
+    "list_real_apply_approval_gate_action":
+        "handle_list_real_apply_approval_gate_records",
+    "summarize_real_apply_approval_gate_action":
+        "handle_summarize_real_apply_approval_gate",
+    "get_real_apply_approval_gate_action":
+        "handle_get_real_apply_approval_gate_record",
+    "open_post_apply_verification_gate_action":
+        "handle_open_post_apply_verification_gate",
+    "submit_post_apply_verification_action":
+        "handle_submit_post_apply_verification",
+    "get_post_apply_verification_gate_status_action":
+        "handle_get_post_apply_verification_gate_status",
+    "list_post_apply_verification_gate_action":
+        "handle_list_post_apply_verification_gate_records",
+    "summarize_post_apply_verification_gate_action":
+        "handle_summarize_post_apply_verification_gate",
+    "get_post_apply_verification_gate_action":
+        "handle_get_post_apply_verification_gate_record",
+}
+
+C1_SERVICE_HANDLER_TO_ACTION = {
+    "approved_dry_run_gate_service.py": {
+        "handle_open_approved_dry_run_gate": "open_approved_dry_run_gate",
+        "handle_execute_approved_dry_run": "execute_approved_dry_run",
+        "handle_get_approved_dry_run_gate_status":
+            "approved_dry_run_gate_status",
+        "handle_list_approved_dry_run_gate_records":
+            "list_approved_dry_run_gate_records",
+        "handle_summarize_approved_dry_run_gate":
+            "summarize_approved_dry_run_gate",
+        "handle_get_approved_dry_run_gate_record":
+            "get_approved_dry_run_gate_record",
+    },
+    "dry_run_review_gate_service.py": {
+        "handle_open_dry_run_review_gate": "open_dry_run_review_gate",
+        "handle_submit_dry_run_review": "submit_dry_run_review",
+        "handle_get_dry_run_review_gate_status": "dry_run_review_gate_status",
+        "handle_list_dry_run_review_gate_records":
+            "list_dry_run_review_gate_records",
+        "handle_summarize_dry_run_review_gate":
+            "summarize_dry_run_review_gate",
+        "handle_get_dry_run_review_gate_record":
+            "get_dry_run_review_gate_record",
+    },
+    "real_apply_approval_gate_service.py": {
+        "handle_open_real_apply_approval_gate":
+            "open_real_apply_approval_gate",
+        "handle_submit_real_apply_final_decision":
+            "submit_real_apply_final_decision",
+        "handle_get_real_apply_approval_gate_status":
+            "real_apply_approval_gate_status",
+        "handle_list_real_apply_approval_gate_records":
+            "list_real_apply_approval_gate_records",
+        "handle_summarize_real_apply_approval_gate":
+            "summarize_real_apply_approval_gate",
+        "handle_get_real_apply_approval_gate_record":
+            "get_real_apply_approval_gate_record",
+    },
+    "post_apply_verification_gate_service.py": {
+        "handle_open_post_apply_verification_gate":
+            "open_post_apply_verification_gate",
+        "handle_submit_post_apply_verification":
+            "submit_post_apply_verification",
+        "handle_get_post_apply_verification_gate_status":
+            "post_apply_verification_gate_status",
+        "handle_list_post_apply_verification_gate_records":
+            "list_post_apply_verification_gate_records",
+        "handle_summarize_post_apply_verification_gate":
+            "summarize_post_apply_verification_gate",
+        "handle_get_post_apply_verification_gate_record":
+            "get_post_apply_verification_gate_record",
+    },
+}
+
 WATCHED_REAL_ROOTS = (
     PROJECT_ROOT / "aether",
     PROJECT_ROOT / "tests",
@@ -399,10 +504,10 @@ def test_c1_openapi_contract_and_operation_ids_are_locked():
         assert schema["paths"][path][method.lower()]["operationId"] == operation_id
 
 
-def test_c1_routes_are_exact_single_action_pass_throughs():
+def test_c1_routes_are_exact_single_service_pass_throughs():
     source_path = PROJECT_ROOT / "aether/interface/api_server.py"
     tree = ast.parse(source_path.read_text(encoding="utf-8"))
-    expected = {details[0]: details[1] for details in C1_ENDPOINTS.values()}
+    expected = C1_ROUTE_TO_SERVICE_HANDLER
     found = {}
 
     for node in tree.body:
@@ -562,14 +667,7 @@ def test_protected_endpoint_contracts_remain_outside_c1():
                    for path in invoked_paths)
 
 
-def test_no_c1_service_or_router_extraction_has_started():
-    service_paths = (
-        "approved_dry_run_gate_service.py",
-        "dry_run_review_gate_service.py",
-        "real_apply_approval_gate_service.py",
-        "post_apply_verification_gate_service.py",
-        "final_real_apply_executor_service.py",
-    )
+def test_c1_service_extraction_is_exact_and_router_extraction_has_not_started():
     router_paths = (
         "approved_dry_run_gate_routes.py",
         "dry_run_review_gate_routes.py",
@@ -577,10 +675,51 @@ def test_no_c1_service_or_router_extraction_has_started():
         "post_apply_verification_gate_routes.py",
         "final_real_apply_executor_routes.py",
     )
-    assert not any(
-        (PROJECT_ROOT / "aether/action/services" / name).exists()
-        for name in service_paths
-    )
+    services_root = PROJECT_ROOT / "aether/action/services"
+    assert not (services_root / "final_real_apply_executor_service.py").exists()
+    assert {
+        handler
+        for handlers in C1_SERVICE_HANDLER_TO_ACTION.values()
+        for handler in handlers
+    } == set(C1_ROUTE_TO_SERVICE_HANDLER.values())
+
+    for filename, expected_handlers in C1_SERVICE_HANDLER_TO_ACTION.items():
+        service_path = services_root / filename
+        assert service_path.exists()
+        tree = ast.parse(service_path.read_text(encoding="utf-8"))
+        functions = {
+            node.name: node
+            for node in tree.body
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+        }
+        assert set(functions) == set(expected_handlers)
+
+        imported_modules = {
+            node.module for node in tree.body
+            if isinstance(node, ast.ImportFrom)
+        }
+        assert "aether.action.final_real_apply_executor" not in imported_modules
+
+        for handler, action in expected_handlers.items():
+            node = functions[handler]
+            assert len(node.body) == 1
+            assert isinstance(node.body[0], ast.Return)
+            calls = [
+                child for child in ast.walk(node.body[0])
+                if isinstance(child, ast.Call)
+            ]
+            assert len(calls) == 1
+            assert isinstance(calls[0].func, ast.Name)
+            assert calls[0].func.id == action
+            return_text = ast.unparse(node.body[0])
+            assert "'name': 'Aether'" in return_text
+            for forbidden in (
+                "final_real_apply_executor",
+                "execute_final_real_apply",
+                "apply_patch_proposal",
+            ):
+                assert forbidden not in return_text
+
     assert not any(
         (PROJECT_ROOT / "aether/interface/routers" / name).exists()
         for name in router_paths
@@ -595,11 +734,18 @@ def test_no_c1_service_or_router_extraction_has_started():
         "aether.action.real_apply_approval_gate",
         "aether.action.post_apply_verification_gate",
     }
+    service_modules = {
+        "aether.action.services.approved_dry_run_gate_service",
+        "aether.action.services.dry_run_review_gate_service",
+        "aether.action.services.real_apply_approval_gate_service",
+        "aether.action.services.post_apply_verification_gate_service",
+    }
     imported_modules = {
         node.module for node in tree.body
         if isinstance(node, ast.ImportFrom)
     }
-    assert direct_modules.issubset(imported_modules)
+    assert direct_modules.isdisjoint(imported_modules)
+    assert service_modules.issubset(imported_modules)
 
     include_router_calls = [
         node for node in ast.walk(tree)

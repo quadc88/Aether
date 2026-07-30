@@ -124,11 +124,11 @@ from aether.interface.routers.verification_plan_routes import verification_plan_
 from aether.interface.routers.tool_registry_plan_routes import tool_registry_plan_router
 from aether.interface.routers.memory_routes import memory_router
 from aether.interface.routers.tool_executor_routes import tool_executor_router
-from aether.action.approved_dry_run_gate import open_approved_dry_run_gate,execute_approved_dry_run,get_approved_dry_run_gate_record,list_approved_dry_run_gate_records,approved_dry_run_gate_status,summarize_approved_dry_run_gate
-from aether.action.dry_run_review_gate import open_dry_run_review_gate,submit_dry_run_review,get_dry_run_review_gate_record,list_dry_run_review_gate_records,dry_run_review_gate_status,summarize_dry_run_review_gate
-from aether.action.real_apply_approval_gate import open_real_apply_approval_gate,submit_real_apply_final_decision,get_real_apply_approval_gate_record,list_real_apply_approval_gate_records,real_apply_approval_gate_status,summarize_real_apply_approval_gate
+from aether.action.services.approved_dry_run_gate_service import handle_open_approved_dry_run_gate,handle_execute_approved_dry_run,handle_get_approved_dry_run_gate_status,handle_list_approved_dry_run_gate_records,handle_summarize_approved_dry_run_gate,handle_get_approved_dry_run_gate_record
+from aether.action.services.dry_run_review_gate_service import handle_open_dry_run_review_gate,handle_submit_dry_run_review,handle_get_dry_run_review_gate_status,handle_list_dry_run_review_gate_records,handle_summarize_dry_run_review_gate,handle_get_dry_run_review_gate_record
+from aether.action.services.real_apply_approval_gate_service import handle_open_real_apply_approval_gate,handle_submit_real_apply_final_decision,handle_get_real_apply_approval_gate_status,handle_list_real_apply_approval_gate_records,handle_summarize_real_apply_approval_gate,handle_get_real_apply_approval_gate_record
 from aether.action.final_real_apply_executor import open_final_real_apply_executor,execute_final_real_apply,get_final_real_apply_executor_record,list_final_real_apply_executor_records,final_real_apply_executor_status,summarize_final_real_apply_executor
-from aether.action.post_apply_verification_gate import open_post_apply_verification_gate,submit_post_apply_verification,get_post_apply_verification_gate_record,list_post_apply_verification_gate_records,post_apply_verification_gate_status,summarize_post_apply_verification_gate
+from aether.action.services.post_apply_verification_gate_service import handle_open_post_apply_verification_gate,handle_submit_post_apply_verification,handle_get_post_apply_verification_gate_status,handle_list_post_apply_verification_gate_records,handle_summarize_post_apply_verification_gate,handle_get_post_apply_verification_gate_record
 from aether.action.repair_cycle_completion_report import create_repair_cycle_completion_report,export_repair_cycle_report,export_repair_cycle_index,export_private_repair_cycle_record,get_repair_cycle_completion_record,list_repair_cycle_completion_records,repair_cycle_completion_status,summarize_repair_cycle_completion
 from aether.action.repair_learning_index import create_repair_learning_record,export_repair_learning_report,export_repair_learning_index,export_private_repair_learning_record,get_repair_learning_record,list_repair_learning_records,repair_learning_index_status,summarize_repair_learning_record
 from aether.action.repair_guidance_engine import create_repair_guidance,export_repair_guidance_report,export_repair_guidance_index,export_private_repair_guidance_record,get_repair_guidance_record,list_repair_guidance_records,repair_guidance_engine_status,summarize_repair_guidance
@@ -416,41 +416,41 @@ def export_private_repair_workflow_report_action(request:PrivateRepairWorkflowEx
 @app.get("/action/repair-workflow-export/status")
 def get_repair_workflow_export_status_action():return repair_workflow_export_status()
 @app.post("/action/approved-dry-run-gate/open")
-def open_approved_dry_run_gate_action(request:ApprovedDryRunGateOpenRequest):return {"name":"Aether","record":open_approved_dry_run_gate(request.source_type,request.source_id,request.metadata)}
+def open_approved_dry_run_gate_action(request:ApprovedDryRunGateOpenRequest):return handle_open_approved_dry_run_gate(request.source_type,request.source_id,request.metadata)
 @app.post("/action/approved-dry-run-gate/execute")
-def execute_approved_dry_run_gate_action(request:ApprovedDryRunExecuteRequest):return {"name":"Aether","record":execute_approved_dry_run(request.gate_record_id,request.create_approval_if_required,request.metadata)}
+def execute_approved_dry_run_gate_action(request:ApprovedDryRunExecuteRequest):return handle_execute_approved_dry_run(request.gate_record_id,request.create_approval_if_required,request.metadata)
 @app.get("/action/approved-dry-run-gate/status")
-def get_approved_dry_run_gate_status_action():return {"name":"Aether","approved_dry_run_gate":approved_dry_run_gate_status()}
+def get_approved_dry_run_gate_status_action():return handle_get_approved_dry_run_gate_status()
 @app.get("/action/approved-dry-run-gate/list")
-def list_approved_dry_run_gate_action(status:str|None=None,proposal_id:str|None=None,limit:int=50):return {"name":"Aether","records":list_approved_dry_run_gate_records(status,proposal_id,limit)}
+def list_approved_dry_run_gate_action(status:str|None=None,proposal_id:str|None=None,limit:int=50):return handle_list_approved_dry_run_gate_records(status,proposal_id,limit)
 @app.get("/action/approved-dry-run-gate/{record_id}/summary")
-def summarize_approved_dry_run_gate_action(record_id:str):return {"name":"Aether","summary":summarize_approved_dry_run_gate(record_id)}
+def summarize_approved_dry_run_gate_action(record_id:str):return handle_summarize_approved_dry_run_gate(record_id)
 @app.get("/action/approved-dry-run-gate/{record_id}")
-def get_approved_dry_run_gate_action(record_id:str):return {"name":"Aether","record":get_approved_dry_run_gate_record(record_id)}
+def get_approved_dry_run_gate_action(record_id:str):return handle_get_approved_dry_run_gate_record(record_id)
 @app.post("/action/dry-run-review-gate/open")
-def open_dry_run_review_gate_action(request:DryRunReviewGateOpenRequest):return {"name":"Aether","record":open_dry_run_review_gate(request.source_type,request.source_id,request.metadata)}
+def open_dry_run_review_gate_action(request:DryRunReviewGateOpenRequest):return handle_open_dry_run_review_gate(request.source_type,request.source_id,request.metadata)
 @app.post("/action/dry-run-review-gate/submit")
-def submit_dry_run_review_action(request:DryRunReviewSubmitRequest):return {"name":"Aether","record":submit_dry_run_review(request.review_gate_record_id,request.decision,request.comment,request.reviewer,request.metadata)}
+def submit_dry_run_review_action(request:DryRunReviewSubmitRequest):return handle_submit_dry_run_review(request.review_gate_record_id,request.decision,request.comment,request.reviewer,request.metadata)
 @app.get("/action/dry-run-review-gate/status")
-def get_dry_run_review_gate_status_action():return {"name":"Aether","dry_run_review_gate":dry_run_review_gate_status()}
+def get_dry_run_review_gate_status_action():return handle_get_dry_run_review_gate_status()
 @app.get("/action/dry-run-review-gate/list")
-def list_dry_run_review_gate_action(status:str|None=None,proposal_id:str|None=None,limit:int=50):return {"name":"Aether","records":list_dry_run_review_gate_records(status,proposal_id,limit)}
+def list_dry_run_review_gate_action(status:str|None=None,proposal_id:str|None=None,limit:int=50):return handle_list_dry_run_review_gate_records(status,proposal_id,limit)
 @app.get("/action/dry-run-review-gate/{record_id}/summary")
-def summarize_dry_run_review_gate_action(record_id:str):return {"name":"Aether","summary":summarize_dry_run_review_gate(record_id)}
+def summarize_dry_run_review_gate_action(record_id:str):return handle_summarize_dry_run_review_gate(record_id)
 @app.get("/action/dry-run-review-gate/{record_id}")
-def get_dry_run_review_gate_action(record_id:str):return {"name":"Aether","record":get_dry_run_review_gate_record(record_id)}
+def get_dry_run_review_gate_action(record_id:str):return handle_get_dry_run_review_gate_record(record_id)
 @app.post("/action/real-apply-approval-gate/open")
-def open_real_apply_approval_gate_action(request:RealApplyApprovalGateOpenRequest):return {"name":"Aether","record":open_real_apply_approval_gate(request.source_type,request.source_id,request.create_approval_item,request.metadata)}
+def open_real_apply_approval_gate_action(request:RealApplyApprovalGateOpenRequest):return handle_open_real_apply_approval_gate(request.source_type,request.source_id,request.create_approval_item,request.metadata)
 @app.post("/action/real-apply-approval-gate/submit")
-def submit_real_apply_final_decision_action(request:RealApplyFinalDecisionRequest):return {"name":"Aether","record":submit_real_apply_final_decision(request.gate_record_id,request.decision,request.comment,request.reviewer,request.metadata)}
+def submit_real_apply_final_decision_action(request:RealApplyFinalDecisionRequest):return handle_submit_real_apply_final_decision(request.gate_record_id,request.decision,request.comment,request.reviewer,request.metadata)
 @app.get("/action/real-apply-approval-gate/status")
-def get_real_apply_approval_gate_status_action():return {"name":"Aether","real_apply_approval_gate":real_apply_approval_gate_status()}
+def get_real_apply_approval_gate_status_action():return handle_get_real_apply_approval_gate_status()
 @app.get("/action/real-apply-approval-gate/list")
-def list_real_apply_approval_gate_action(status:str|None=None,proposal_id:str|None=None,limit:int=50):return {"name":"Aether","records":list_real_apply_approval_gate_records(status,proposal_id,limit)}
+def list_real_apply_approval_gate_action(status:str|None=None,proposal_id:str|None=None,limit:int=50):return handle_list_real_apply_approval_gate_records(status,proposal_id,limit)
 @app.get("/action/real-apply-approval-gate/{record_id}/summary")
-def summarize_real_apply_approval_gate_action(record_id:str):return {"name":"Aether","summary":summarize_real_apply_approval_gate(record_id)}
+def summarize_real_apply_approval_gate_action(record_id:str):return handle_summarize_real_apply_approval_gate(record_id)
 @app.get("/action/real-apply-approval-gate/{record_id}")
-def get_real_apply_approval_gate_action(record_id:str):return {"name":"Aether","record":get_real_apply_approval_gate_record(record_id)}
+def get_real_apply_approval_gate_action(record_id:str):return handle_get_real_apply_approval_gate_record(record_id)
 @app.post("/action/final-real-apply-executor/open")
 def open_final_real_apply_executor_action(request:FinalRealApplyExecutorOpenRequest):return {"name":"Aether","record":open_final_real_apply_executor(request.source_type,request.source_id,request.metadata)}
 @app.post("/action/final-real-apply-executor/execute")
@@ -464,17 +464,17 @@ def summarize_final_real_apply_executor_action(record_id:str):return {"name":"Ae
 @app.get("/action/final-real-apply-executor/{record_id}")
 def get_final_real_apply_executor_action(record_id:str):return {"name":"Aether","record":get_final_real_apply_executor_record(record_id)}
 @app.post("/action/post-apply-verification-gate/open")
-def open_post_apply_verification_gate_action(request:PostApplyVerificationGateOpenRequest):return {"name":"Aether","record":open_post_apply_verification_gate(request.source_type,request.source_id,request.metadata)}
+def open_post_apply_verification_gate_action(request:PostApplyVerificationGateOpenRequest):return handle_open_post_apply_verification_gate(request.source_type,request.source_id,request.metadata)
 @app.post("/action/post-apply-verification-gate/submit")
-def submit_post_apply_verification_action(request:PostApplyVerificationSubmitRequest):return {"name":"Aether","record":submit_post_apply_verification(request.verification_record_id,request.decision,request.comment,request.verifier,request.metadata)}
+def submit_post_apply_verification_action(request:PostApplyVerificationSubmitRequest):return handle_submit_post_apply_verification(request.verification_record_id,request.decision,request.comment,request.verifier,request.metadata)
 @app.get("/action/post-apply-verification-gate/status")
-def get_post_apply_verification_gate_status_action():return {"name":"Aether","post_apply_verification_gate":post_apply_verification_gate_status()}
+def get_post_apply_verification_gate_status_action():return handle_get_post_apply_verification_gate_status()
 @app.get("/action/post-apply-verification-gate/list")
-def list_post_apply_verification_gate_action(status:str|None=None,proposal_id:str|None=None,limit:int=50):return {"name":"Aether","records":list_post_apply_verification_gate_records(status,proposal_id,limit)}
+def list_post_apply_verification_gate_action(status:str|None=None,proposal_id:str|None=None,limit:int=50):return handle_list_post_apply_verification_gate_records(status,proposal_id,limit)
 @app.get("/action/post-apply-verification-gate/{record_id}/summary")
-def summarize_post_apply_verification_gate_action(record_id:str):return {"name":"Aether","summary":summarize_post_apply_verification_gate(record_id)}
+def summarize_post_apply_verification_gate_action(record_id:str):return handle_summarize_post_apply_verification_gate(record_id)
 @app.get("/action/post-apply-verification-gate/{record_id}")
-def get_post_apply_verification_gate_action(record_id:str):return {"name":"Aether","record":get_post_apply_verification_gate_record(record_id)}
+def get_post_apply_verification_gate_action(record_id:str):return handle_get_post_apply_verification_gate_record(record_id)
 @app.post("/action/repair-cycle-completion/create")
 def create_repair_cycle_completion_action(request:RepairCycleCompletionCreateRequest):return {"name":"Aether","record":create_repair_cycle_completion_report(request.source_type,request.source_id,request.export_public,request.export_index,request.export_private,request.metadata)}
 @app.post("/action/repair-cycle-completion/export-report")
