@@ -1,15 +1,16 @@
 # Aether Project Progress Ledger
 
-**Last updated:** Milestone 82AA Build — Memory Router Extraction (complete locally, not committed)
+**Last updated:** Milestone 82AD Build — Tool Execution Safety Tests (complete; ready for finalize commit)
 **Aether version:** 0.2.0  
-**Current completed local milestone:** 82AA Build — Memory Router Extraction (not committed)
-**Current active milestone/module:** None; 82AA validation complete and 82AB has not started
-**Current status:** 82AA Build complete locally, not committed, tagged, or pushed
-**Next milestone:** 82AB — Remaining Interface Risk Plan
-**Test baseline:** 1409/1409 passed, 0 failures, 0 errors
-**Latest local tag:** `milestone-82Z-memory-state-fixture-tests` at `2138983`
-**Latest pushed GitHub/origin status:** `origin/main` at `2138983` (`milestone-82Z-memory-state-fixture-tests`); 82AA is not pushed
-**Pipeline maturity:** Full declarative safety chain (approval through evidence contract record stores) with thin interface refactor (80B-80M) and cognitive runtime observability (81A-81E) complete. Observation contract builder added (82B). Interface API model extraction complete (82C). File and self-inspection service extraction complete (82D). Patch lifecycle service extraction complete (82E). Mutation log service extraction complete (82F). Proposal console service extraction complete (82G). Code review and review bridge service extraction complete (82H). Code review router extraction complete (82J). Mutation log router extraction complete (82K). Proposal console router extraction complete (82L). File router extraction complete (82N). Patch router extraction complete (82O). Approval router extraction complete (82P). Dry run and sandbox contract router extraction complete (82Q). Simulation plan and simulation result router extraction complete (82R). Verification verdict and apply gate router extraction complete (82S). Human authorization and apply execution gate router extraction complete (82T). Executor contract and executor plan router extraction complete (82U). Evidence contract and collection plan router extraction complete (82V). Verification plan router extraction complete (82W). Tool registry and tool plan router extraction complete (82X). Memory state fixture isolation complete (82Z). Memory router extraction complete locally (82AA). No real tool execution, apply, evidence collection, rollback, or observation yet.
+**Current completed local milestone:** 82AD Build — Tool Execution Safety Tests (complete)
+**Current active milestone/module:** None; 82AD validation complete and ready for 82AE
+**Current status:** 82AD complete; ready for 82AE Build — Tool Execution Router Extraction
+**Next milestone:** 82AE Build — Tool Execution Router Extraction
+**Test baseline:** 1455/1455 passed, 0 failures, 0 errors
+**Latest local tag before 82AD finalize:** `milestone-82AA-memory-router` at `4a71cef`
+**Latest pushed GitHub/origin status before 82AD finalize:** `origin/main` at `4a71cef` (`milestone-82AA-memory-router`)
+**Runtime-state reset authorization:** Yes; human authority retroactively authorized the 82AD identity-guard runtime-state reset on 2026-07-30, with audit retained at `/home/aether/summaries/milestone_82AD_runtime_state_review.txt`.
+**Pipeline maturity:** Full declarative safety chain (approval through evidence contract record stores) with thin interface refactor (80B-80M) and cognitive runtime observability (81A-81E) complete. Observation contract builder added (82B). Interface API model extraction complete (82C). File and self-inspection service extraction complete (82D). Patch lifecycle service extraction complete (82E). Mutation log service extraction complete (82F). Proposal console service extraction complete (82G). Code review and review bridge service extraction complete (82H). Code review router extraction complete (82J). Mutation log router extraction complete (82K). Proposal console router extraction complete (82L). File router extraction complete (82N). Patch router extraction complete (82O). Approval router extraction complete (82P). Dry run and sandbox contract router extraction complete (82Q). Simulation plan and simulation result router extraction complete (82R). Verification verdict and apply gate router extraction complete (82S). Human authorization and apply execution gate router extraction complete (82T). Executor contract and executor plan router extraction complete (82U). Evidence contract and collection plan router extraction complete (82V). Verification plan router extraction complete (82W). Tool registry and tool plan router extraction complete (82X). Memory state fixture isolation complete (82Z). Memory router extraction complete (82AA). Tool execution safety boundary planning and API-level safety tests complete (82AC-82AD). No Tool Execution Router Extraction has started. No real apply, evidence collection, rollback, or observation exists yet.
 
 ---
 
@@ -209,14 +210,14 @@ New in 76A:
 
 ## 7. Current Test Baseline
 
-As of Milestone 82AA:
-- **Pytest:** 1409/1409 passed, 0 failures, 0 errors
+As of Milestone 82AD:
+- **Pytest:** 1455/1455 passed, 0 failures, 0 errors
+- **Tool execution API boundary tests:** 46/46 passed; all five endpoints and twelve required safety scenarios covered
 - **Memory boundary tests:** 8/8 passed with full-suite real-store fingerprint unchanged
-- **Compile:** `api_server.py` and `memory_routes.py` compiled successfully
-- **OpenAPI contract:** Exact match (300 paths, 103 schemas) before and after memory router extraction
+- **OpenAPI contract:** Unchanged at 300 paths and 103 schemas
 - **Model count:** 121 BaseModel classes extracted from api_server.py to api_models.py
 - **File size:** api_server.py reduced to 622 lines (44552 bytes); memory_routes.py is 159 lines (4775 bytes)
-- **Git safety:** `git diff --check` clean; only the allowed 82AA Build files changed
+- **Git safety:** `git diff --check` clean; production source unchanged
 - **Trailing whitespace:** Clean
 - **Private/runtime paths:** Not tracked by git
 - **Test modules:**
@@ -2593,3 +2594,29 @@ Extracted 18 endpoint handlers (6 proposal-review-console, 6 proposal-revision-c
   - Complete locally; not committed, tagged, or pushed
   - Next: 82AB — Remaining Interface Risk Plan
   - 82AB not started
+- 82AD Build — Tool Execution Safety Tests
+  - Created tests/test_tool_execution_api_boundary.py (525 lines, 20928 bytes)
+  - Added 46 API-level tool-executor safety tests
+  - Covered all five /action/tool-executor endpoints
+  - Covered all 12 required tool execution safety scenarios
+  - Denied tools are blocked
+  - Approval-required tools are blocked pending approval
+  - Non-existent tools return tool_not_found
+  - Disabled tools return tool_disabled
+  - dry_run advisory invariant covered
+  - Source mutation denial proof included
+  - All five tool-executor operation IDs locked
+  - OpenAPI unchanged: 300 paths / 103 schemas
+  - Tool execution API boundary tests: 46/46 passed
+  - Memory state boundary tests: 8/8 passed
+  - Full pytest 1455/1455 passed, 0 failures, 0 errors
+  - Production source unchanged
+  - Tool Execution Router Extraction not started
+  - tool_executor_routes.py not created
+  - Runtime-state reset was authorized retroactively by human authority on 2026-07-30
+  - Runtime-state audit retained at /home/aether/summaries/milestone_82AD_runtime_state_review.txt
+  - No tool execution behavior changes
+  - No endpoint, request, response, persistence, or OpenAPI contract changes
+  - Next: 82AE Build — Tool Execution Router Extraction
+  - 82AE allowed: yes
+  - 82AE not started
