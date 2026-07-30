@@ -1,17 +1,17 @@
 # Aether Project Progress Ledger
 
-**Last updated:** Milestone 82AI Build — Post-Chain Gate C1 Service Extraction (complete locally, not committed)
+**Last updated:** Milestone 82AI Build — Post-Chain Gate C1 Service Extraction (finalized, committed, tagged, pushed)
 **Aether version:** 0.2.0  
-**Current completed local milestone:** 82AI Build — Post-Chain Gate C1 Service Extraction (not committed)
-**Current active milestone/module:** None; 82AI validation complete and 82AJ has not started
-**Current status:** 82AI C1 service extraction complete locally, not committed, tagged, or pushed
+**Current completed local milestone:** 82AI Build — Post-Chain Gate C1 Service Extraction (finalized)
+**Current active milestone/module:** None; 82AI finalized and 82AJ has not started
+**Current status:** 82AI C1 service extraction committed, tagged, and pushed; ready for 82AJ
 **Next milestone:** 82AJ — Final Real-Apply Executor C2 Safety Boundary Plan/Tests
 **Test baseline:** 1505/1505 passed, 0 failures, 0 errors
 **OpenAPI baseline:** 300 paths / 103 schemas
-**Latest local tag:** `milestone-82AH-R-full-suite-private-persistence-isolation` at `8575d31`
-**Latest pushed GitHub/origin status:** `origin/main` at `13eaa3e`; remote tag `milestone-82AH-R-full-suite-private-persistence-isolation` at `8575d31`; 82AI is not pushed
+**Latest local tag:** `milestone-82AI-post-chain-c1-service-extraction` at `35f457b`
+**Latest pushed GitHub/origin status:** 82AI finalization commit `35f457b` pushed to `origin/main`; remote tag `milestone-82AI-post-chain-c1-service-extraction` at `35f457b`; 82AJ is not pushed or started
 **Runtime-state reset authorization:** Yes; human authority retroactively authorized the 82AD identity-guard runtime-state reset on 2026-07-30, with audit retained at `/home/aether/summaries/milestone_82AD_runtime_state_review.txt`.
-**Pipeline maturity:** Full declarative safety chain (approval through evidence contract record stores) with thin interface refactor (80B-80M) and cognitive runtime observability (81A-81E) complete. Observation contract builder added (82B). Interface API model extraction complete (82C). File and self-inspection service extraction complete (82D). Patch lifecycle service extraction complete (82E). Mutation log service extraction complete (82F). Proposal console service extraction complete (82G). Code review and review bridge service extraction complete (82H). Code review router extraction complete (82J). Mutation log router extraction complete (82K). Proposal console router extraction complete (82L). File router extraction complete (82N). Patch router extraction complete (82O). Approval router extraction complete (82P). Dry run and sandbox contract router extraction complete (82Q). Simulation plan and simulation result router extraction complete (82R). Verification verdict and apply gate router extraction complete (82S). Human authorization and apply execution gate router extraction complete (82T). Executor contract and executor plan router extraction complete (82U). Evidence contract and collection plan router extraction complete (82V). Verification plan router extraction complete (82W). Tool registry and tool plan router extraction complete (82X). Memory state fixture isolation complete (82Z). Memory router extraction complete (82AA). Tool execution safety boundary planning and API-level safety tests complete (82AC-82AD). Tool execution router extraction finalized (82AE). Post-chain C1 state-boundary coverage and full-suite tests-only private/runtime persistence isolation finalized (82AH/82AH-R). Post-chain C1 service extraction is complete locally (82AI). C2 final real-apply execution remains deferred. No real apply, evidence collection, rollback, or observation exists yet.
+**Pipeline maturity:** Full declarative safety chain (approval through evidence contract record stores) with thin interface refactor (80B-80M) and cognitive runtime observability (81A-81E) complete. Observation contract builder added (82B). Interface API model extraction complete (82C). File and self-inspection service extraction complete (82D). Patch lifecycle service extraction complete (82E). Mutation log service extraction complete (82F). Proposal console service extraction complete (82G). Code review and review bridge service extraction complete (82H). Code review router extraction complete (82J). Mutation log router extraction complete (82K). Proposal console router extraction complete (82L). File router extraction complete (82N). Patch router extraction complete (82O). Approval router extraction complete (82P). Dry run and sandbox contract router extraction complete (82Q). Simulation plan and simulation result router extraction complete (82R). Verification verdict and apply gate router extraction complete (82S). Human authorization and apply execution gate router extraction complete (82T). Executor contract and executor plan router extraction complete (82U). Evidence contract and collection plan router extraction complete (82V). Verification plan router extraction complete (82W). Tool registry and tool plan router extraction complete (82X). Memory state fixture isolation complete (82Z). Memory router extraction complete (82AA). Tool execution safety boundary planning and API-level safety tests complete (82AC-82AD). Tool execution router extraction finalized (82AE). Post-chain C1 state-boundary coverage and full-suite tests-only private/runtime persistence isolation finalized (82AH/82AH-R). Post-chain C1 service extraction finalized (82AI). C2 final real-apply execution remains deferred. No real apply, evidence collection, rollback, or observation exists yet.
 
 ---
 
@@ -2684,7 +2684,7 @@ Extracted 18 endpoint handlers (6 proposal-review-console, 6 proposal-revision-c
   - Next: 82AI Build — Post-Chain Gate C1 Service Extraction
   - 82AI not started
 - 82AI Build — Post-Chain Gate C1 Service Extraction
-  - C1 service extraction complete locally
+  - C1 service extraction finalized
   - Added `aether/action/services/approved_dry_run_gate_service.py`
   - Added `aether/action/services/dry_run_review_gate_service.py`
   - Added `aether/action/services/real_apply_approval_gate_service.py`
@@ -2701,6 +2701,6 @@ Extracted 18 endpoint handlers (6 proposal-review-console, 6 proposal-revision-c
   - Full pytest: 1505/1505 passed, 0 failures, 0 errors
   - Full-suite real-root fingerprint passed with drift count 0
   - No real apply, rollback, evidence collection, or tool execution
-  - Complete locally; not committed, tagged, or pushed
+  - Finalized, committed, tagged, and pushed as `milestone-82AI-post-chain-c1-service-extraction` at `35f457b`
   - Next: 82AJ — Final Real-Apply Executor C2 Safety Boundary Plan/Tests
   - 82AJ not started
