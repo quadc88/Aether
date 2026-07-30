@@ -1,15 +1,15 @@
 # Aether Project Progress Ledger
 
-**Last updated:** Milestone 82W Build — Verification Plan Router Extraction (complete locally, not committed)
+**Last updated:** Milestone 82X Build — Tool Registry + Tool Plan Router Extraction (complete locally, not committed)
 **Aether version:** 0.2.0  
-**Current completed local milestone:** 82W Build — Verification Plan Router Extraction (not committed)
-**Current active milestone/module:** None; 82W validation complete and 82X has not started
-**Current status:** 82W Build complete locally, not committed, tagged, or pushed
-**Next milestone:** 82X — Remaining Router Extraction Plan
+**Current completed local milestone:** 82X Build — Tool Registry + Tool Plan Router Extraction (not committed)
+**Current active milestone/module:** None; 82X validation complete and 82Y has not started
+**Current status:** 82X Build complete locally, not committed, tagged, or pushed
+**Next milestone:** 82Y — Remaining Router Extraction Plan
 **Test baseline:** 1401/1401 passed, 0 failures, 0 errors
-**Latest local tag:** `milestone-82V-evidence-router` at `5d49431`
-**Latest pushed GitHub/origin status:** `origin/main` at `5d49431` (`milestone-82V-evidence-router`); 82W is not pushed
-**Pipeline maturity:** Full declarative safety chain (approval through evidence contract record stores) with thin interface refactor (80B-80M) and cognitive runtime observability (81A-81E) complete. Observation contract builder added (82B). Interface API model extraction complete (82C). File and self-inspection service extraction complete (82D). Patch lifecycle service extraction complete (82E). Mutation log service extraction complete (82F). Proposal console service extraction complete (82G). Code review and review bridge service extraction complete (82H). Code review router extraction complete (82J). Mutation log router extraction complete (82K). Proposal console router extraction complete (82L). File router extraction complete (82N). Patch router extraction complete (82O). Approval router extraction complete (82P). Dry run and sandbox contract router extraction complete (82Q). Simulation plan and simulation result router extraction complete (82R). Verification verdict and apply gate router extraction complete (82S). Human authorization and apply execution gate router extraction complete (82T). Executor contract and executor plan router extraction complete (82U). Evidence contract and collection plan router extraction complete (82V). Verification plan router extraction complete (82W). No real tool execution, apply, evidence collection, rollback, or observation yet.
+**Latest local tag:** `milestone-82W-verification-plan-router` at `baa6f6b`
+**Latest pushed GitHub/origin status:** `origin/main` at `baa6f6b` (`milestone-82W-verification-plan-router`); 82X is not pushed
+**Pipeline maturity:** Full declarative safety chain (approval through evidence contract record stores) with thin interface refactor (80B-80M) and cognitive runtime observability (81A-81E) complete. Observation contract builder added (82B). Interface API model extraction complete (82C). File and self-inspection service extraction complete (82D). Patch lifecycle service extraction complete (82E). Mutation log service extraction complete (82F). Proposal console service extraction complete (82G). Code review and review bridge service extraction complete (82H). Code review router extraction complete (82J). Mutation log router extraction complete (82K). Proposal console router extraction complete (82L). File router extraction complete (82N). Patch router extraction complete (82O). Approval router extraction complete (82P). Dry run and sandbox contract router extraction complete (82Q). Simulation plan and simulation result router extraction complete (82R). Verification verdict and apply gate router extraction complete (82S). Human authorization and apply execution gate router extraction complete (82T). Executor contract and executor plan router extraction complete (82U). Evidence contract and collection plan router extraction complete (82V). Verification plan router extraction complete (82W). Tool registry and tool plan router extraction complete (82X). No real tool execution, apply, evidence collection, rollback, or observation yet.
 
 ---
 
@@ -2503,6 +2503,54 @@ Extracted 18 endpoint handlers (6 proposal-review-console, 6 proposal-revision-c
   - No apply/rollback
   - No evidence collection
   - No Observation Record Store
+  - Committed, tagged, and pushed as milestone-82W-verification-plan-router at baa6f6b
+  - Superseded next-step status: 82X Build completed locally after the 82X planning artifact
+- 82X Build — Tool Registry + Tool Plan Router Extraction
+  - Created aether/interface/routers/tool_registry_plan_routes.py (117 lines, 4000 bytes)
+  - Moved 13 tool-registry/tool-plan routes from api_server.py to tool_registry_plan_routes.py
+  - Added app.include_router(tool_registry_plan_router, prefix="")
+  - Removed tool_registry_service import block from api_server.py
+  - Removed tool_plan_service import block from api_server.py
+  - Removed ToolRegisterRequest, ToolSearchRequest, ToolPolicyUpdateRequest, and ToolPlanRequest from api_server.py after unused-reference proof
+  - /action/tool-executor routes remain in api_server.py
+  - tool_execution_service imports remain in api_server.py
+  - ToolExecutionRequest remains in api_server.py
+  - ToolPlanListRequest and ToolExecutionListRequest remain unchanged in api_server.py
+  - /chat remains unchanged
+  - /awaken remains unchanged
+  - Root and identity routes remain unchanged
+  - /verification/classify remains unchanged
+  - Memory routes remain unchanged
+  - OpenAPI exact match
+  - OpenAPI path count unchanged: 300
+  - OpenAPI schema count unchanged: 103
+  - All 13 moved paths present
+  - All tool-execution protected paths present
+  - Operation IDs unchanged
+  - Full pytest 1401/1401 passed
+  - Raw len(app.routes) changed 179→167 due to include_router representation and is not the contract gate
+  - api_server.py reduced from 881 lines / 52354 bytes to 773 lines / 48903 bytes
+  - No api_models.py changes
+  - No tool_registry_service.py changes
+  - No tool_plan_service.py changes
+  - No tool_execution_service.py changes
+  - No service module changes
+  - No action module changes
+  - No test file changes
+  - No tool-registry behavior changes
+  - No tool-plan behavior changes
+  - No tool-execution behavior changes
+  - No persistence behavior changes
+  - No memory/timeline/graph behavior changes
+  - No side-effect behavior changes
+  - No manual tool-registry endpoint invocation
+  - No manual tool-plan endpoint invocation
+  - No manual tool-execution endpoint invocation
+  - No source mutation
+  - No tool execution added or performed
+  - No apply/rollback
+  - No evidence collection
+  - No Observation Record Store
   - Complete locally; not committed, tagged, or pushed
-  - Next: 82X — Remaining Router Extraction Plan
-  - 82X not started
+  - Next: 82Y — Remaining Router Extraction Plan
+  - 82Y not started
