@@ -676,7 +676,8 @@ def test_c1_service_extraction_is_exact_and_router_extraction_has_not_started():
         "final_real_apply_executor_routes.py",
     )
     services_root = PROJECT_ROOT / "aether/action/services"
-    assert not (services_root / "final_real_apply_executor_service.py").exists()
+    assert (services_root / "final_real_apply_executor_service.py").exists()  # C2 service extraction (82AK)
+    assert not (services_root / "final_real_apply_executor_routes.py").exists()  # no C2 router extraction
     assert {
         handler
         for handlers in C1_SERVICE_HANDLER_TO_ACTION.values()

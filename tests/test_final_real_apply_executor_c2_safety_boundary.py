@@ -25,36 +25,42 @@ EXPECTED_OPENAPI_SHA256 = (
 C2_ENDPOINTS = {
     ("POST", "/action/final-real-apply-executor/open"): (
         "open_final_real_apply_executor_action",
+        "handle_open_final_real_apply_executor",
         "open_final_real_apply_executor",
         "open_final_real_apply_executor_action_action_final_real_apply_executor_open_post",
         "record",
     ),
     ("POST", "/action/final-real-apply-executor/execute"): (
         "execute_final_real_apply_action",
+        "handle_execute_final_real_apply",
         "execute_final_real_apply",
         "execute_final_real_apply_action_action_final_real_apply_executor_execute_post",
         "record",
     ),
     ("GET", "/action/final-real-apply-executor/status"): (
         "get_final_real_apply_executor_status_action",
+        "handle_get_final_real_apply_executor_status",
         "final_real_apply_executor_status",
         "get_final_real_apply_executor_status_action_action_final_real_apply_executor_status_get",
         "final_real_apply_executor",
     ),
     ("GET", "/action/final-real-apply-executor/list"): (
         "list_final_real_apply_executor_action",
+        "handle_list_final_real_apply_executor_records",
         "list_final_real_apply_executor_records",
         "list_final_real_apply_executor_action_action_final_real_apply_executor_list_get",
         "records",
     ),
     ("GET", "/action/final-real-apply-executor/{record_id}/summary"): (
         "summarize_final_real_apply_executor_action",
+        "handle_summarize_final_real_apply_executor",
         "summarize_final_real_apply_executor",
         "summarize_final_real_apply_executor_action_action_final_real_apply_executor__record_id__summary_get",
         "summary",
     ),
     ("GET", "/action/final-real-apply-executor/{record_id}"): (
         "get_final_real_apply_executor_action",
+        "handle_get_final_real_apply_executor_record",
         "get_final_real_apply_executor_record",
         "get_final_real_apply_executor_action_action_final_real_apply_executor__record_id__get",
         "record",
@@ -215,7 +221,7 @@ def test_c2_openapi_inventory_operation_ids_and_exact_schema_are_locked():
     assert len(schema.get("components", {}).get("schemas", {})) == 103
     assert len(C2_ENDPOINTS) == 6
 
-    for (method, path), (_, _, operation_id, _) in C2_ENDPOINTS.items():
+    for (method, path), (_, _, _, operation_id, _) in C2_ENDPOINTS.items():
         assert schema["paths"][path][method.lower()]["operationId"] == operation_id
 
     canonical = _canonical_openapi(schema)
@@ -225,11 +231,11 @@ def test_c2_openapi_inventory_operation_ids_and_exact_schema_are_locked():
         assert baseline == schema
 
 
-def test_c2_routes_remain_exact_direct_action_pass_throughs():
+def test_c2_routes_remain_exact_service_pass_throughs():
     source_path = PROJECT_ROOT / "aether/interface/api_server.py"
     tree = ast.parse(source_path.read_text(encoding="utf-8"))
     expected = {
-        details[0]: (details[1], details[3])
+        details[0]: (details[1], details[4])
         for details in C2_ENDPOINTS.values()
     }
     found = {}
@@ -249,37 +255,23 @@ def test_c2_routes_remain_exact_direct_action_pass_throughs():
         if node.name not in expected:
             continue
 
-        action_name, wrapper_key = expected[node.name]
+        service_handler_name, wrapper_key = expected[node.name]
         assert len(node.body) == 1
         assert isinstance(node.body[0], ast.Return)
-        assert isinstance(node.body[0].value, ast.Dict)
-        calls = [
-            child for child in ast.walk(node.body[0])
-            if isinstance(child, ast.Call)
-        ]
-        assert len(calls) == 1
-        assert isinstance(calls[0].func, ast.Name)
-        assert calls[0].func.id == action_name
-        keys = {
-            key.value
-            for key in node.body[0].value.keys
-            if isinstance(key, ast.Constant)
-        }
-        assert keys == {"name", wrapper_key}
-        found[node.name] = action_name
+        assert isinstance(node.body[0].value, ast.Call)
+        call = node.body[0].value
+        assert isinstance(call.func, ast.Name)
+        assert call.func.id == service_handler_name
+        found[node.name] = service_handler_name
 
     assert found == {
-        route_name: action_name
-        for route_name, (action_name, _) in expected.items()
+        route_name: service_handler_name
+        for route_name, (service_handler_name, _) in expected.items()
     }
-    assert imported_from_action == {
+    assert imported_from_action == set()
+    assert imported_from_service == {
         details[1] for details in C2_ENDPOINTS.values()
     }
-    assert imported_from_service == set()
-    assert not (
-        PROJECT_ROOT
-        / "aether/action/services/final_real_apply_executor_service.py"
-    ).exists()
 
 
 def test_c2_action_static_risk_is_single_explicit_real_apply_boundary():
@@ -342,11 +334,60 @@ def test_c2_action_static_risk_is_single_explicit_real_apply_boundary():
     )
 
 
-def test_c2_service_absent_and_c1_services_cannot_reach_real_apply():
+def test_c2_service_module_exists_and_is_boundary_correct():
     services_root = PROJECT_ROOT / "aether/action/services"
-    assert not (services_root / "final_real_apply_executor_service.py").exists()
+    service_path = services_root / "final_real_apply_executor_service.py"
+    assert service_path.exists()
 
+    tree = ast.parse(service_path.read_text(encoding="utf-8"))
+
+    functions = {
+        node.name: node
+        for node in tree.body
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+    }
+    expected_handlers = {
+        details[1] for details in C2_ENDPOINTS.values()
+    }
+    for handler in expected_handlers:
+        assert handler in functions, f"Missing service handler: {handler}"
+
+    called_action_functions = {}
+    for handler_name, func in functions.items():
+        calls = [
+            node for node in ast.walk(func) if isinstance(node, ast.Call)
+        ]
+        assert len(calls) == 1, f"{handler_name}: expected 1 call, got {len(calls)}"
+        call_name = ast.unparse(calls[0].func)
+        called_action_functions[handler_name] = call_name
+
+    expected_routes = {
+        details[1]: details[2]
+        for details in C2_ENDPOINTS.values()
+    }
+    assert called_action_functions == expected_routes
+
+    for func in tree.body:
+        if isinstance(func, ast.ImportFrom):
+            assert func.module == "aether.action.final_real_apply_executor"
+
+    imported_names = set()
+    for func in tree.body:
+        if isinstance(func, (ast.Import, ast.ImportFrom)):
+            if isinstance(func, ast.ImportFrom):
+                imported_names.update(alias.name for alias in func.names)
+            else:
+                imported_names.update(alias.name for alias in func.names)
+
+    forbidden_imports = {"apply_patch_proposal", "rollback", "collect_evidence", "execute_tool"}
+    assert imported_names.isdisjoint(forbidden_imports)
+
+
+def test_c1_services_cannot_reach_real_apply():
+    services_root = PROJECT_ROOT / "aether/action/services"
     for path in services_root.glob("*.py"):
+        if path.name == "final_real_apply_executor_service.py":
+            continue
         tree = ast.parse(path.read_text(encoding="utf-8"))
         for node in ast.walk(tree):
             if isinstance(node, ast.ImportFrom):
