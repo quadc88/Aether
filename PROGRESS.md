@@ -1,17 +1,17 @@
 # Aether Project Progress Ledger
 
-**Last updated:** Milestone 82AI Build — Post-Chain Gate C1 Service Extraction (finalized, committed, tagged, pushed)
+**Last updated:** Milestone 82AJ Build — Final Real-Apply Executor C2 Safety Boundary Plan/Tests (complete locally, not committed)
 **Aether version:** 0.2.0  
-**Current completed local milestone:** 82AI Build — Post-Chain Gate C1 Service Extraction (finalized)
-**Current active milestone/module:** None; 82AI finalized and 82AJ has not started
-**Current status:** 82AI C1 service extraction committed, tagged, and pushed; ready for 82AJ
-**Next milestone:** 82AJ — Final Real-Apply Executor C2 Safety Boundary Plan/Tests
-**Test baseline:** 1505/1505 passed, 0 failures, 0 errors
+**Current completed local milestone:** 82AJ Build — Final Real-Apply Executor C2 Safety Boundary Plan/Tests (not committed)
+**Current active milestone/module:** None; 82AJ validation complete and 82AK has not started
+**Current status:** 82AJ C2 safety boundary tests complete locally, not committed, tagged, or pushed
+**Next milestone:** 82AK Build — Final Real-Apply Executor C2 Service Extraction
+**Test baseline:** 1516/1516 passed, 0 failures, 0 errors
 **OpenAPI baseline:** 300 paths / 103 schemas
 **Latest local tag:** `milestone-82AI-post-chain-c1-service-extraction` at `35f457b`
-**Latest pushed GitHub/origin status:** 82AI finalization commit `35f457b` pushed to `origin/main`; remote tag `milestone-82AI-post-chain-c1-service-extraction` at `35f457b`; 82AJ is not pushed or started
+**Latest pushed GitHub/origin status:** `origin/main` at `4ed1c8c`; remote tag `milestone-82AI-post-chain-c1-service-extraction` at `35f457b`; 82AJ is not pushed
 **Runtime-state reset authorization:** Yes; human authority retroactively authorized the 82AD identity-guard runtime-state reset on 2026-07-30, with audit retained at `/home/aether/summaries/milestone_82AD_runtime_state_review.txt`.
-**Pipeline maturity:** Full declarative safety chain (approval through evidence contract record stores) with thin interface refactor (80B-80M) and cognitive runtime observability (81A-81E) complete. Observation contract builder added (82B). Interface API model extraction complete (82C). File and self-inspection service extraction complete (82D). Patch lifecycle service extraction complete (82E). Mutation log service extraction complete (82F). Proposal console service extraction complete (82G). Code review and review bridge service extraction complete (82H). Code review router extraction complete (82J). Mutation log router extraction complete (82K). Proposal console router extraction complete (82L). File router extraction complete (82N). Patch router extraction complete (82O). Approval router extraction complete (82P). Dry run and sandbox contract router extraction complete (82Q). Simulation plan and simulation result router extraction complete (82R). Verification verdict and apply gate router extraction complete (82S). Human authorization and apply execution gate router extraction complete (82T). Executor contract and executor plan router extraction complete (82U). Evidence contract and collection plan router extraction complete (82V). Verification plan router extraction complete (82W). Tool registry and tool plan router extraction complete (82X). Memory state fixture isolation complete (82Z). Memory router extraction complete (82AA). Tool execution safety boundary planning and API-level safety tests complete (82AC-82AD). Tool execution router extraction finalized (82AE). Post-chain C1 state-boundary coverage and full-suite tests-only private/runtime persistence isolation finalized (82AH/82AH-R). Post-chain C1 service extraction finalized (82AI). C2 final real-apply execution remains deferred. No real apply, evidence collection, rollback, or observation exists yet.
+**Pipeline maturity:** Full declarative safety chain (approval through evidence contract record stores) with thin interface refactor (80B-80M) and cognitive runtime observability (81A-81E) complete. Observation contract builder added (82B). Interface API model extraction complete (82C). File and self-inspection service extraction complete (82D). Patch lifecycle service extraction complete (82E). Mutation log service extraction complete (82F). Proposal console service extraction complete (82G). Code review and review bridge service extraction complete (82H). Code review router extraction complete (82J). Mutation log router extraction complete (82K). Proposal console router extraction complete (82L). File router extraction complete (82N). Patch router extraction complete (82O). Approval router extraction complete (82P). Dry run and sandbox contract router extraction complete (82Q). Simulation plan and simulation result router extraction complete (82R). Verification verdict and apply gate router extraction complete (82S). Human authorization and apply execution gate router extraction complete (82T). Executor contract and executor plan router extraction complete (82U). Evidence contract and collection plan router extraction complete (82V). Verification plan router extraction complete (82W). Tool registry and tool plan router extraction complete (82X). Memory state fixture isolation complete (82Z). Memory router extraction complete (82AA). Tool execution safety boundary planning and API-level safety tests complete (82AC-82AD). Tool execution router extraction finalized (82AE). Post-chain C1 state-boundary coverage and full-suite tests-only private/runtime persistence isolation finalized (82AH/82AH-R). Post-chain C1 service extraction finalized (82AI). C2 final real-apply executor safety boundary tests are complete locally (82AJ); C2 service extraction remains deferred to 82AK. No real apply, evidence collection, rollback, or observation exists yet.
 
 ---
 
@@ -2704,3 +2704,23 @@ Extracted 18 endpoint handlers (6 proposal-review-console, 6 proposal-revision-c
   - Finalized, committed, tagged, and pushed as `milestone-82AI-post-chain-c1-service-extraction` at `35f457b`
   - Next: 82AJ — Final Real-Apply Executor C2 Safety Boundary Plan/Tests
   - 82AJ not started
+- 82AJ Build — Final Real-Apply Executor C2 Safety Boundary Plan/Tests
+  - Tests-only C2 final-real-apply safety prerequisite complete locally
+  - Added `tests/test_final_real_apply_executor_c2_safety_boundary.py` with 11 safety-boundary tests
+  - Covered all 6 `/action/final-real-apply-executor` endpoints
+  - Locked all 6 current C2 operation IDs and the exact OpenAPI contract
+  - Locked the current route → direct action boundary before service extraction
+  - Locked `execute_final_real_apply` as the sole C2 `apply_patch_proposal(..., False)` call site
+  - Execute endpoint guarded by a fail-closed deny-real-apply monkeypatch
+  - Missing/non-ready execute proved not to reach `apply_patch_proposal`
+  - `final_real_apply_executor_service.py` not created
+  - No production source changes
+  - No router or service extraction
+  - No action behavior changes
+  - OpenAPI exact match: 300 paths / 103 schemas
+  - Full pytest: 1516/1516 passed, 0 failures, 0 errors
+  - Full-suite real-root fingerprint passed with drift count 0
+  - No real apply, rollback, evidence collection, or tool execution
+  - Complete locally; not committed, tagged, or pushed
+  - Next: 82AK Build — Final Real-Apply Executor C2 Service Extraction
+  - 82AK not started
