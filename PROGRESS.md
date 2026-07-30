@@ -1,15 +1,15 @@
 # Aether Project Progress Ledger
 
-**Last updated:** Milestone 82X Build — Tool Registry + Tool Plan Router Extraction (complete locally, not committed)
+**Last updated:** Milestone 82AA Build — Memory Router Extraction (complete locally, not committed)
 **Aether version:** 0.2.0  
-**Current completed local milestone:** 82X Build — Tool Registry + Tool Plan Router Extraction (not committed)
-**Current active milestone/module:** None; 82X validation complete and 82Y has not started
-**Current status:** 82X Build complete locally, not committed, tagged, or pushed
-**Next milestone:** 82Y — Remaining Router Extraction Plan
-**Test baseline:** 1401/1401 passed, 0 failures, 0 errors
-**Latest local tag:** `milestone-82W-verification-plan-router` at `baa6f6b`
-**Latest pushed GitHub/origin status:** `origin/main` at `baa6f6b` (`milestone-82W-verification-plan-router`); 82X is not pushed
-**Pipeline maturity:** Full declarative safety chain (approval through evidence contract record stores) with thin interface refactor (80B-80M) and cognitive runtime observability (81A-81E) complete. Observation contract builder added (82B). Interface API model extraction complete (82C). File and self-inspection service extraction complete (82D). Patch lifecycle service extraction complete (82E). Mutation log service extraction complete (82F). Proposal console service extraction complete (82G). Code review and review bridge service extraction complete (82H). Code review router extraction complete (82J). Mutation log router extraction complete (82K). Proposal console router extraction complete (82L). File router extraction complete (82N). Patch router extraction complete (82O). Approval router extraction complete (82P). Dry run and sandbox contract router extraction complete (82Q). Simulation plan and simulation result router extraction complete (82R). Verification verdict and apply gate router extraction complete (82S). Human authorization and apply execution gate router extraction complete (82T). Executor contract and executor plan router extraction complete (82U). Evidence contract and collection plan router extraction complete (82V). Verification plan router extraction complete (82W). Tool registry and tool plan router extraction complete (82X). No real tool execution, apply, evidence collection, rollback, or observation yet.
+**Current completed local milestone:** 82AA Build — Memory Router Extraction (not committed)
+**Current active milestone/module:** None; 82AA validation complete and 82AB has not started
+**Current status:** 82AA Build complete locally, not committed, tagged, or pushed
+**Next milestone:** 82AB — Remaining Interface Risk Plan
+**Test baseline:** 1409/1409 passed, 0 failures, 0 errors
+**Latest local tag:** `milestone-82Z-memory-state-fixture-tests` at `2138983`
+**Latest pushed GitHub/origin status:** `origin/main` at `2138983` (`milestone-82Z-memory-state-fixture-tests`); 82AA is not pushed
+**Pipeline maturity:** Full declarative safety chain (approval through evidence contract record stores) with thin interface refactor (80B-80M) and cognitive runtime observability (81A-81E) complete. Observation contract builder added (82B). Interface API model extraction complete (82C). File and self-inspection service extraction complete (82D). Patch lifecycle service extraction complete (82E). Mutation log service extraction complete (82F). Proposal console service extraction complete (82G). Code review and review bridge service extraction complete (82H). Code review router extraction complete (82J). Mutation log router extraction complete (82K). Proposal console router extraction complete (82L). File router extraction complete (82N). Patch router extraction complete (82O). Approval router extraction complete (82P). Dry run and sandbox contract router extraction complete (82Q). Simulation plan and simulation result router extraction complete (82R). Verification verdict and apply gate router extraction complete (82S). Human authorization and apply execution gate router extraction complete (82T). Executor contract and executor plan router extraction complete (82U). Evidence contract and collection plan router extraction complete (82V). Verification plan router extraction complete (82W). Tool registry and tool plan router extraction complete (82X). Memory state fixture isolation complete (82Z). Memory router extraction complete locally (82AA). No real tool execution, apply, evidence collection, rollback, or observation yet.
 
 ---
 
@@ -209,13 +209,14 @@ New in 76A:
 
 ## 7. Current Test Baseline
 
-As of Milestone 82C:
-- **Pytest:** Baseline 1401/1401 passed (82B); after 82C extraction: 1401/1401 passed, 0 failures, 0 errors
-- **Compile:** All modules compiled successfully (api_models.py + api_server.py)
-- **OpenAPI contract:** Exact match (300 paths, 103 schemas) before and after extraction
+As of Milestone 82AA:
+- **Pytest:** 1409/1409 passed, 0 failures, 0 errors
+- **Memory boundary tests:** 8/8 passed with full-suite real-store fingerprint unchanged
+- **Compile:** `api_server.py` and `memory_routes.py` compiled successfully
+- **OpenAPI contract:** Exact match (300 paths, 103 schemas) before and after memory router extraction
 - **Model count:** 121 BaseModel classes extracted from api_server.py to api_models.py
-- **File size:** api_server.py thinned from 2186 lines (113058 bytes) to 1694 lines (99158 bytes)
-- **Git safety:** Clean — no diffs on README.md, ARCHITECTURE.md, code_reviewer.py
+- **File size:** api_server.py reduced to 622 lines (44552 bytes); memory_routes.py is 159 lines (4775 bytes)
+- **Git safety:** `git diff --check` clean; only the allowed 82AA Build files changed
 - **Trailing whitespace:** Clean
 - **Private/runtime paths:** Not tracked by git
 - **Test modules:**
@@ -2554,3 +2555,41 @@ Extracted 18 endpoint handlers (6 proposal-review-console, 6 proposal-revision-c
   - Complete locally; not committed, tagged, or pushed
   - Next: 82Y — Remaining Router Extraction Plan
   - 82Y not started
+- 82AA Build — Memory Router Extraction
+  - Created aether/interface/routers/memory_routes.py (159 lines, 4775 bytes)
+  - Moved all 21 working, episodic, semantic, timeline, and graph memory routes from api_server.py to memory_routes.py
+  - Added app.include_router(memory_router, prefix="")
+  - Removed the complete memory_service import block from api_server.py
+  - Removed EpisodeWriteRequest, GoalRequest, GraphEdgeRequest, GraphNodeRequest, GraphSearchRequest, MilestoneRequest, SemanticSearchRequest, and TimelineSearchRequest from api_server.py after unused-reference proof
+  - /chat remains unchanged
+  - /awaken remains unchanged
+  - Root and identity routes remain unchanged
+  - /verification/classify remains unchanged
+  - Tool-executor routes remain unchanged
+  - OpenAPI exact match
+  - OpenAPI path count unchanged: 300
+  - OpenAPI schema count unchanged: 103
+  - All 21 moved memory paths present
+  - All protected paths present
+  - Operation IDs unchanged
+  - tests/test_memory_state_boundary.py: 8/8 passed
+  - Full pytest 1409/1409 passed
+  - Real-store fingerprint before/after the full suite unchanged
+  - Raw len(app.routes) changed 167→147 due to include_router representation and is not the contract gate
+  - api_server.py reduced from 773 lines / 48903 bytes to 622 lines / 44552 bytes
+  - No api_models.py changes
+  - No memory_service.py changes
+  - No aether/memory module changes
+  - No test changes
+  - No service or action module changes
+  - No persistence behavior changes
+  - No memory, timeline, graph, semantic, or vector behavior changes
+  - No side-effect behavior changes
+  - No manual memory endpoint invocation outside pytest
+  - No source mutation
+  - No tool execution
+  - No apply/rollback
+  - No Observation Record Store
+  - Complete locally; not committed, tagged, or pushed
+  - Next: 82AB — Remaining Interface Risk Plan
+  - 82AB not started

@@ -14,14 +14,9 @@ from aether.interface.api_models import (
     DryRunDecisionBody,
     DryRunReviewGateOpenRequest,
     DryRunReviewSubmitRequest,
-    EpisodeWriteRequest,
     FinalRealApplyExecuteRequest,
     FinalRealApplyExecutorListRequest,
     FinalRealApplyExecutorOpenRequest,
-    GoalRequest,
-    GraphEdgeRequest,
-    GraphNodeRequest,
-    GraphSearchRequest,
     GuidedBridgeSelectionLaunchRequest,
     GuidedBridgeSelectionLauncherListRequest,
     GuidedProposalDecisionLauncherListRequest,
@@ -39,7 +34,6 @@ from aether.interface.api_models import (
     InitializeIdentityGuardResponse,
     MilestoneCompletedRequest,
     MilestoneReportExportRequest,
-    MilestoneRequest,
     MutationRecordRequest,
     PostApplyVerificationGateListRequest,
     PostApplyVerificationGateOpenRequest,
@@ -89,8 +83,6 @@ from aether.interface.api_models import (
     SelfModificationActionRequest,
     SelfModificationCreateRequest,
     SelfModificationReviewRequest,
-    SemanticSearchRequest,
-    TimelineSearchRequest,
     ToolExecutionListRequest,
     ToolExecutionRequest,
     ToolPlanListRequest,
@@ -118,30 +110,6 @@ from aether.action.services.tool_execution_service import (
 from aether.action.services.runtime_lifecycle_service import (
     handle_awaken,
 )
-from aether.action.services.memory_service import (
-    handle_clear_working_memory as _handle_clear_wm,
-    handle_create_graph_edge as _handle_create_graph_edge,
-    handle_create_graph_node as _handle_create_graph_node,
-    handle_get_working_memory as _handle_get_wm,
-    handle_graph_status as _handle_graph_status,
-    handle_index_semantic_memory as _handle_index_semantic,
-    handle_latest_episodic_memory as _handle_latest_episodic,
-    handle_latest_timeline_event as _handle_latest_timeline,
-    handle_list_episodic_memory as _handle_list_episodic,
-    handle_list_graph_edges as _handle_list_graph_edges,
-    handle_list_graph_nodes as _handle_list_graph_nodes,
-    handle_list_timeline_events as _handle_list_timeline,
-    handle_search_graph as _handle_search_graph,
-    handle_search_semantic_memory as _handle_search_semantic,
-    handle_search_timeline as _handle_search_timeline,
-    handle_seed_graph_memory as _handle_seed_graph,
-    handle_semantic_memory_status as _handle_semantic_status,
-    handle_set_working_goal as _handle_set_wm_goal,
-    handle_set_working_milestone as _handle_set_wm_milestone,
-    handle_timeline_status as _handle_timeline_status,
-    handle_write_episodic_memory as _handle_write_episodic,
-)
-
 from aether.action.self_modification_cycle import create_self_modification_session, review_self_modification_session, dry_run_self_modification_session, apply_self_modification_session, rollback_self_modification_session, self_modification_status, list_self_modification_sessions, get_self_modification_session, summarize_self_modification_session
 from aether.action.changelog_exporter import export_public_changelog, export_milestone_report, export_private_changelog_report, changelog_export_status
 from aether.action.repair_planner import create_repair_plan, get_repair_plan, list_repair_plans, repair_plan_status, summarize_repair_plan
@@ -162,6 +130,7 @@ from aether.interface.routers.executor_routes import executor_router
 from aether.interface.routers.evidence_routes import evidence_router
 from aether.interface.routers.verification_plan_routes import verification_plan_router
 from aether.interface.routers.tool_registry_plan_routes import tool_registry_plan_router
+from aether.interface.routers.memory_routes import memory_router
 from aether.action.approved_dry_run_gate import open_approved_dry_run_gate,execute_approved_dry_run,get_approved_dry_run_gate_record,list_approved_dry_run_gate_records,approved_dry_run_gate_status,summarize_approved_dry_run_gate
 from aether.action.dry_run_review_gate import open_dry_run_review_gate,submit_dry_run_review,get_dry_run_review_gate_record,list_dry_run_review_gate_records,dry_run_review_gate_status,summarize_dry_run_review_gate
 from aether.action.real_apply_approval_gate import open_real_apply_approval_gate,submit_real_apply_final_decision,get_real_apply_approval_gate_record,list_real_apply_approval_gate_records,real_apply_approval_gate_status,summarize_real_apply_approval_gate
@@ -196,6 +165,7 @@ app.include_router(executor_router, prefix="")
 app.include_router(evidence_router, prefix="")
 app.include_router(verification_plan_router, prefix="")
 app.include_router(tool_registry_plan_router, prefix="")
+app.include_router(memory_router, prefix="")
 
 
 # ---- Identity Integrity Endpoints (Milestone 48A) ----
@@ -348,127 +318,6 @@ def chat(request: ChatRequest):
         # --- Loop Trace (Milestone 81C) ---
         loop_trace=result.get("loop_trace"),
     )
-
-
-@app.get("/memory/working")
-def get_working_memory():
-    return _handle_get_wm()
-
-
-@app.post("/memory/working/goal")
-def set_working_goal(request: GoalRequest):
-    return _handle_set_wm_goal(goal=request.goal)
-
-
-@app.post("/memory/working/milestone")
-def set_working_milestone(request: MilestoneRequest):
-    return _handle_set_wm_milestone(milestone=request.milestone)
-
-
-@app.post("/memory/working/clear")
-def clear_working_memory():
-    return _handle_clear_wm()
-
-
-@app.post("/memory/episodic/write")
-def write_episodic_memory(request: EpisodeWriteRequest):
-    return _handle_write_episodic(
-        title=request.title,
-        summary=request.summary,
-        details=request.details,
-        importance=request.importance,
-        tags=request.tags,
-        related_files=request.related_files,
-    )
-
-
-@app.get("/memory/episodic/list")
-def list_episodic_memory(limit: int = 20):
-    return _handle_list_episodic(limit=limit)
-
-
-@app.get("/memory/episodic/latest")
-def get_latest_episodic_memory():
-    return _handle_latest_episodic()
-
-
-@app.post("/memory/semantic/index")
-def index_semantic_memory():
-    return _handle_index_semantic()
-
-
-@app.get("/memory/semantic/status")
-def get_semantic_memory_status():
-    return _handle_semantic_status()
-
-
-@app.post("/memory/semantic/search")
-def search_memory(request: SemanticSearchRequest):
-    return _handle_search_semantic(query=request.query, limit=request.limit)
-
-
-@app.get("/memory/timeline/status")
-def get_timeline_status():
-    return _handle_timeline_status()
-
-
-@app.get("/memory/timeline/list")
-def list_timeline_events(limit: int = 20):
-    return _handle_list_timeline(limit=limit)
-
-
-@app.get("/memory/timeline/latest")
-def get_latest_timeline_event():
-    return _handle_latest_timeline()
-
-
-@app.post("/memory/timeline/search")
-def search_timeline_memory(request: TimelineSearchRequest):
-    return _handle_search_timeline(query=request.query, limit=request.limit)
-
-
-@app.get("/memory/graph/status")
-def get_graph_memory_status():
-    return _handle_graph_status()
-
-
-@app.post("/memory/graph/node")
-def create_graph_node(request: GraphNodeRequest):
-    return _handle_create_graph_node(
-        label=request.label,
-        node_type=request.node_type,
-        properties=request.properties,
-    )
-
-
-@app.post("/memory/graph/edge")
-def create_graph_edge(request: GraphEdgeRequest):
-    return _handle_create_graph_edge(
-        source=request.source,
-        relation=request.relation,
-        target=request.target,
-        properties=request.properties,
-    )
-
-
-@app.get("/memory/graph/nodes")
-def get_graph_nodes(limit: int = 50):
-    return _handle_list_graph_nodes(limit=limit)
-
-
-@app.get("/memory/graph/edges")
-def get_graph_edges(limit: int = 50):
-    return _handle_list_graph_edges(limit=limit)
-
-
-@app.post("/memory/graph/search")
-def search_graph_memory(request: GraphSearchRequest):
-    return _handle_search_graph(query=request.query, limit=request.limit)
-
-
-@app.post("/memory/graph/seed")
-def seed_graph_memory():
-    return _handle_seed_graph()
 
 
 @app.post("/verification/classify")
