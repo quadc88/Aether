@@ -505,7 +505,7 @@ def test_c1_openapi_contract_and_operation_ids_are_locked():
 
 
 def test_c1_routes_are_exact_single_service_pass_throughs():
-    source_path = PROJECT_ROOT / "aether/interface/api_server.py"
+    source_path = PROJECT_ROOT / "aether/interface/routers/post_chain_c1_routes.py"
     tree = ast.parse(source_path.read_text(encoding="utf-8"))
     expected = C1_ROUTE_TO_SERVICE_HANDLER
     found = {}
@@ -517,6 +517,14 @@ def test_c1_routes_are_exact_single_service_pass_throughs():
             continue
         assert len(node.body) == 1
         assert isinstance(node.body[0], ast.Return)
+        assert any(
+            ast.unparse(decorator).startswith("post_chain_c1_router.")
+            for decorator in node.decorator_list
+        )
+        assert not any(
+            ast.unparse(decorator).startswith("app.")
+            for decorator in node.decorator_list
+        )
         calls = [child for child in ast.walk(node.body[0]) if isinstance(child, ast.Call)]
         assert len(calls) == 1
         assert isinstance(calls[0].func, ast.Name)
@@ -667,7 +675,7 @@ def test_protected_endpoint_contracts_remain_outside_c1():
                    for path in invoked_paths)
 
 
-def test_c1_service_extraction_is_exact_and_router_extraction_has_not_started():
+def test_c1_service_extraction_is_exact_and_c1_router_extraction_is_isolated():
     router_paths = (
         "approved_dry_run_gate_routes.py",
         "dry_run_review_gate_routes.py",
@@ -721,14 +729,20 @@ def test_c1_service_extraction_is_exact_and_router_extraction_has_not_started():
             ):
                 assert forbidden not in return_text
 
+    # 82AN Build: all 24 C1 post-chain routes moved to post_chain_c1_routes.py.
+    # The 4 family-named C1 router files and the C2 router file remain absent.
     assert not any(
         (PROJECT_ROOT / "aether/interface/routers" / name).exists()
         for name in router_paths
     )
 
-    tree = ast.parse(
+    api_tree = ast.parse(
         (PROJECT_ROOT / "aether/interface/api_server.py").read_text(encoding="utf-8")
     )
+    router_path = PROJECT_ROOT / "aether/interface/routers/post_chain_c1_routes.py"
+    assert router_path.exists()
+    router_tree = ast.parse(router_path.read_text(encoding="utf-8"))
+
     direct_modules = {
         "aether.action.approved_dry_run_gate",
         "aether.action.dry_run_review_gate",
@@ -741,19 +755,93 @@ def test_c1_service_extraction_is_exact_and_router_extraction_has_not_started():
         "aether.action.services.real_apply_approval_gate_service",
         "aether.action.services.post_apply_verification_gate_service",
     }
+    c2_service_module = "aether.action.services.final_real_apply_executor_service"
     imported_modules = {
-        node.module for node in tree.body
+        node.module for node in api_tree.body
         if isinstance(node, ast.ImportFrom)
     }
     assert direct_modules.isdisjoint(imported_modules)
-    assert service_modules.issubset(imported_modules)
+    assert service_modules.isdisjoint(imported_modules)
+    assert c2_service_module in imported_modules
 
-    # 82AM Build added app.include_router(repair_router, prefix="") (16 -> 17);
-    # C1 gate router extraction has not started, so the 5 C1 router files are absent.
+    router_imported_modules = {
+        node.module for node in router_tree.body
+        if isinstance(node, ast.ImportFrom)
+    }
+    assert service_modules.issubset(router_imported_modules)
+    assert "aether.action.final_real_apply_executor" not in router_imported_modules
+    assert not any(
+        module.startswith("aether.action.")
+        and not module.startswith("aether.action.services.")
+        for module in router_imported_modules
+    )
+    assert not any(
+        "final_real_apply" in module or "repair" in module or "guided" in module
+        or "self_modification" in module or "changelog" in module
+        or "tool" in module or "patch" in module or "evidence" in module
+        for module in router_imported_modules
+    )
+
+    router_assigns = [
+        node for node in router_tree.body
+        if isinstance(node, ast.Assign)
+        and any(
+            isinstance(target, ast.Name) and target.id == "post_chain_c1_router"
+            for target in node.targets
+        )
+    ]
+    assert len(router_assigns) == 1
+    assert ast.unparse(router_assigns[0].value) == "APIRouter()"
+
+    router_functions = {
+        node.name: node
+        for node in router_tree.body
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+        and node.name in C1_ROUTE_TO_SERVICE_HANDLER
+    }
+    assert set(router_functions) == set(C1_ROUTE_TO_SERVICE_HANDLER)
+    for name, node in router_functions.items():
+        assert len(node.body) == 1
+        assert isinstance(node.body[0], ast.Return)
+        assert any(
+            ast.unparse(decorator).startswith("post_chain_c1_router.")
+            for decorator in node.decorator_list
+        )
+        assert not any(
+            ast.unparse(decorator).startswith("app.")
+            for decorator in node.decorator_list
+        )
+        calls = [
+            child for child in ast.walk(node.body[0])
+            if isinstance(child, ast.Call)
+        ]
+        assert len(calls) == 1
+        assert isinstance(calls[0].func, ast.Name)
+        assert calls[0].func.id == C1_ROUTE_TO_SERVICE_HANDLER[name]
+
+    api_functions = {
+        node.name for node in api_tree.body
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+    }
+    assert api_functions.isdisjoint(set(C1_ROUTE_TO_SERVICE_HANDLER))
+
+    api_c2_functions = [
+        node for node in api_tree.body
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+        and any(
+            ast.unparse(decorator).startswith("app.")
+            and "/action/final-real-apply-executor" in ast.unparse(decorator)
+            for decorator in node.decorator_list
+        )
+    ]
+    assert len(api_c2_functions) == 6
+
+    # 82AN Build added app.include_router(post_chain_c1_router, prefix="") (17 -> 18);
+    # C2 router extraction has not started, so final_real_apply_executor_routes.py is absent.
     include_router_calls = [
-        node for node in ast.walk(tree)
+        node for node in ast.walk(api_tree)
         if isinstance(node, ast.Call)
         and isinstance(node.func, ast.Attribute)
         and node.func.attr == "include_router"
     ]
-    assert len(include_router_calls) == 17
+    assert len(include_router_calls) == 18

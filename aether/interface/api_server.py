@@ -121,11 +121,8 @@ from aether.interface.routers.tool_registry_plan_routes import tool_registry_pla
 from aether.interface.routers.memory_routes import memory_router
 from aether.interface.routers.tool_executor_routes import tool_executor_router
 from aether.interface.routers.repair_routes import repair_router
-from aether.action.services.approved_dry_run_gate_service import handle_open_approved_dry_run_gate,handle_execute_approved_dry_run,handle_get_approved_dry_run_gate_status,handle_list_approved_dry_run_gate_records,handle_summarize_approved_dry_run_gate,handle_get_approved_dry_run_gate_record
-from aether.action.services.dry_run_review_gate_service import handle_open_dry_run_review_gate,handle_submit_dry_run_review,handle_get_dry_run_review_gate_status,handle_list_dry_run_review_gate_records,handle_summarize_dry_run_review_gate,handle_get_dry_run_review_gate_record
-from aether.action.services.real_apply_approval_gate_service import handle_open_real_apply_approval_gate,handle_submit_real_apply_final_decision,handle_get_real_apply_approval_gate_status,handle_list_real_apply_approval_gate_records,handle_summarize_real_apply_approval_gate,handle_get_real_apply_approval_gate_record
+from aether.interface.routers.post_chain_c1_routes import post_chain_c1_router
 from aether.action.services.final_real_apply_executor_service import handle_open_final_real_apply_executor,handle_execute_final_real_apply,handle_get_final_real_apply_executor_status,handle_list_final_real_apply_executor_records,handle_summarize_final_real_apply_executor,handle_get_final_real_apply_executor_record
-from aether.action.services.post_apply_verification_gate_service import handle_open_post_apply_verification_gate,handle_submit_post_apply_verification,handle_get_post_apply_verification_gate_status,handle_list_post_apply_verification_gate_records,handle_summarize_post_apply_verification_gate,handle_get_post_apply_verification_gate_record
 from aether.action.guided_repair_intake import open_guided_repair_intake,submit_guided_repair_intake_decision,export_guided_repair_intake_report,export_guided_repair_intake_index,export_private_guided_repair_intake_record,get_guided_repair_intake_record,list_guided_repair_intake_records,guided_repair_intake_status,summarize_guided_repair_intake
 from aether.action.guided_repair_plan_launcher import launch_guided_repair_plan,get_guided_repair_plan_launcher_record,list_guided_repair_plan_launcher_records,guided_repair_plan_launcher_status,summarize_guided_repair_plan_launcher
 from aether.action.guided_bridge_selection_launcher import launch_guided_bridge_selection,get_guided_bridge_selection_launcher_record,list_guided_bridge_selection_launcher_records,guided_bridge_selection_launcher_status,summarize_guided_bridge_selection_launcher
@@ -155,6 +152,7 @@ app.include_router(tool_registry_plan_router, prefix="")
 app.include_router(memory_router, prefix="")
 app.include_router(tool_executor_router, prefix="")
 app.include_router(repair_router, prefix="")
+app.include_router(post_chain_c1_router, prefix="")
 
 
 # ---- Identity Integrity Endpoints (Milestone 48A) ----
@@ -372,42 +370,6 @@ def export_milestone_changelog_action(request:MilestoneReportExportRequest):retu
 def export_private_changelog_action(request:ChangelogExportRequest):return export_private_changelog_report(request.milestone,request.limit,request.metadata)
 @app.get("/action/changelog/status")
 def get_changelog_status():return changelog_export_status()
-@app.post("/action/approved-dry-run-gate/open")
-def open_approved_dry_run_gate_action(request:ApprovedDryRunGateOpenRequest):return handle_open_approved_dry_run_gate(request.source_type,request.source_id,request.metadata)
-@app.post("/action/approved-dry-run-gate/execute")
-def execute_approved_dry_run_gate_action(request:ApprovedDryRunExecuteRequest):return handle_execute_approved_dry_run(request.gate_record_id,request.create_approval_if_required,request.metadata)
-@app.get("/action/approved-dry-run-gate/status")
-def get_approved_dry_run_gate_status_action():return handle_get_approved_dry_run_gate_status()
-@app.get("/action/approved-dry-run-gate/list")
-def list_approved_dry_run_gate_action(status:str|None=None,proposal_id:str|None=None,limit:int=50):return handle_list_approved_dry_run_gate_records(status,proposal_id,limit)
-@app.get("/action/approved-dry-run-gate/{record_id}/summary")
-def summarize_approved_dry_run_gate_action(record_id:str):return handle_summarize_approved_dry_run_gate(record_id)
-@app.get("/action/approved-dry-run-gate/{record_id}")
-def get_approved_dry_run_gate_action(record_id:str):return handle_get_approved_dry_run_gate_record(record_id)
-@app.post("/action/dry-run-review-gate/open")
-def open_dry_run_review_gate_action(request:DryRunReviewGateOpenRequest):return handle_open_dry_run_review_gate(request.source_type,request.source_id,request.metadata)
-@app.post("/action/dry-run-review-gate/submit")
-def submit_dry_run_review_action(request:DryRunReviewSubmitRequest):return handle_submit_dry_run_review(request.review_gate_record_id,request.decision,request.comment,request.reviewer,request.metadata)
-@app.get("/action/dry-run-review-gate/status")
-def get_dry_run_review_gate_status_action():return handle_get_dry_run_review_gate_status()
-@app.get("/action/dry-run-review-gate/list")
-def list_dry_run_review_gate_action(status:str|None=None,proposal_id:str|None=None,limit:int=50):return handle_list_dry_run_review_gate_records(status,proposal_id,limit)
-@app.get("/action/dry-run-review-gate/{record_id}/summary")
-def summarize_dry_run_review_gate_action(record_id:str):return handle_summarize_dry_run_review_gate(record_id)
-@app.get("/action/dry-run-review-gate/{record_id}")
-def get_dry_run_review_gate_action(record_id:str):return handle_get_dry_run_review_gate_record(record_id)
-@app.post("/action/real-apply-approval-gate/open")
-def open_real_apply_approval_gate_action(request:RealApplyApprovalGateOpenRequest):return handle_open_real_apply_approval_gate(request.source_type,request.source_id,request.create_approval_item,request.metadata)
-@app.post("/action/real-apply-approval-gate/submit")
-def submit_real_apply_final_decision_action(request:RealApplyFinalDecisionRequest):return handle_submit_real_apply_final_decision(request.gate_record_id,request.decision,request.comment,request.reviewer,request.metadata)
-@app.get("/action/real-apply-approval-gate/status")
-def get_real_apply_approval_gate_status_action():return handle_get_real_apply_approval_gate_status()
-@app.get("/action/real-apply-approval-gate/list")
-def list_real_apply_approval_gate_action(status:str|None=None,proposal_id:str|None=None,limit:int=50):return handle_list_real_apply_approval_gate_records(status,proposal_id,limit)
-@app.get("/action/real-apply-approval-gate/{record_id}/summary")
-def summarize_real_apply_approval_gate_action(record_id:str):return handle_summarize_real_apply_approval_gate(record_id)
-@app.get("/action/real-apply-approval-gate/{record_id}")
-def get_real_apply_approval_gate_action(record_id:str):return handle_get_real_apply_approval_gate_record(record_id)
 @app.post("/action/final-real-apply-executor/open")
 def open_final_real_apply_executor_action(request:FinalRealApplyExecutorOpenRequest):return handle_open_final_real_apply_executor(request.source_type,request.source_id,request.metadata)
 @app.post("/action/final-real-apply-executor/execute")
@@ -420,18 +382,6 @@ def list_final_real_apply_executor_action(status:str|None=None,proposal_id:str|N
 def summarize_final_real_apply_executor_action(record_id:str):return handle_summarize_final_real_apply_executor(record_id)
 @app.get("/action/final-real-apply-executor/{record_id}")
 def get_final_real_apply_executor_action(record_id:str):return handle_get_final_real_apply_executor_record(record_id)
-@app.post("/action/post-apply-verification-gate/open")
-def open_post_apply_verification_gate_action(request:PostApplyVerificationGateOpenRequest):return handle_open_post_apply_verification_gate(request.source_type,request.source_id,request.metadata)
-@app.post("/action/post-apply-verification-gate/submit")
-def submit_post_apply_verification_action(request:PostApplyVerificationSubmitRequest):return handle_submit_post_apply_verification(request.verification_record_id,request.decision,request.comment,request.verifier,request.metadata)
-@app.get("/action/post-apply-verification-gate/status")
-def get_post_apply_verification_gate_status_action():return handle_get_post_apply_verification_gate_status()
-@app.get("/action/post-apply-verification-gate/list")
-def list_post_apply_verification_gate_action(status:str|None=None,proposal_id:str|None=None,limit:int=50):return handle_list_post_apply_verification_gate_records(status,proposal_id,limit)
-@app.get("/action/post-apply-verification-gate/{record_id}/summary")
-def summarize_post_apply_verification_gate_action(record_id:str):return handle_summarize_post_apply_verification_gate(record_id)
-@app.get("/action/post-apply-verification-gate/{record_id}")
-def get_post_apply_verification_gate_action(record_id:str):return handle_get_post_apply_verification_gate_record(record_id)
 @app.post("/action/guided-repair-intake/open")
 def open_guided_repair_intake_action(request:GuidedRepairIntakeOpenRequest):return {"name":"Aether","record":open_guided_repair_intake(request.request_type,request.requested_scope,request.target_path,request.requester,request.guidance_record_id,request.create_guidance_if_missing,request.export_public,request.export_index,request.export_private,request.metadata)}
 @app.post("/action/guided-repair-intake/submit-decision")
