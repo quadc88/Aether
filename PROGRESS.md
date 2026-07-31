@@ -1,15 +1,15 @@
 # Aether Project Progress Ledger
 
-**Last updated:** Milestone 82AK Build — Final Real-Apply Executor C2 Service Extraction (finalized, committed, tagged, pushed)
+**Last updated:** Milestone 82AL Build Part 1 — Repair Family State-Boundary Tests (complete, not yet committed)
 **Aether version:** 0.2.0  
-**Current completed local milestone:** 82AK Build — Final Real-Apply Executor C2 Service Extraction (finalized)
-**Current active milestone/module:** None; 82AK finalized and 82AL has not started
-**Current status:** 82AK C2 service extraction committed, tagged, and pushed; ready for 82AL
-**Next milestone:** 82AL Plan — Repair Family Service Boundary Plan
-**Test baseline:** 1517/1517 passed, 0 failures, 0 errors
+**Current completed local milestone:** 82AL Build Part 1 — Repair Family State-Boundary Tests
+**Current active milestone/module:** 82AL Build Part 1 complete locally; Part 2 not started
+**Current status:** 82AL Part 1 boundary tests passed (1567/1567); 82AL Part 2 not started
+**Next milestone:** 82AL Build Part 2 — Low-Risk Repair Family Service Extraction (repair_planner + repair_workflow_tracker only)
+**Test baseline:** 1567/1567 passed, 0 failures, 0 errors
 **OpenAPI baseline:** 300 paths / 103 schemas
 **Latest local tag:** `milestone-82AK-final-real-apply-c2-service-extraction` at `03b726c`
-**Latest pushed GitHub/origin status:** `origin/main` at `03b726c` (82AK implementation); remote tag `milestone-82AK-final-real-apply-c2-service-extraction` at `03b726c`; 82AL is not pushed or started
+**Latest pushed GitHub/origin status:** `origin/main` at `9182de9` (82AK ledger correction); remote tag `milestone-82AK-final-real-apply-c2-service-extraction` at `03b726c`; 82AL Part 1 not yet pushed
 **Runtime-state reset authorization:** Yes; human authority retroactively authorized the 82AD identity-guard runtime-state reset on 2026-07-30, with audit retained at `/home/aether/summaries/milestone_82AD_runtime_state_review.txt`.
 **Pipeline maturity:** Full declarative safety chain (approval through evidence contract record stores) with thin interface refactor (80B-80M) and cognitive runtime observability (81A-81E) complete. Observation contract builder added (82B). Interface API model extraction complete (82C). File and self-inspection service extraction complete (82D). Patch lifecycle service extraction complete (82E). Mutation log service extraction complete (82F). Proposal console service extraction complete (82G). Code review and review bridge service extraction complete (82H). Code review router extraction complete (82J). Mutation log router extraction complete (82K). Proposal console router extraction complete (82L). File router extraction complete (82N). Patch router extraction complete (82O). Approval router extraction complete (82P). Dry run and sandbox contract router extraction complete (82Q). Simulation plan and simulation result router extraction complete (82R). Verification verdict and apply gate router extraction complete (82S). Human authorization and apply execution gate router extraction complete (82T). Executor contract and executor plan router extraction complete (82U). Evidence contract and collection plan router extraction complete (82V). Verification plan router extraction complete (82W). Tool registry and tool plan router extraction complete (82X). Memory state fixture isolation complete (82Z). Memory router extraction complete (82AA). Tool execution safety boundary planning and API-level safety tests complete (82AC-82AD). Tool execution router extraction finalized (82AE). Post-chain C1 state-boundary coverage and full-suite tests-only private/runtime persistence isolation finalized (82AH/82AH-R). Post-chain C1 service extraction finalized (82AI). C2 final real-apply executor safety boundary tests finalized, committed, tagged, and pushed (82AJ). C2 final real-apply executor service extraction finalized, committed, tagged, and pushed (82AK). No real apply, evidence collection, rollback, or observation exists yet.
 
@@ -2735,5 +2735,32 @@ Extracted 18 endpoint handlers (6 proposal-review-console, 6 proposal-revision-c
   - Full-suite real-root fingerprint passed with drift count 0
   - No real apply, rollback, evidence collection, or tool execution
   - Finalized, committed, tagged, and pushed as `milestone-82AK-final-real-apply-c2-service-extraction` at `03b726c`
-  - Next: 82AL Plan — Repair Family Service Boundary Plan
-  - 82AL not started
+  - Next: 82AL Plan — Repair Family State-Boundary Plan
+  - 82AL Plan — Repair Family State-Boundary Plan
+    - Scope: 43 endpoints across 7 Repair families (repair_planner 5, repair_bridge_selector 5, repair_workflow_tracker 5, repair_workflow_exporter 4, repair_cycle_completion 8, repair_learning 8, repair_guidance 8)
+    - Strategy: Phased extraction by risk (bridge_selector highest-risk → extracted last)
+      - Part 1: Boundary tests only — create tests/test_repair_family_service_boundary.py covering all 43 endpoints before any service extraction
+      - Part 2: Low-Risk Service Extraction — repair_planner + repair_workflow_tracker only
+      - Part 3: Medium-Risk Service Extraction — repair_workflow_exporter + repair_cycle_completion + repair_learning + repair_guidance
+      - Part 4: Highest-Risk Service Extraction — repair_bridge_selector only
+      - Router extraction is not part of the immediate next milestone and must not be presented as the next step
+    - No production source changes in Part 1
+- 82AL Build Part 1 — Repair Family State-Boundary Tests
+  - Tests-only boundary milestone for all 43 Repair Family endpoints
+  - Created `tests/test_repair_family_service_boundary.py` with 50 tests
+  - Locked all 43 OpenAPI operation IDs for repair endpoints
+  - Locked the exact OpenAPI contract: 300 paths / 103 schemas
+  - Verified 41/43 endpoints return 200 with valid responses via isolated fixture
+  - Documented 2 pre-existing bugs in repair_guidance/export-report and export-private
+    (export_repair_guidance_report and export_private_repair_guidance_record crash on
+    None when get_repair_guidance_record returns None for missing records)
+  - Locked route→action function pass-through for all 43 routes
+  - Verified no forbidden imports (executor/apply/rollback) in repair action modules
+  - No production source changes
+  - OpenAPI exact match: 300 paths / 103 schemas
+  - Full pytest: 1567/1567 passed, 0 failures, 0 errors
+  - No real apply, rollback, evidence collection, or tool execution
+  - Complete locally; not committed, tagged, or pushed
+  - Next: 82AL Build Part 2 — Low-Risk Repair Family Service Extraction (repair_planner + repair_workflow_tracker only)
+  - 82AL Part 2 not started
+  - 82AM not started
