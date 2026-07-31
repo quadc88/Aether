@@ -120,18 +120,12 @@ from aether.interface.routers.verification_plan_routes import verification_plan_
 from aether.interface.routers.tool_registry_plan_routes import tool_registry_plan_router
 from aether.interface.routers.memory_routes import memory_router
 from aether.interface.routers.tool_executor_routes import tool_executor_router
+from aether.interface.routers.repair_routes import repair_router
 from aether.action.services.approved_dry_run_gate_service import handle_open_approved_dry_run_gate,handle_execute_approved_dry_run,handle_get_approved_dry_run_gate_status,handle_list_approved_dry_run_gate_records,handle_summarize_approved_dry_run_gate,handle_get_approved_dry_run_gate_record
 from aether.action.services.dry_run_review_gate_service import handle_open_dry_run_review_gate,handle_submit_dry_run_review,handle_get_dry_run_review_gate_status,handle_list_dry_run_review_gate_records,handle_summarize_dry_run_review_gate,handle_get_dry_run_review_gate_record
 from aether.action.services.real_apply_approval_gate_service import handle_open_real_apply_approval_gate,handle_submit_real_apply_final_decision,handle_get_real_apply_approval_gate_status,handle_list_real_apply_approval_gate_records,handle_summarize_real_apply_approval_gate,handle_get_real_apply_approval_gate_record
 from aether.action.services.final_real_apply_executor_service import handle_open_final_real_apply_executor,handle_execute_final_real_apply,handle_get_final_real_apply_executor_status,handle_list_final_real_apply_executor_records,handle_summarize_final_real_apply_executor,handle_get_final_real_apply_executor_record
-from aether.action.services.repair_planner_service import handle_create_repair_plan,handle_get_repair_plan_status,handle_list_repair_plans,handle_summarize_repair_plan,handle_get_repair_plan
-from aether.action.services.repair_workflow_tracker_service import handle_trace_repair_workflow,handle_get_repair_workflow_status,handle_list_repair_workflow_reports,handle_summarize_repair_workflow,handle_get_repair_workflow_report
 from aether.action.services.post_apply_verification_gate_service import handle_open_post_apply_verification_gate,handle_submit_post_apply_verification,handle_get_post_apply_verification_gate_status,handle_list_post_apply_verification_gate_records,handle_summarize_post_apply_verification_gate,handle_get_post_apply_verification_gate_record
-from aether.action.services.repair_workflow_exporter_service import handle_export_repair_workflow_report,handle_export_repair_workflow_index,handle_export_private_repair_workflow_report,handle_get_repair_workflow_export_status
-from aether.action.services.repair_cycle_completion_service import handle_create_repair_cycle_completion_report,handle_export_repair_cycle_report,handle_export_repair_cycle_index,handle_export_private_repair_cycle_record,handle_get_repair_cycle_completion_status,handle_list_repair_cycle_completion_records,handle_summarize_repair_cycle_completion,handle_get_repair_cycle_completion_record
-from aether.action.services.repair_learning_service import handle_create_repair_learning_record,handle_export_repair_learning_report,handle_export_repair_learning_index,handle_export_private_repair_learning_record,handle_get_repair_learning_status,handle_list_repair_learning_records,handle_summarize_repair_learning_record,handle_get_repair_learning_record
-from aether.action.services.repair_guidance_service import handle_create_repair_guidance,handle_export_repair_guidance_report,handle_export_repair_guidance_index,handle_export_private_repair_guidance_record,handle_get_repair_guidance_status,handle_list_repair_guidance_records,handle_summarize_repair_guidance,handle_get_repair_guidance_record
-from aether.action.services.repair_bridge_selector_service import handle_create_repair_bridge_selection,handle_get_repair_bridge_selection_status,handle_list_repair_bridge_selections,handle_summarize_repair_bridge_selection,handle_get_repair_bridge_selection
 from aether.action.guided_repair_intake import open_guided_repair_intake,submit_guided_repair_intake_decision,export_guided_repair_intake_report,export_guided_repair_intake_index,export_private_guided_repair_intake_record,get_guided_repair_intake_record,list_guided_repair_intake_records,guided_repair_intake_status,summarize_guided_repair_intake
 from aether.action.guided_repair_plan_launcher import launch_guided_repair_plan,get_guided_repair_plan_launcher_record,list_guided_repair_plan_launcher_records,guided_repair_plan_launcher_status,summarize_guided_repair_plan_launcher
 from aether.action.guided_bridge_selection_launcher import launch_guided_bridge_selection,get_guided_bridge_selection_launcher_record,list_guided_bridge_selection_launcher_records,guided_bridge_selection_launcher_status,summarize_guided_bridge_selection_launcher
@@ -160,6 +154,7 @@ app.include_router(verification_plan_router, prefix="")
 app.include_router(tool_registry_plan_router, prefix="")
 app.include_router(memory_router, prefix="")
 app.include_router(tool_executor_router, prefix="")
+app.include_router(repair_router, prefix="")
 
 
 # ---- Identity Integrity Endpoints (Milestone 48A) ----
@@ -377,44 +372,6 @@ def export_milestone_changelog_action(request:MilestoneReportExportRequest):retu
 def export_private_changelog_action(request:ChangelogExportRequest):return export_private_changelog_report(request.milestone,request.limit,request.metadata)
 @app.get("/action/changelog/status")
 def get_changelog_status():return changelog_export_status()
-@app.post("/action/repair-plan/create")
-def create_repair_plan_action(request:RepairPlanCreateRequest):return handle_create_repair_plan(request.review_report_id,request.scope,request.include_deferred,request.max_findings,request.metadata)
-@app.get("/action/repair-plan/status")
-def get_repair_plan_status_action():return handle_get_repair_plan_status()
-@app.get("/action/repair-plan/list")
-def list_repair_plan_action(status:str|None=None,review_report_id:str|None=None,limit:int=50):return handle_list_repair_plans(status,review_report_id,limit)
-@app.get("/action/repair-plan/{plan_id}/summary")
-def summarize_repair_plan_action(plan_id:str):return handle_summarize_repair_plan(plan_id)
-@app.get("/action/repair-plan/{plan_id}")
-def get_repair_plan_action(plan_id:str):return handle_get_repair_plan(plan_id)
-@app.post("/action/repair-bridge-selection/create")
-def create_repair_bridge_selection_action(request:RepairBridgeSelectionCreateRequest):return handle_create_repair_bridge_selection(request.repair_plan_id,request.finding_id,request.proposed_excerpt,request.original_excerpt,request.proposed_change_summary,request.reason,request.create_approval_if_required,request.metadata)
-@app.get("/action/repair-bridge-selection/status")
-def get_repair_bridge_selection_status_action():return handle_get_repair_bridge_selection_status()
-@app.get("/action/repair-bridge-selection/list")
-def list_repair_bridge_selection_action(status:str|None=None,repair_plan_id:str|None=None,limit:int=50):return handle_list_repair_bridge_selections(status,repair_plan_id,limit)
-@app.get("/action/repair-bridge-selection/{record_id}/summary")
-def summarize_repair_bridge_selection_action(record_id:str):return handle_summarize_repair_bridge_selection(record_id)
-@app.get("/action/repair-bridge-selection/{record_id}")
-def get_repair_bridge_selection_action(record_id:str):return handle_get_repair_bridge_selection(record_id)
-@app.post("/action/repair-workflow/trace")
-def trace_repair_workflow_action(request:RepairWorkflowTraceRequest):return handle_trace_repair_workflow(request.root_type,request.root_id,request.metadata)
-@app.get("/action/repair-workflow/status")
-def get_repair_workflow_status_action():return handle_get_repair_workflow_status()
-@app.get("/action/repair-workflow/list")
-def list_repair_workflow_action(status:str|None=None,root_type:str|None=None,limit:int=50):return handle_list_repair_workflow_reports(status,root_type,limit)
-@app.get("/action/repair-workflow/{report_id}/summary")
-def summarize_repair_workflow_action(report_id:str):return handle_summarize_repair_workflow(report_id)
-@app.get("/action/repair-workflow/{report_id}")
-def get_repair_workflow_action(report_id:str):return handle_get_repair_workflow_report(report_id)
-@app.post("/action/repair-workflow-export/export-report")
-def export_repair_workflow_report_action(request:RepairWorkflowExportRequest):return handle_export_repair_workflow_report(request.report_id,request.output_dir,request.metadata)
-@app.post("/action/repair-workflow-export/export-index")
-def export_repair_workflow_index_action(request:RepairWorkflowIndexExportRequest):return handle_export_repair_workflow_index(request.output_path,request.limit,request.metadata)
-@app.post("/action/repair-workflow-export/export-private")
-def export_private_repair_workflow_report_action(request:PrivateRepairWorkflowExportRequest):return handle_export_private_repair_workflow_report(request.report_id,request.metadata)
-@app.get("/action/repair-workflow-export/status")
-def get_repair_workflow_export_status_action():return handle_get_repair_workflow_export_status()
 @app.post("/action/approved-dry-run-gate/open")
 def open_approved_dry_run_gate_action(request:ApprovedDryRunGateOpenRequest):return handle_open_approved_dry_run_gate(request.source_type,request.source_id,request.metadata)
 @app.post("/action/approved-dry-run-gate/execute")
@@ -475,54 +432,6 @@ def list_post_apply_verification_gate_action(status:str|None=None,proposal_id:st
 def summarize_post_apply_verification_gate_action(record_id:str):return handle_summarize_post_apply_verification_gate(record_id)
 @app.get("/action/post-apply-verification-gate/{record_id}")
 def get_post_apply_verification_gate_action(record_id:str):return handle_get_post_apply_verification_gate_record(record_id)
-@app.post("/action/repair-cycle-completion/create")
-def create_repair_cycle_completion_action(request:RepairCycleCompletionCreateRequest):return handle_create_repair_cycle_completion_report(request.source_type,request.source_id,request.export_public,request.export_index,request.export_private,request.metadata)
-@app.post("/action/repair-cycle-completion/export-report")
-def export_repair_cycle_report_action(request:RepairCycleReportExportRequest):return handle_export_repair_cycle_report(request.completion_record_id,request.output_dir,request.metadata)
-@app.post("/action/repair-cycle-completion/export-index")
-def export_repair_cycle_index_action(request:RepairCycleIndexExportRequest):return handle_export_repair_cycle_index(request.output_path,request.limit,request.metadata)
-@app.post("/action/repair-cycle-completion/export-private")
-def export_private_repair_cycle_action(request:PrivateRepairCycleExportRequest):return handle_export_private_repair_cycle_record(request.completion_record_id,request.metadata)
-@app.get("/action/repair-cycle-completion/status")
-def get_repair_cycle_completion_status_action():return handle_get_repair_cycle_completion_status()
-@app.get("/action/repair-cycle-completion/list")
-def list_repair_cycle_completion_action(status:str|None=None,proposal_id:str|None=None,limit:int=50):return handle_list_repair_cycle_completion_records(status,proposal_id,limit)
-@app.get("/action/repair-cycle-completion/{record_id}/summary")
-def summarize_repair_cycle_completion_action(record_id:str):return handle_summarize_repair_cycle_completion(record_id)
-@app.get("/action/repair-cycle-completion/{record_id}")
-def get_repair_cycle_completion_action(record_id:str):return handle_get_repair_cycle_completion_record(record_id)
-@app.post("/action/repair-learning/create")
-def create_repair_learning_action(request:RepairLearningCreateRequest):return handle_create_repair_learning_record(request.source_type,request.source_id,request.export_public,request.export_index,request.export_private,request.metadata)
-@app.post("/action/repair-learning/export-report")
-def export_repair_learning_report_action(request:RepairLearningReportExportRequest):return handle_export_repair_learning_report(request.learning_record_id,request.output_dir,request.metadata)
-@app.post("/action/repair-learning/export-index")
-def export_repair_learning_index_action(request:RepairLearningIndexExportRequest):return handle_export_repair_learning_index(request.output_path,request.limit,request.metadata)
-@app.post("/action/repair-learning/export-private")
-def export_private_repair_learning_action(request:PrivateRepairLearningExportRequest):return handle_export_private_repair_learning_record(request.learning_record_id,request.metadata)
-@app.get("/action/repair-learning/status")
-def get_repair_learning_status_action():return handle_get_repair_learning_status()
-@app.get("/action/repair-learning/list")
-def list_repair_learning_action(status:str|None=None,learning_category:str|None=None,target_path:str|None=None,limit:int=50):return handle_list_repair_learning_records(status,learning_category,target_path,limit)
-@app.get("/action/repair-learning/{record_id}/summary")
-def summarize_repair_learning_action(record_id:str):return handle_summarize_repair_learning_record(record_id)
-@app.get("/action/repair-learning/{record_id}")
-def get_repair_learning_action(record_id:str):return handle_get_repair_learning_record(record_id)
-@app.post("/action/repair-guidance/create")
-def create_repair_guidance_action(request:RepairGuidanceCreateRequest):return handle_create_repair_guidance(request.request_type,request.requested_scope,request.target_path,request.source_type,request.source_id,request.export_public,request.export_index,request.export_private,request.metadata)
-@app.post("/action/repair-guidance/export-report")
-def export_repair_guidance_report_action(request:RepairGuidanceReportExportRequest):return handle_export_repair_guidance_report(request.guidance_record_id,request.output_dir,request.metadata)
-@app.post("/action/repair-guidance/export-index")
-def export_repair_guidance_index_action(request:RepairGuidanceIndexExportRequest):return handle_export_repair_guidance_index(request.output_path,request.limit,request.metadata)
-@app.post("/action/repair-guidance/export-private")
-def export_private_repair_guidance_action(request:PrivateRepairGuidanceExportRequest):return handle_export_private_repair_guidance_record(request.guidance_record_id,request.metadata)
-@app.get("/action/repair-guidance/status")
-def get_repair_guidance_status_action():return handle_get_repair_guidance_status()
-@app.get("/action/repair-guidance/list")
-def list_repair_guidance_action(status:str|None=None,guidance_decision:str|None=None,target_path:str|None=None,limit:int=50):return handle_list_repair_guidance_records(status,guidance_decision,target_path,limit)
-@app.get("/action/repair-guidance/{record_id}/summary")
-def summarize_repair_guidance_action(record_id:str):return handle_summarize_repair_guidance(record_id)
-@app.get("/action/repair-guidance/{record_id}")
-def get_repair_guidance_action(record_id:str):return handle_get_repair_guidance_record(record_id)
 @app.post("/action/guided-repair-intake/open")
 def open_guided_repair_intake_action(request:GuidedRepairIntakeOpenRequest):return {"name":"Aether","record":open_guided_repair_intake(request.request_type,request.requested_scope,request.target_path,request.requester,request.guidance_record_id,request.create_guidance_if_missing,request.export_public,request.export_index,request.export_private,request.metadata)}
 @app.post("/action/guided-repair-intake/submit-decision")

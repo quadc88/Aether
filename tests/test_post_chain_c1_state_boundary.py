@@ -748,10 +748,12 @@ def test_c1_service_extraction_is_exact_and_router_extraction_has_not_started():
     assert direct_modules.isdisjoint(imported_modules)
     assert service_modules.issubset(imported_modules)
 
+    # 82AM Build added app.include_router(repair_router, prefix="") (16 -> 17);
+    # C1 gate router extraction has not started, so the 5 C1 router files are absent.
     include_router_calls = [
         node for node in ast.walk(tree)
         if isinstance(node, ast.Call)
         and isinstance(node.func, ast.Attribute)
         and node.func.attr == "include_router"
     ]
-    assert len(include_router_calls) == 16
+    assert len(include_router_calls) == 17

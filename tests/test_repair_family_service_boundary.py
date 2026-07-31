@@ -1,10 +1,13 @@
-"""Boundary tests for 43 Repair Family endpoints after 82AL Part 4 service extraction.
+"""Boundary tests for 43 Repair Family endpoints after 82AL Part 4 service extraction
+and 82AM Build router extraction.
 
 Covers 7 families: repair_planner (5), repair_bridge_selector (5),
 repair_workflow_tracker (5), repair_workflow_exporter (4),
 repair_cycle_completion (8), repair_learning (8), repair_guidance (8).
 
-Boundary model (full service extraction after 82AL Part 4):
+Boundary model (82AM Build: route -> router -> service -> action):
+- All 43 routes live in aether/interface/routers/repair_routes.py
+- api_server.py includes repair_router (empty prefix) and defines no repair routes
 - Service-backed (route -> service handler -> action):
   repair_planner, repair_workflow_tracker, repair_workflow_exporter,
   repair_cycle_completion, repair_learning, repair_guidance,
@@ -792,7 +795,8 @@ def test_repair_routes_are_boundary_pass_throughs():
     - direct-action families: exactly one call to the expected action function
       (no handle_* service call)
     """
-    source_path = PROJECT_ROOT / "aether/interface/api_server.py"
+    # 82AM Build: all 43 repair route functions live in repair_routes.py
+    source_path = PROJECT_ROOT / "aether/interface/routers/repair_routes.py"
     tree = ast.parse(source_path.read_text(encoding="utf-8"))
 
     func_names = {route_func for _, (route_func, _, _, _, _) in REPAIR_ENDPOINTS.items()}
@@ -877,11 +881,18 @@ def test_repair_routes_are_boundary_pass_throughs():
 # ----- Test 6: Import boundary — service-backed families via services, others direct -----
 
 def test_api_server_import_boundary_mixed_model():
+    """After 82AM Build, api_server.py must:
+    - import repair_router from aether.interface.routers.repair_routes exactly once
+    - include repair_router exactly once (empty prefix)
+    - NOT import any of the 7 Repair Family service modules (they moved to the router)
+    - NOT import any direct Repair Family action module (guided_repair_* are out of scope)
+    """
     source = (PROJECT_ROOT / "aether/interface/api_server.py").read_text(encoding="utf-8")
     tree = ast.parse(source)
 
-    repair_imports = set()
     service_imports = set()
+    repair_imports = set()
+    router_imports = set()
     for node in tree.body:
         if isinstance(node, ast.ImportFrom):
             module = node.module or ""
@@ -890,20 +901,20 @@ def test_api_server_import_boundary_mixed_model():
                     service_imports.add(module)
                 elif module.startswith("aether.action.") and "repair" in module:
                     repair_imports.add(module)
+                if module == "aether.interface.routers.repair_routes":
+                    router_imports.add(alias.name)
 
-    # Service-backed families: api_server must import the service modules
-    # and must NOT import their action modules directly
-    for service_module, action_module in SERVICE_ACTION_MODULES.items():
-        assert service_module in service_imports, (
-            f"Missing import of service module: {service_module}"
-        )
-        assert action_module not in repair_imports, (
-            f"Direct action import must be removed after service extraction: {action_module}"
-        )
+    assert router_imports == {"repair_router"}, (
+        f"api_server.py must import repair_router exactly once, got {router_imports}"
+    )
 
-    # After Part 4 there are no direct-action Repair families: none of the 7
-    # Repair Family action modules may be imported directly by api_server.
-    # guided_repair_* action imports are out of 82AL scope and must remain.
+    # service modules must NOT be imported directly by api_server anymore
+    assert not service_imports, (
+        f"api_server.py must not import Repair Family service modules after 82AM Build: "
+        f"{service_imports}"
+    )
+
+    # no direct Repair Family action imports in api_server
     guided_action_modules = {
         "aether.action.guided_repair_intake",
         "aether.action.guided_repair_plan_launcher",
@@ -913,9 +924,145 @@ def test_api_server_import_boundary_mixed_model():
         f"{repair_imports - guided_action_modules}"
     )
 
-    # Only the extracted service modules may be imported
+    # exactly one include_router(repair_router, prefix="")
+    include_calls = [
+        (ast.unparse(call.func), [ast.unparse(a) for a in call.args], {
+            k.arg: ast.unparse(k.value) for k in call.keywords
+        })
+        for call in ast.walk(tree)
+        if isinstance(call, ast.Call) and ast.unparse(call.func) == "app.include_router"
+    ]
+    repair_includes = [
+        call for call in include_calls
+        if call[0] == "app.include_router"
+        and call[1] == ["repair_router"]
+        and call[2].get("prefix") == "''"
+    ]
+    assert len(repair_includes) == 1, (
+        f"api_server.py must include repair_router exactly once with empty prefix, "
+        f"got {repair_includes}"
+    )
+
+
+# ----- Test 6b: Router file boundary — repair_routes.py -----
+
+def test_repair_routes_module_boundary():
+    """repair_routes.py must:
+    - exist and define repair_router = APIRouter() (empty prefix)
+    - define all 43 Repair Family route functions
+    - decorate all 43 routes with repair_router (never app)
+    - import all 7 Repair Family service modules (the only repair action imports allowed)
+    - import no direct Repair Family action modules
+    - import no approval/gate/dry_run/evidence/tool/final_real_apply modules
+    """
+    router_path = PROJECT_ROOT / "aether/interface/routers/repair_routes.py"
+    assert router_path.exists(), "repair_routes.py missing after 82AM Build"
+    tree = ast.parse(router_path.read_text(encoding="utf-8"))
+
+    # repair_router = APIRouter() with no arguments (empty prefix)
+    router_assigns = [
+        node for node in tree.body
+        if isinstance(node, ast.Assign)
+        and any(isinstance(t, ast.Name) and t.id == "repair_router" for t in node.targets)
+    ]
+    assert len(router_assigns) == 1, "repair_router must be assigned exactly once"
+    assign = router_assigns[0]
+    assert isinstance(assign.value, ast.Call), "repair_router must be APIRouter()"
+    assert ast.unparse(assign.value.func) == "APIRouter", "repair_router must be APIRouter()"
+    assert not assign.value.args, "repair_router must be created with an empty prefix (no args)"
+
+    func_names = {route_func for _, (route_func, _, _, _, _) in REPAIR_ENDPOINTS.items()}
+
+    # all 43 route functions present, decorated with repair_router
+    router_route_funcs = {}
+    for node in tree.body:
+        if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            continue
+        if node.name not in func_names:
+            continue
+        decorators = [ast.unparse(d) for d in node.decorator_list]
+        assert decorators, f"{node.name}: missing decorator"
+        for dec in decorators:
+            assert dec.startswith("repair_router."), (
+                f"{node.name}: decorator {dec!r} must use repair_router, not app"
+            )
+        assert len(node.decorator_list) == 1, f"{node.name}: expected single decorator"
+        router_route_funcs[node.name] = decorators[0]
+
+    assert len(router_route_funcs) == 43, (
+        f"Expected 43 route functions in repair_routes.py, got {len(router_route_funcs)}"
+    )
+    assert set(router_route_funcs) == func_names
+
+    # decorator paths/methods match REPAIR_ENDPOINTS exactly
+    for (method, path), (route_func, _, _, _, _) in REPAIR_ENDPOINTS.items():
+        dec = router_route_funcs[route_func]
+        assert f"'{path}'" in dec, (
+            f"{route_func}: decorator {dec!r} missing path {path!r}"
+        )
+        assert dec.startswith(f"repair_router.{method.lower()}("), (
+            f"{route_func}: decorator {dec!r} must use {method.lower()} method"
+        )
+
+    # import boundary
+    service_imports = set()
+    repair_action_imports = set()
+    forbidden_router_imports = set()
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.ImportFrom):
+            continue
+        module = node.module or ""
+        if module.startswith("aether.action.services.") and "repair" in module:
+            service_imports.add(module)
+        elif module.startswith("aether.action."):
+            repair_action_imports.add(module)
+        if any(k in module for k in (
+            "approval", "gate", "dry_run", "evidence", "tool",
+            "final_real_apply", "executor", "verification", "patch",
+        )):
+            forbidden_router_imports.add(module)
+
     assert service_imports == set(SERVICE_ACTION_MODULES), (
-        f"Unexpected service imports in api_server.py: {service_imports - set(SERVICE_ACTION_MODULES)}"
+        f"repair_routes.py must import all 7 Repair Family service modules, got "
+        f"{service_imports - set(SERVICE_ACTION_MODULES)} missing"
+    )
+    assert not repair_action_imports, (
+        f"repair_routes.py must not import Repair Family action modules: "
+        f"{repair_action_imports}"
+    )
+    assert not forbidden_router_imports, (
+        f"repair_routes.py must not import approval/gate/dry_run/evidence/tool/"
+        f"final_real_apply modules: {forbidden_router_imports}"
+    )
+
+
+# ----- Test 6c: api_server no longer defines repair routes -----
+
+def test_api_server_no_longer_defines_repair_routes():
+    """api_server.py must no longer define any of the 43 Repair Family route
+    functions, and must no longer import the 7 Repair Family service modules."""
+    source = (PROJECT_ROOT / "aether/interface/api_server.py").read_text(encoding="utf-8")
+    tree = ast.parse(source)
+
+    func_names = {route_func for _, (route_func, _, _, _, _) in REPAIR_ENDPOINTS.items()}
+    defined = {
+        node.name for node in tree.body
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+        and node.name in func_names
+    }
+    assert not defined, (
+        f"api_server.py must not define Repair Family route functions after 82AM Build: "
+        f"{sorted(defined)}"
+    )
+
+    service_imports = set()
+    for node in tree.body:
+        if isinstance(node, ast.ImportFrom):
+            module = node.module or ""
+            if module.startswith("aether.action.services.") and "repair" in module:
+                service_imports.add(module)
+    assert not service_imports, (
+        f"api_server.py must not import Repair Family service modules: {service_imports}"
     )
 
 
@@ -1081,10 +1228,13 @@ BRIDGE_CREATE_ROUTE_ARGS = (
 
 def test_repair_bridge_selection_create_passes_create_approval_if_required_through():
     """Highest-risk preservation proof: create_approval_if_required must flow
-    route -> service handler -> action exactly as received, with no hardcoded
-    True/False and no approval creation in the service layer.
+    route -> router -> service handler -> action exactly as received, with no
+    hardcoded True/False and no approval creation in the service layer.
     """
-    api_source = (PROJECT_ROOT / "aether/interface/api_server.py").read_text(encoding="utf-8")
+    # 82AM Build: the route lives in repair_routes.py
+    api_source = (
+        PROJECT_ROOT / "aether/interface/routers/repair_routes.py"
+    ).read_text(encoding="utf-8")
     api_tree = ast.parse(api_source)
 
     route_node = None
