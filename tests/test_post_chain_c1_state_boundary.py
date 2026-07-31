@@ -842,11 +842,12 @@ def test_c1_service_extraction_is_exact_and_c1_router_extraction_is_isolated():
     assert len(api_c2_functions) == 0
 
     # 82AN Build added app.include_router(post_chain_c1_router, prefix="") (17 -> 18);
-    # 82AO Build added app.include_router(final_real_apply_executor_router, prefix="") (18 -> 19).
+    # 82AO Build added app.include_router(final_real_apply_executor_router, prefix="") (18 -> 19);
+    # 82AP Build added app.include_router(changelog_router, prefix="") (19 -> 20).
     include_router_calls = [
         node for node in ast.walk(api_tree)
         if isinstance(node, ast.Call)
         and isinstance(node.func, ast.Attribute)
         and node.func.attr == "include_router"
     ]
-    assert len(include_router_calls) == 19
+    assert len(include_router_calls) == 20

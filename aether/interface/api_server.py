@@ -103,7 +103,6 @@ from aether.action.services.runtime_lifecycle_service import (
     handle_awaken,
 )
 from aether.action.self_modification_cycle import create_self_modification_session, review_self_modification_session, dry_run_self_modification_session, apply_self_modification_session, rollback_self_modification_session, self_modification_status, list_self_modification_sessions, get_self_modification_session, summarize_self_modification_session
-from aether.action.changelog_exporter import export_public_changelog, export_milestone_report, export_private_changelog_report, changelog_export_status
 from aether.interface.routers.code_review_routes import code_review_router
 from aether.interface.routers.mutation_log_routes import mutation_log_router
 from aether.interface.routers.proposal_console_routes import proposal_console_router
@@ -123,6 +122,7 @@ from aether.interface.routers.tool_executor_routes import tool_executor_router
 from aether.interface.routers.repair_routes import repair_router
 from aether.interface.routers.post_chain_c1_routes import post_chain_c1_router
 from aether.interface.routers.final_real_apply_executor_routes import final_real_apply_executor_router
+from aether.interface.routers.changelog_routes import changelog_router
 from aether.action.guided_repair_intake import open_guided_repair_intake,submit_guided_repair_intake_decision,export_guided_repair_intake_report,export_guided_repair_intake_index,export_private_guided_repair_intake_record,get_guided_repair_intake_record,list_guided_repair_intake_records,guided_repair_intake_status,summarize_guided_repair_intake
 from aether.action.guided_repair_plan_launcher import launch_guided_repair_plan,get_guided_repair_plan_launcher_record,list_guided_repair_plan_launcher_records,guided_repair_plan_launcher_status,summarize_guided_repair_plan_launcher
 from aether.action.guided_bridge_selection_launcher import launch_guided_bridge_selection,get_guided_bridge_selection_launcher_record,list_guided_bridge_selection_launcher_records,guided_bridge_selection_launcher_status,summarize_guided_bridge_selection_launcher
@@ -154,6 +154,7 @@ app.include_router(tool_executor_router, prefix="")
 app.include_router(repair_router, prefix="")
 app.include_router(post_chain_c1_router, prefix="")
 app.include_router(final_real_apply_executor_router, prefix="")
+app.include_router(changelog_router, prefix="")
 
 
 # ---- Identity Integrity Endpoints (Milestone 48A) ----
@@ -363,14 +364,6 @@ def list_self_modification(status:str|None=None,target_path:str|None=None,limit:
 def summarize_self_modification(session_id:str):return {"name":"Aether","summary":summarize_self_modification_session(session_id)}
 @app.get("/action/self-modification/{session_id}")
 def get_self_modification(session_id:str):return {"name":"Aether","session":get_self_modification_session(session_id)}
-@app.post("/action/changelog/export-public")
-def export_public_changelog_action(request:ChangelogExportRequest):return export_public_changelog(request.output_path,request.milestone,request.limit,request.metadata)
-@app.post("/action/changelog/export-milestone")
-def export_milestone_changelog_action(request:MilestoneReportExportRequest):return export_milestone_report(request.milestone,request.output_dir,request.metadata)
-@app.post("/action/changelog/export-private")
-def export_private_changelog_action(request:ChangelogExportRequest):return export_private_changelog_report(request.milestone,request.limit,request.metadata)
-@app.get("/action/changelog/status")
-def get_changelog_status():return changelog_export_status()
 @app.post("/action/guided-repair-intake/open")
 def open_guided_repair_intake_action(request:GuidedRepairIntakeOpenRequest):return {"name":"Aether","record":open_guided_repair_intake(request.request_type,request.requested_scope,request.target_path,request.requester,request.guidance_record_id,request.create_guidance_if_missing,request.export_public,request.export_index,request.export_private,request.metadata)}
 @app.post("/action/guided-repair-intake/submit-decision")

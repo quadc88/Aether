@@ -1,15 +1,15 @@
 # Aether Project Progress Ledger
 
-**Last updated:** Milestone 82AO Build — C2 Final Real-Apply Executor Router Extraction (finalized, committed, tagged, pushed)
+**Last updated:** Milestone 82AP Build — Changelog Router Extraction (build complete, pending finalization)
 **Aether version:** 0.2.0  
-**Current completed local milestone:** 82AO Build — C2 Final Real-Apply Executor Router Extraction (finalized)
-**Current active milestone/module:** None; 82AO finalized and 82AP has not started
-**Current status:** C2 final-real-apply executor router extraction committed, tagged, and pushed; ready for 82AP planning
-**Next milestone:** 82AP Plan — Changelog Router Extraction Plan
-**Test baseline:** 1572/1572 passed, 0 failures, 0 errors
+**Current completed local milestone:** 82AP Build — Changelog Router Extraction (build complete, pending finalization)
+**Current active milestone/module:** None; 82AP Build complete and 82AQ has not started
+**Current status:** Changelog router extraction build complete; 1576/1576 test baseline; ready for 82AP finalization
+**Next milestone:** 82AP Finalization — Changelog Router Extraction
+**Test baseline:** 1576/1576 passed, 0 failures, 0 errors
 **OpenAPI baseline:** 300 paths / 103 schemas
-**Latest local tag:** `milestone-82AO-c2-final-real-apply-executor-router-extraction` at `2a8de72`
-**Latest pushed GitHub/origin status:** `origin/main` contains the 82AO finalized ledger correction commit; remote tag `milestone-82AO-c2-final-real-apply-executor-router-extraction` at `2a8de72`; 82AP not started
+**Latest local tag:** `milestone-82AO-c2-final-real-apply-executor-router-extraction` at `2a8de72` (unchanged; 82AP not yet committed/tagged)
+**Latest pushed GitHub/origin status:** `origin/main` is at the 82AO finalized ledger correction commit; 82AP Build changes are uncommitted/untracked local work only; 82AQ not started
 **Runtime-state reset authorization:** Yes; human authority retroactively authorized the 82AD identity-guard runtime-state reset on 2026-07-30, with audit retained at `/home/aether/summaries/milestone_82AD_runtime_state_review.txt`.
 **Pipeline maturity:** Full declarative safety chain (approval through evidence contract record stores) with thin interface refactor (80B-80M) and cognitive runtime observability (81A-81E) complete. Observation contract builder added (82B). Interface API model extraction complete (82C). File and self-inspection service extraction complete (82D). Patch lifecycle service extraction complete (82E). Mutation log service extraction complete (82F). Proposal console service extraction complete (82G). Code review and review bridge service extraction complete (82H). Code review router extraction complete (82J). Mutation log router extraction complete (82K). Proposal console router extraction complete (82L). File router extraction complete (82N). Patch router extraction complete (82O). Approval router extraction complete (82P). Dry run and sandbox contract router extraction complete (82Q). Simulation plan and simulation result router extraction complete (82R). Verification verdict and apply gate router extraction complete (82S). Human authorization and apply execution gate router extraction complete (82T). Executor contract and executor plan router extraction complete (82U). Evidence contract and collection plan router extraction complete (82V). Verification plan router extraction complete (82W). Tool registry and tool plan router extraction complete (82X). Memory state fixture isolation complete (82Z). Memory router extraction complete (82AA). Tool execution safety boundary planning and API-level safety tests complete (82AC-82AD). Tool execution router extraction finalized (82AE). Post-chain C1 state-boundary coverage and full-suite tests-only private/runtime persistence isolation finalized (82AH/82AH-R). Post-chain C1 service extraction finalized (82AI). C2 final real-apply executor safety boundary tests finalized, committed, tagged, and pushed (82AJ). C2 final real-apply executor service extraction finalized, committed, tagged, and pushed (82AK). Repair Family state-boundary tests finalized, committed, tagged, and pushed (82AL Part 1). Repair Family low-risk service extraction finalized, committed, tagged, and pushed (82AL Part 2: repair_planner + repair_workflow_tracker at `f233ba0`). Repair Family medium-risk service extraction finalized, committed, tagged, and pushed (82AL Part 3: repair_workflow_exporter + repair_cycle_completion + repair_learning + repair_guidance at `ff1d728`). Repair Family highest-risk service extraction finalized, committed, tagged, and pushed (82AL Part 4: repair_bridge_selector, the last Repair Family, at `13b84a6`). All 43 Repair Family endpoints are service-backed. Repair Family router extraction finalized, committed, tagged, and pushed (82AM Build: all 43 Repair Family routes moved into `aether/interface/routers/repair_routes.py` at `dfe9949`; `api_server.py` imports and includes `repair_router`; authorized C1 include_router snapshot refresh 16 -> 17; OpenAPI exact match 300/103; full pytest 1572/1572). C1 post-chain router extraction finalized, committed, tagged, and pushed (82AN Build: all 24 C1 post-chain routes moved into `aether/interface/routers/post_chain_c1_routes.py` at `d860616`; `api_server.py` imports and includes `post_chain_c1_router`; authorized C1 include_router snapshot refresh 17 -> 18; OpenAPI exact match 300/103; full pytest 1572/1572). C2 final-real-apply executor router extraction finalized, committed, tagged, and pushed (82AO Build: all 6 C2 routes moved into `aether/interface/routers/final_real_apply_executor_routes.py` at `2a8de72`; `api_server.py` imports and includes `final_real_apply_executor_router`; authorized include_router snapshot refresh 18 -> 19; OpenAPI exact match 300/103; full pytest 1572/1572). No real apply, evidence collection, rollback, or observation exists yet.
 
@@ -2906,5 +2906,35 @@ Extracted 18 endpoint handlers (6 proposal-review-console, 6 proposal-revision-c
     - full-suite real-root/docs-history fingerprint passed
     - Full pytest: 1572/1572 passed, 0 failures, 0 errors
     - Finalized, committed, tagged, and pushed as `milestone-82AO-c2-final-real-apply-executor-router-extraction` at `2a8de72`
-  - Next: 82AP Plan — Changelog Router Extraction Plan
-  - 82AP not started
+  - Next: 82AP Finalization — Changelog Router Extraction
+  - 82AP Build — Changelog Router Extraction (build complete, pending finalization, not committed or tagged)
+    - Changelog router extraction complete locally
+    - Added `aether/interface/routers/changelog_routes.py`
+    - Did not modify `aether/interface/routers/__init__.py`
+    - Did not modify `aether/interface/routers/final_real_apply_executor_routes.py`
+    - Did not modify `aether/interface/routers/post_chain_c1_routes.py`
+    - Did not modify `aether/interface/routers/repair_routes.py`
+    - Moved all 4 changelog routes from `aether/interface/api_server.py` into `aether/interface/routers/changelog_routes.py`
+    - `api_server.py` now imports and includes `changelog_router`
+    - `changelog_router = APIRouter()` with empty prefix
+    - all 4 changelog endpoints remain direct-action pass-throughs
+    - C1 post-chain routes remain in `post_chain_c1_routes.py`
+    - Repair Family routes remain in `repair_routes.py`
+    - C2 final-real-apply executor routes remain in `final_real_apply_executor_routes.py`
+    - direct-action changelog endpoints remaining in api_server: none
+    - operation IDs preserved
+    - OpenAPI exact match: 300 paths / 103 schemas
+    - all 4 changelog paths present
+    - all 24 C1 paths still present and unchanged
+    - all 43 Repair paths still present and unchanged
+    - all 6 C2 paths still present and unchanged
+    - route function names/signatures/defaults/request models preserved
+    - response wrappers preserved
+    - authorized include_router snapshot refresh: 19 -> 20
+    - no C1/C2 safety assertions weakened
+    - no action modules changed
+    - no service modules changed
+    - no api_models.py change
+    - no real apply, rollback, evidence collection, or tool execution
+    - full-suite real-root/docs-history fingerprint passed with drift count 0
+    - Full pytest: 1576/1576 passed, 0 failures, 0 errors
