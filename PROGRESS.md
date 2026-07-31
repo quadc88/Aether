@@ -1,17 +1,17 @@
 # Aether Project Progress Ledger
 
-**Last updated:** Milestone 82AL Build Part 2 — Low-Risk Repair Family Service Extraction (complete locally, not committed)
+**Last updated:** Milestone 82AL Build Part 2 — Low-Risk Repair Family Service Extraction (finalized, committed, tagged, pushed)
 **Aether version:** 0.2.0  
-**Current completed local milestone:** 82AL Build Part 2 — Low-Risk Repair Family Service Extraction (not committed)
-**Current active milestone/module:** None; 82AL Part 2 validation complete and 82AL Part 3 has not started
-**Current status:** 82AL Part 2 low-risk Repair Family service extraction complete locally, not committed, tagged, or pushed
+**Current completed local milestone:** 82AL Build Part 2 — Low-Risk Repair Family Service Extraction (finalized)
+**Current active milestone/module:** None; 82AL Part 2 finalized and 82AL Part 3 has not started
+**Current status:** 82AL Part 2 low-risk Repair Family service extraction committed, tagged, and pushed; ready for 82AL Part 3
 **Next milestone:** 82AL Build Part 3 — Medium-Risk Repair Family Service Extraction (repair_workflow_exporter + repair_cycle_completion + repair_learning + repair_guidance)
 **Test baseline:** 1569/1569 passed, 0 failures, 0 errors
 **OpenAPI baseline:** 300 paths / 103 schemas
-**Latest local tag:** `milestone-82AL-part1-repair-family-boundary-tests` at `9ed75f8`
-**Latest pushed GitHub/origin status:** `origin/main` at `1727fcb`; remote tag `milestone-82AL-part1-repair-family-boundary-tests` at `9ed75f8`; 82AL Part 2 is not pushed
+**Latest local tag:** `milestone-82AL-part2-low-risk-repair-family-services` at `f233ba0`
+**Latest pushed GitHub/origin status:** 82AL Part 2 implementation commit short `f233ba0` pushed to origin/main; remote tag `milestone-82AL-part2-low-risk-repair-family-services` at `f233ba0`; 82AL Part 3 is not pushed or started
 **Runtime-state reset authorization:** Yes; human authority retroactively authorized the 82AD identity-guard runtime-state reset on 2026-07-30, with audit retained at `/home/aether/summaries/milestone_82AD_runtime_state_review.txt`.
-**Pipeline maturity:** Full declarative safety chain (approval through evidence contract record stores) with thin interface refactor (80B-80M) and cognitive runtime observability (81A-81E) complete. Observation contract builder added (82B). Interface API model extraction complete (82C). File and self-inspection service extraction complete (82D). Patch lifecycle service extraction complete (82E). Mutation log service extraction complete (82F). Proposal console service extraction complete (82G). Code review and review bridge service extraction complete (82H). Code review router extraction complete (82J). Mutation log router extraction complete (82K). Proposal console router extraction complete (82L). File router extraction complete (82N). Patch router extraction complete (82O). Approval router extraction complete (82P). Dry run and sandbox contract router extraction complete (82Q). Simulation plan and simulation result router extraction complete (82R). Verification verdict and apply gate router extraction complete (82S). Human authorization and apply execution gate router extraction complete (82T). Executor contract and executor plan router extraction complete (82U). Evidence contract and collection plan router extraction complete (82V). Verification plan router extraction complete (82W). Tool registry and tool plan router extraction complete (82X). Memory state fixture isolation complete (82Z). Memory router extraction complete (82AA). Tool execution safety boundary planning and API-level safety tests complete (82AC-82AD). Tool execution router extraction finalized (82AE). Post-chain C1 state-boundary coverage and full-suite tests-only private/runtime persistence isolation finalized (82AH/82AH-R). Post-chain C1 service extraction finalized (82AI). C2 final real-apply executor safety boundary tests finalized, committed, tagged, and pushed (82AJ). C2 final real-apply executor service extraction finalized, committed, tagged, and pushed (82AK). Repair Family state-boundary tests finalized, committed, tagged, and pushed (82AL Part 1). Repair Family low-risk service extraction complete locally, not committed (82AL Part 2: repair_planner + repair_workflow_tracker). No real apply, evidence collection, rollback, or observation exists yet.
+**Pipeline maturity:** Full declarative safety chain (approval through evidence contract record stores) with thin interface refactor (80B-80M) and cognitive runtime observability (81A-81E) complete. Observation contract builder added (82B). Interface API model extraction complete (82C). File and self-inspection service extraction complete (82D). Patch lifecycle service extraction complete (82E). Mutation log service extraction complete (82F). Proposal console service extraction complete (82G). Code review and review bridge service extraction complete (82H). Code review router extraction complete (82J). Mutation log router extraction complete (82K). Proposal console router extraction complete (82L). File router extraction complete (82N). Patch router extraction complete (82O). Approval router extraction complete (82P). Dry run and sandbox contract router extraction complete (82Q). Simulation plan and simulation result router extraction complete (82R). Verification verdict and apply gate router extraction complete (82S). Human authorization and apply execution gate router extraction complete (82T). Executor contract and executor plan router extraction complete (82U). Evidence contract and collection plan router extraction complete (82V). Verification plan router extraction complete (82W). Tool registry and tool plan router extraction complete (82X). Memory state fixture isolation complete (82Z). Memory router extraction complete (82AA). Tool execution safety boundary planning and API-level safety tests complete (82AC-82AD). Tool execution router extraction finalized (82AE). Post-chain C1 state-boundary coverage and full-suite tests-only private/runtime persistence isolation finalized (82AH/82AH-R). Post-chain C1 service extraction finalized (82AI). C2 final real-apply executor safety boundary tests finalized, committed, tagged, and pushed (82AJ). C2 final real-apply executor service extraction finalized, committed, tagged, and pushed (82AK). Repair Family state-boundary tests finalized, committed, tagged, and pushed (82AL Part 1). Repair Family low-risk service extraction finalized, committed, tagged, and pushed (82AL Part 2: repair_planner + repair_workflow_tracker at `f233ba0`). No real apply, evidence collection, rollback, or observation exists yet.
 
 ---
 
@@ -2762,7 +2762,7 @@ Extracted 18 endpoint handlers (6 proposal-review-console, 6 proposal-revision-c
   - No real apply, rollback, evidence collection, or tool execution
   - Finalized, committed, tagged, and pushed as `milestone-82AL-part1-repair-family-boundary-tests` at `9ed75f8`
   - Next: 82AL Build Part 2 — Low-Risk Repair Family Service Extraction (repair_planner + repair_workflow_tracker only)
-  - 82AL Build Part 2 — Low-Risk Repair Family Service Extraction (complete locally, not committed)
+  - 82AL Build Part 2 — Low-Risk Repair Family Service Extraction (finalized)
     - Created `aether/action/services/repair_planner_service.py` and `aether/action/services/repair_workflow_tracker_service.py`
       with 10 `handle_*` service functions, each a single-return passthrough to its action function
     - Updated `aether/interface/api_server.py`: the 10 repair_planner and repair_workflow_tracker
@@ -2777,7 +2777,7 @@ Extracted 18 endpoint handlers (6 proposal-review-console, 6 proposal-revision-c
       or tool execution; no repair_guidance export bugfix (2 known bugs remain documented)
     - OpenAPI exact match: 300 paths / 103 schemas
     - Full pytest: 1569/1569 passed, 0 failures, 0 errors
-    - Complete locally, not committed, tagged, or pushed
+    - Finalized, committed, tagged, and pushed as `milestone-82AL-part2-low-risk-repair-family-services` at `f233ba0`
   - Next: 82AL Build Part 3 — Medium-Risk Repair Family Service Extraction (repair_workflow_exporter + repair_cycle_completion + repair_learning + repair_guidance)
   - 82AL Part 3 not started
   - 82AM not started
