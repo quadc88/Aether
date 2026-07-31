@@ -104,9 +104,7 @@ from aether.action.services.runtime_lifecycle_service import (
 )
 from aether.action.self_modification_cycle import create_self_modification_session, review_self_modification_session, dry_run_self_modification_session, apply_self_modification_session, rollback_self_modification_session, self_modification_status, list_self_modification_sessions, get_self_modification_session, summarize_self_modification_session
 from aether.action.changelog_exporter import export_public_changelog, export_milestone_report, export_private_changelog_report, changelog_export_status
-from aether.action.repair_planner import create_repair_plan, get_repair_plan, list_repair_plans, repair_plan_status, summarize_repair_plan
 from aether.action.repair_bridge_selector import create_bridge_from_repair_plan, get_repair_bridge_selection, list_repair_bridge_selections, repair_bridge_selection_status, summarize_repair_bridge_selection
-from aether.action.repair_workflow_tracker import trace_repair_workflow, get_repair_workflow_report, list_repair_workflow_reports, repair_workflow_status, summarize_repair_workflow
 from aether.action.repair_workflow_exporter import export_workflow_report, export_workflow_index, export_private_workflow_report, repair_workflow_export_status
 from aether.interface.routers.code_review_routes import code_review_router
 from aether.interface.routers.mutation_log_routes import mutation_log_router
@@ -128,6 +126,8 @@ from aether.action.services.approved_dry_run_gate_service import handle_open_app
 from aether.action.services.dry_run_review_gate_service import handle_open_dry_run_review_gate,handle_submit_dry_run_review,handle_get_dry_run_review_gate_status,handle_list_dry_run_review_gate_records,handle_summarize_dry_run_review_gate,handle_get_dry_run_review_gate_record
 from aether.action.services.real_apply_approval_gate_service import handle_open_real_apply_approval_gate,handle_submit_real_apply_final_decision,handle_get_real_apply_approval_gate_status,handle_list_real_apply_approval_gate_records,handle_summarize_real_apply_approval_gate,handle_get_real_apply_approval_gate_record
 from aether.action.services.final_real_apply_executor_service import handle_open_final_real_apply_executor,handle_execute_final_real_apply,handle_get_final_real_apply_executor_status,handle_list_final_real_apply_executor_records,handle_summarize_final_real_apply_executor,handle_get_final_real_apply_executor_record
+from aether.action.services.repair_planner_service import handle_create_repair_plan,handle_get_repair_plan_status,handle_list_repair_plans,handle_summarize_repair_plan,handle_get_repair_plan
+from aether.action.services.repair_workflow_tracker_service import handle_trace_repair_workflow,handle_get_repair_workflow_status,handle_list_repair_workflow_reports,handle_summarize_repair_workflow,handle_get_repair_workflow_report
 from aether.action.services.post_apply_verification_gate_service import handle_open_post_apply_verification_gate,handle_submit_post_apply_verification,handle_get_post_apply_verification_gate_status,handle_list_post_apply_verification_gate_records,handle_summarize_post_apply_verification_gate,handle_get_post_apply_verification_gate_record
 from aether.action.repair_cycle_completion_report import create_repair_cycle_completion_report,export_repair_cycle_report,export_repair_cycle_index,export_private_repair_cycle_record,get_repair_cycle_completion_record,list_repair_cycle_completion_records,repair_cycle_completion_status,summarize_repair_cycle_completion
 from aether.action.repair_learning_index import create_repair_learning_record,export_repair_learning_report,export_repair_learning_index,export_private_repair_learning_record,get_repair_learning_record,list_repair_learning_records,repair_learning_index_status,summarize_repair_learning_record
@@ -378,15 +378,15 @@ def export_private_changelog_action(request:ChangelogExportRequest):return expor
 @app.get("/action/changelog/status")
 def get_changelog_status():return changelog_export_status()
 @app.post("/action/repair-plan/create")
-def create_repair_plan_action(request:RepairPlanCreateRequest):return {"name":"Aether","plan":create_repair_plan(request.review_report_id,request.scope,request.include_deferred,request.max_findings,request.metadata)}
+def create_repair_plan_action(request:RepairPlanCreateRequest):return handle_create_repair_plan(request.review_report_id,request.scope,request.include_deferred,request.max_findings,request.metadata)
 @app.get("/action/repair-plan/status")
-def get_repair_plan_status_action():return {"name":"Aether","repair_plan":repair_plan_status()}
+def get_repair_plan_status_action():return handle_get_repair_plan_status()
 @app.get("/action/repair-plan/list")
-def list_repair_plan_action(status:str|None=None,review_report_id:str|None=None,limit:int=50):return {"name":"Aether","plans":list_repair_plans(status,review_report_id,limit)}
+def list_repair_plan_action(status:str|None=None,review_report_id:str|None=None,limit:int=50):return handle_list_repair_plans(status,review_report_id,limit)
 @app.get("/action/repair-plan/{plan_id}/summary")
-def summarize_repair_plan_action(plan_id:str):return {"name":"Aether","summary":summarize_repair_plan(plan_id)}
+def summarize_repair_plan_action(plan_id:str):return handle_summarize_repair_plan(plan_id)
 @app.get("/action/repair-plan/{plan_id}")
-def get_repair_plan_action(plan_id:str):return {"name":"Aether","plan":get_repair_plan(plan_id)}
+def get_repair_plan_action(plan_id:str):return handle_get_repair_plan(plan_id)
 @app.post("/action/repair-bridge-selection/create")
 def create_repair_bridge_selection_action(request:RepairBridgeSelectionCreateRequest):return {"name":"Aether","record":create_bridge_from_repair_plan(request.repair_plan_id,request.finding_id,request.proposed_excerpt,request.original_excerpt,request.proposed_change_summary,request.reason,request.create_approval_if_required,request.metadata)}
 @app.get("/action/repair-bridge-selection/status")
@@ -398,15 +398,15 @@ def summarize_repair_bridge_selection_action(record_id:str):return {"name":"Aeth
 @app.get("/action/repair-bridge-selection/{record_id}")
 def get_repair_bridge_selection_action(record_id:str):return {"name":"Aether","record":get_repair_bridge_selection(record_id)}
 @app.post("/action/repair-workflow/trace")
-def trace_repair_workflow_action(request:RepairWorkflowTraceRequest):return {"name":"Aether","report":trace_repair_workflow(request.root_type,request.root_id,request.metadata)}
+def trace_repair_workflow_action(request:RepairWorkflowTraceRequest):return handle_trace_repair_workflow(request.root_type,request.root_id,request.metadata)
 @app.get("/action/repair-workflow/status")
-def get_repair_workflow_status_action():return {"name":"Aether","repair_workflow":repair_workflow_status()}
+def get_repair_workflow_status_action():return handle_get_repair_workflow_status()
 @app.get("/action/repair-workflow/list")
-def list_repair_workflow_action(status:str|None=None,root_type:str|None=None,limit:int=50):return {"name":"Aether","reports":list_repair_workflow_reports(status,root_type,limit)}
+def list_repair_workflow_action(status:str|None=None,root_type:str|None=None,limit:int=50):return handle_list_repair_workflow_reports(status,root_type,limit)
 @app.get("/action/repair-workflow/{report_id}/summary")
-def summarize_repair_workflow_action(report_id:str):return {"name":"Aether","summary":summarize_repair_workflow(report_id)}
+def summarize_repair_workflow_action(report_id:str):return handle_summarize_repair_workflow(report_id)
 @app.get("/action/repair-workflow/{report_id}")
-def get_repair_workflow_action(report_id:str):return {"name":"Aether","report":get_repair_workflow_report(report_id)}
+def get_repair_workflow_action(report_id:str):return handle_get_repair_workflow_report(report_id)
 @app.post("/action/repair-workflow-export/export-report")
 def export_repair_workflow_report_action(request:RepairWorkflowExportRequest):return export_workflow_report(request.report_id,request.output_dir,request.metadata)
 @app.post("/action/repair-workflow-export/export-index")

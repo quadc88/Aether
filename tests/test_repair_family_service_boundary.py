@@ -1,8 +1,15 @@
-"""Boundary tests for 43 Repair Family endpoints before service extraction.
+"""Boundary tests for 43 Repair Family endpoints after 82AL Part 2 service extraction.
 
 Covers 7 families: repair_planner (5), repair_bridge_selector (5),
 repair_workflow_tracker (5), repair_workflow_exporter (4),
 repair_cycle_completion (8), repair_learning (8), repair_guidance (8).
+
+Boundary model (mixed after 82AL Part 2):
+- Service-backed (route -> service handler -> action):
+  repair_planner, repair_workflow_tracker
+- Direct-action (route -> action, no service):
+  repair_bridge_selector, repair_workflow_exporter,
+  repair_cycle_completion, repair_learning, repair_guidance
 """
 
 from __future__ import annotations
@@ -335,6 +342,69 @@ REPAIR_ENDPOINTS: dict[tuple[str, str], tuple[str, str, str, str | None, str]] =
 
 assert len(REPAIR_ENDPOINTS) == 43, f"Expected 43 repair endpoints, got {len(REPAIR_ENDPOINTS)}"
 
+# ----- Boundary model after 82AL Part 2 -----
+# Service-backed families (route -> service handler -> action):
+#   repair_planner, repair_workflow_tracker
+# Direct-action families (route -> action, no service):
+#   repair_bridge_selector, repair_workflow_exporter,
+#   repair_cycle_completion, repair_learning, repair_guidance
+SERVICE_BACKED_FAMILIES = {"repair_planner", "repair_workflow_tracker"}
+DIRECT_ACTION_FAMILIES = {
+    "repair_bridge_selector",
+    "repair_workflow_exporter",
+    "repair_cycle_completion",
+    "repair_learning",
+    "repair_guidance",
+}
+
+# route_func -> (service_handler, action_func)
+ROUTE_TO_SERVICE: dict[str, tuple[str, str]] = {
+    "create_repair_plan_action": ("handle_create_repair_plan", "create_repair_plan"),
+    "get_repair_plan_status_action": ("handle_get_repair_plan_status", "repair_plan_status"),
+    "list_repair_plan_action": ("handle_list_repair_plans", "list_repair_plans"),
+    "summarize_repair_plan_action": ("handle_summarize_repair_plan", "summarize_repair_plan"),
+    "get_repair_plan_action": ("handle_get_repair_plan", "get_repair_plan"),
+    "trace_repair_workflow_action": ("handle_trace_repair_workflow", "trace_repair_workflow"),
+    "get_repair_workflow_status_action": ("handle_get_repair_workflow_status", "repair_workflow_status"),
+    "list_repair_workflow_action": ("handle_list_repair_workflow_reports", "list_repair_workflow_reports"),
+    "summarize_repair_workflow_action": ("handle_summarize_repair_workflow", "summarize_repair_workflow"),
+    "get_repair_workflow_action": ("handle_get_repair_workflow_report", "get_repair_workflow_report"),
+}
+
+# service module -> {handler: action_func}
+SERVICE_HANDLER_MAP: dict[str, dict[str, str]] = {
+    "aether.action.services.repair_planner_service": {
+        "handle_create_repair_plan": "create_repair_plan",
+        "handle_get_repair_plan_status": "repair_plan_status",
+        "handle_list_repair_plans": "list_repair_plans",
+        "handle_summarize_repair_plan": "summarize_repair_plan",
+        "handle_get_repair_plan": "get_repair_plan",
+    },
+    "aether.action.services.repair_workflow_tracker_service": {
+        "handle_trace_repair_workflow": "trace_repair_workflow",
+        "handle_get_repair_workflow_status": "repair_workflow_status",
+        "handle_list_repair_workflow_reports": "list_repair_workflow_reports",
+        "handle_summarize_repair_workflow": "summarize_repair_workflow",
+        "handle_get_repair_workflow_report": "get_repair_workflow_report",
+    },
+}
+
+# service module -> its sole action module
+SERVICE_ACTION_MODULES: dict[str, str] = {
+    "aether.action.services.repair_planner_service": "aether.action.repair_planner",
+    "aether.action.services.repair_workflow_tracker_service": "aether.action.repair_workflow_tracker",
+}
+
+# handler -> wrapper key (derived from REPAIR_ENDPOINTS for service-backed routes)
+SERVICE_HANDLER_WRAPPER_KEYS: dict[str, str] = {}
+for (method, path), (route_func, action_func, operation_id, wrapper_key, family) in REPAIR_ENDPOINTS.items():
+    if family in SERVICE_BACKED_FAMILIES:
+        handler, _ = ROUTE_TO_SERVICE[route_func]
+        SERVICE_HANDLER_WRAPPER_KEYS[handler] = wrapper_key
+assert len(SERVICE_HANDLER_WRAPPER_KEYS) == 10, (
+    f"Expected 10 service handlers with wrapper keys, got {len(SERVICE_HANDLER_WRAPPER_KEYS)}"
+)
+
 # Known pre-existing bugs: repair_guidance export functions crash on None
 # from get_repair_guidance_record("missing"). Deferred to Part 3 or a
 # dedicated bugfix milestone before guidance extraction.
@@ -629,17 +699,19 @@ def test_known_buggy_export_endpoints_documented():
     }, "Bug endpoints list changed — verify and update this test"
 
 
-# ----- Test 5: Route -> action function direct pass-through (pre-extraction snapshot) -----
+# ----- Test 5: Route boundary — service-backed vs direct-action pass-throughs -----
 
-def test_repair_routes_are_direct_pass_throughs():
-    """Verify each repair route calls exactly one action function directly
-    (no service handler, no handle_* wrapper)."""
+def test_repair_routes_are_boundary_pass_throughs():
+    """Verify each repair route body is a single return statement:
+    - service-backed families (repair_planner, repair_workflow_tracker):
+      exactly one call to the expected service handler (no direct action call)
+    - direct-action families: exactly one call to the expected action function
+      (no handle_* service call)
+    """
     source_path = PROJECT_ROOT / "aether/interface/api_server.py"
     tree = ast.parse(source_path.read_text(encoding="utf-8"))
 
-    route_map = {(route_func, action_func): path
-                 for (method, path), (route_func, action_func, _, _, _) in REPAIR_ENDPOINTS.items()}
-    func_names = {route_func for route_func, _ in route_map}
+    func_names = {route_func for _, (route_func, _, _, _, _) in REPAIR_ENDPOINTS.items()}
 
     found = {}
     for node in tree.body:
@@ -653,31 +725,38 @@ def test_repair_routes_are_direct_pass_throughs():
         assert len(calls) == 1, f"{node.name}: expected exactly 1 call, got {len(calls)}"
         called_name = ast.unparse(calls[0].func)
 
-        assert not called_name.startswith("handle_"), (
-            f"{node.name}: calls handle_* service function {called_name!r}; "
-            f"service extraction has not started"
-        )
-
         found[node.name] = called_name
 
     assert len(found) == 43, f"Expected 43 route functions, found {len(found)}"
 
-    for (route_func, action_func), path in route_map.items():
-        assert found[route_func] == action_func, (
-            f"Route {route_func} ({path}): expected action {action_func!r}, "
-            f"got {found[route_func]!r}"
+    for (method, path), (route_func, action_func, _, _, family) in REPAIR_ENDPOINTS.items():
+        if family in SERVICE_BACKED_FAMILIES:
+            expected = ROUTE_TO_SERVICE[route_func][0]
+        else:
+            expected = action_func
+        assert found[route_func] == expected, (
+            f"Route {route_func} ({path}): expected {expected!r}, got {found[route_func]!r}"
         )
 
-    # Verify wrapper contract for each route
-    for (method, path), (route_func, action_func, _, wrapper_key, _) in REPAIR_ENDPOINTS.items():
+    # Verify wrapper contract for each route (unchanged by service extraction;
+    # for service-backed routes the wrapper lives in the service handler and is
+    # verified by test_service_handlers_boundary_static)
+    for (method, path), (route_func, action_func, _, wrapper_key, family) in REPAIR_ENDPOINTS.items():
         for node in tree.body:
             if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
                 continue
             if node.name != route_func:
                 continue
             ret = node.body[0]
-            if wrapper_key is not None:
-                # wrapped: return {"name":"Aether","<key>": action_func(...)}
+            if family in SERVICE_BACKED_FAMILIES:
+                assert isinstance(ret.value, ast.Call), (
+                    f"{route_func}: expected service handler call return"
+                )
+                assert ast.unparse(ret.value.func) == ROUTE_TO_SERVICE[route_func][0], (
+                    f"{route_func}: expected call to {ROUTE_TO_SERVICE[route_func][0]!r}"
+                )
+            elif wrapper_key is not None:
+                # wrapped direct-action: return {"name":"Aether","<key>": action_func(...)}
                 assert isinstance(ret.value, ast.Dict), (
                     f"{route_func}: expected dict return for wrapped route"
                 )
@@ -693,68 +772,200 @@ def test_repair_routes_are_direct_pass_throughs():
                 )
             break
 
+    # Verify service-backed routes call the service handler, not the action directly
+    for route_func, (handler, _) in ROUTE_TO_SERVICE.items():
+        assert found[route_func] == handler, (
+            f"Route {route_func}: expected service handler {handler!r}, got {found[route_func]!r}"
+        )
 
-# ----- Test 6: Import boundary — api_server.py imports repair action modules directly -----
+    # Verify direct-action families do NOT call any handle_* service function
+    direct_route_funcs = {
+        route_func
+        for (method, path), (route_func, _, _, _, family) in REPAIR_ENDPOINTS.items()
+        if family in DIRECT_ACTION_FAMILIES
+    }
+    for route_func in direct_route_funcs:
+        assert not found[route_func].startswith("handle_"), (
+            f"Route {route_func}: direct-action family calls service function {found[route_func]!r}"
+        )
 
-def test_api_server_imports_repair_action_modules_directly():
+
+# ----- Test 6: Import boundary — service-backed families via services, others direct -----
+
+def test_api_server_import_boundary_mixed_model():
     source = (PROJECT_ROOT / "aether/interface/api_server.py").read_text(encoding="utf-8")
     tree = ast.parse(source)
 
     repair_imports = set()
-    future_service_imports = set()
+    service_imports = set()
     for node in tree.body:
         if isinstance(node, ast.ImportFrom):
             module = node.module or ""
             for alias in node.names:
-                if module.startswith("aether.action.") and "repair" in module:
-                    repair_imports.add(module)
                 if module.startswith("aether.action.services.") and "repair" in module:
-                    future_service_imports.add(module)
+                    service_imports.add(module)
+                elif module.startswith("aether.action.") and "repair" in module:
+                    repair_imports.add(module)
 
-    expected_repair_modules = {
-        "aether.action.repair_planner",
+    # Service-backed families: api_server must import the service modules
+    # and must NOT import their action modules directly
+    for service_module, action_module in SERVICE_ACTION_MODULES.items():
+        assert service_module in service_imports, (
+            f"Missing import of service module: {service_module}"
+        )
+        assert action_module not in repair_imports, (
+            f"Direct action import must be removed after service extraction: {action_module}"
+        )
+
+    # Direct-action families: api_server must still import their action modules directly
+    direct_action_modules = {
         "aether.action.repair_bridge_selector",
-        "aether.action.repair_workflow_tracker",
         "aether.action.repair_workflow_exporter",
         "aether.action.repair_cycle_completion_report",
         "aether.action.repair_learning_index",
         "aether.action.repair_guidance_engine",
     }
-    for mod in expected_repair_modules:
+    for mod in direct_action_modules:
         assert mod in repair_imports, (
             f"Missing direct import of repair action module: {mod}"
         )
 
+    # No other Repair Family service modules may be imported yet
     forbidden_future = {
-        "aether.action.services.repair_planner_service",
         "aether.action.services.repair_bridge_selector_service",
-        "aether.action.services.repair_workflow_tracker_service",
         "aether.action.services.repair_workflow_exporter_service",
         "aether.action.services.repair_cycle_completion_service",
         "aether.action.services.repair_learning_service",
         "aether.action.services.repair_guidance_service",
     }
-    overlap = future_service_imports & forbidden_future
+    overlap = service_imports & forbidden_future
     assert not overlap, (
-        f"Future service module(s) already imported in api_server.py: {overlap}"
+        f"Not-yet-extracted service module(s) already imported in api_server.py: {overlap}"
+    )
+
+    # Only the two extracted service modules may be imported
+    assert service_imports <= set(SERVICE_ACTION_MODULES), (
+        f"Unexpected service imports in api_server.py: {service_imports - set(SERVICE_ACTION_MODULES)}"
     )
 
 
-# ----- Test 7: Service absence proof -----
+# ----- Test 7: Service existence proof (2 present, 5 absent) -----
 
-def test_repair_service_modules_do_not_exist_yet():
-    service_paths = [
+def test_extracted_service_modules_exist_and_others_do_not():
+    present_paths = [
         PROJECT_ROOT / "aether/action/services/repair_planner_service.py",
-        PROJECT_ROOT / "aether/action/services/repair_bridge_selector_service.py",
         PROJECT_ROOT / "aether/action/services/repair_workflow_tracker_service.py",
+    ]
+    absent_paths = [
+        PROJECT_ROOT / "aether/action/services/repair_bridge_selector_service.py",
         PROJECT_ROOT / "aether/action/services/repair_workflow_exporter_service.py",
         PROJECT_ROOT / "aether/action/services/repair_cycle_completion_service.py",
         PROJECT_ROOT / "aether/action/services/repair_learning_service.py",
         PROJECT_ROOT / "aether/action/services/repair_guidance_service.py",
     ]
-    for path in service_paths:
+    for path in present_paths:
+        assert path.exists(), (
+            f"Extracted service module missing (should exist after Part 2): {path}"
+        )
+    for path in absent_paths:
         assert not path.exists(), (
-            f"Service module already exists (should not before Part 2): {path}"
+            f"Service module exists but its family is not extracted yet (Part 3+): {path}"
+        )
+
+
+# ----- Test 7b: Service handler static proof -----
+
+def test_service_handlers_boundary_static():
+    """Each service module:
+    - defines exactly the expected handle_* functions
+    - each handler is a single return of {"name": "Aether", <wrapper_key>: <action_call>}
+    - each handler makes exactly one call, to its expected action function
+    - no forbidden imports/calls/network
+    """
+    for service_module, handler_map in SERVICE_HANDLER_MAP.items():
+        module_path = PROJECT_ROOT / (
+            "aether/action/services/" + service_module.rsplit(".", 1)[1] + ".py"
+        )
+        assert module_path.exists(), f"Missing service module: {module_path}"
+        tree = ast.parse(module_path.read_text(encoding="utf-8"))
+
+        defs = {
+            node.name: node
+            for node in tree.body
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+            and node.name.startswith("handle_")
+        }
+        assert set(defs) == set(handler_map), (
+            f"{module_path.name}: expected handlers {sorted(handler_map)}, "
+            f"got {sorted(defs)}"
+        )
+
+        for handler, action_func in handler_map.items():
+            node = defs[handler]
+            assert len(node.body) == 1, f"{handler}: expected single-statement body"
+            assert isinstance(node.body[0], ast.Return), f"{handler}: expected return"
+            ret = node.body[0]
+
+            # wrapper dict
+            assert isinstance(ret.value, ast.Dict), f"{handler}: expected dict return"
+            keys = [ast.unparse(k) for k in ret.value.keys]
+            assert "'name'" in keys, f"{handler}: missing 'name' key"
+            expected_key = SERVICE_HANDLER_WRAPPER_KEYS[handler]
+            assert f"'{expected_key}'" in keys, (
+                f"{handler}: missing wrapper key {expected_key!r}, got keys {keys}"
+            )
+
+            calls = [child for child in ast.walk(ret.value) if isinstance(child, ast.Call)]
+            assert len(calls) == 1, f"{handler}: expected exactly 1 call, got {len(calls)}"
+            assert ast.unparse(calls[0].func) == action_func, (
+                f"{handler}: expected call to {action_func!r}, "
+                f"got {ast.unparse(calls[0].func)!r}"
+            )
+
+        # import boundary: only its own action module may be imported
+        imported_action_modules = set()
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ImportFrom):
+                module = node.module or ""
+                if module.startswith("aether.action."):
+                    imported_action_modules.add(module)
+        expected_action_module = SERVICE_ACTION_MODULES[service_module]
+        assert imported_action_modules == {expected_action_module}, (
+            f"{module_path.name}: expected imports only from {expected_action_module}, "
+            f"got {imported_action_modules}"
+        )
+
+
+# ----- Test 7c: Service modules risk static proof -----
+
+def test_service_modules_no_forbidden_imports_or_calls():
+    service_paths = [
+        PROJECT_ROOT / "aether/action/services/repair_planner_service.py",
+        PROJECT_ROOT / "aether/action/services/repair_workflow_tracker_service.py",
+    ]
+    for module_path in service_paths:
+        assert module_path.exists(), f"Missing service module: {module_path}"
+        tree = ast.parse(module_path.read_text(encoding="utf-8"))
+
+        imported_names = set()
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ImportFrom):
+                for alias in node.names:
+                    imported_names.add(alias.name)
+
+        overlap = imported_names & FORBIDDEN_ACTION_IMPORTS
+        assert not overlap, (
+            f"{module_path.name}: forbidden import(s): {overlap}"
+        )
+
+        all_calls = set()
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Call):
+                all_calls.add(ast.unparse(node.func))
+
+        overlap_calls = all_calls & FORBIDDEN_ACTION_CALLS
+        assert not overlap_calls, (
+            f"{module_path.name}: forbidden call(s): {overlap_calls}"
         )
 
 
