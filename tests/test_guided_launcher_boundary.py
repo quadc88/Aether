@@ -1,4 +1,5 @@
-"""Tests-only safety boundary for the guided launcher families (82AQ Build).
+"""Tests-only safety boundary for the guided launcher families (82AQ Build,
+router placement locked after 82AR Build).
 
 AST/OpenAPI-based only. No guided endpoint is ever invoked and no guided
 action function is ever called, so no guided record-store JSON, export/report
@@ -17,6 +18,9 @@ from aether.interface.api_server import app
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 API_SERVER_PATH = PROJECT_ROOT / "aether/interface/api_server.py"
+GUIDED_LAUNCHER_ROUTER_PATH = (
+    PROJECT_ROOT / "aether/interface/routers/guided_launcher_routes.py"
+)
 GUIDED_ACTION_PATHS = (
     PROJECT_ROOT / "aether/action/guided_repair_intake.py",
     PROJECT_ROOT / "aether/action/guided_repair_plan_launcher.py",
@@ -551,7 +555,7 @@ def test_guided_openapi_contract_and_operation_ids_are_locked():
 
 
 def test_guided_routes_are_exact_direct_action_pass_throughs():
-    tree = ast.parse(API_SERVER_PATH.read_text(encoding="utf-8"))
+    tree = ast.parse(GUIDED_LAUNCHER_ROUTER_PATH.read_text(encoding="utf-8"))
     functions = _route_functions(tree)
     guided_functions = {
         name: fn for name, fn in functions.items() if name in GUIDED_ROUTE_FUNCTION_NAMES
@@ -576,7 +580,8 @@ def test_guided_routes_are_exact_direct_action_pass_throughs():
         ]
         assert decorator_paths == [path]
         assert all(
-            isinstance(dec.func, ast.Attribute) and dec.func.value.id == "app"
+            isinstance(dec.func, ast.Attribute)
+            and dec.func.value.id == "guided_launcher_router"
             for dec in fn.decorator_list
             if isinstance(dec, ast.Call)
             and isinstance(dec.func, ast.Attribute)
@@ -631,8 +636,8 @@ def test_guided_routes_are_exact_direct_action_pass_throughs():
         if isinstance(arg, ast.Name)
     }
     assert all_call_names == GUIDED_ACTION_NAMES
-    api_source = API_SERVER_PATH.read_text(encoding="utf-8")
-    assert not any(term in api_source for term in FORBIDDEN_ACTION_TERMS)
+    router_source = GUIDED_LAUNCHER_ROUTER_PATH.read_text(encoding="utf-8")
+    assert not any(term in router_source for term in FORBIDDEN_ACTION_TERMS)
 
 
 def _param_specs(fn: ast.FunctionDef) -> dict[str, tuple[str, str | None]]:
@@ -668,35 +673,95 @@ def _expected_param_specs(call_args: tuple) -> dict[str, tuple[str, str | None]]
     return specs
 
 
-def test_guided_import_boundary_and_no_router_file():
-    tree = ast.parse(API_SERVER_PATH.read_text(encoding="utf-8"))
-    guided_imports = {
+def test_guided_import_boundary_and_router_placement():
+    api_tree = ast.parse(API_SERVER_PATH.read_text(encoding="utf-8"))
+    router_tree = ast.parse(GUIDED_LAUNCHER_ROUTER_PATH.read_text(encoding="utf-8"))
+
+    # api_server.py no longer imports the 5 guided action modules directly.
+    api_guided_action_imports = {
         n.module: tuple(a.name for a in n.names)
-        for n in _import_froms(tree)
-        if n.module and "guided" in n.module
+        for n in _import_froms(api_tree)
+        if n.module in EXPECTED_GUIDED_IMPORTS
     }
-    assert guided_imports == EXPECTED_GUIDED_IMPORTS
-    all_imported_modules = {n.module for n in _import_froms(tree)}
+    assert api_guided_action_imports == {}
+    api_all_modules = {n.module for n in _import_froms(api_tree)}
     assert not any(
         m and "guided" in m and ("service" in m or "services" in m)
-        for m in all_imported_modules
+        for m in api_all_modules
     )
-    assert not any(
-        m and "guided" in m and "routers" in m for m in all_imported_modules
-    )
-    router_dir = PROJECT_ROOT / "aether/interface/routers"
-    assert not list(router_dir.glob("guided_*_routes.py"))
+
+    # api_server.py no longer defines the 29 guided route functions.
+    api_function_names = {
+        node.name
+        for node in api_tree.body
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+    }
+    assert not GUIDED_ROUTE_FUNCTION_NAMES & api_function_names
+
+    # api_server.py imports guided_launcher_router exactly once.
+    api_router_imports = [
+        (n.module, tuple(a.name for a in n.names))
+        for n in _import_froms(api_tree)
+        if n.module == "aether.interface.routers.guided_launcher_routes"
+    ]
+    assert api_router_imports == [
+        ("aether.interface.routers.guided_launcher_routes", ("guided_launcher_router",))
+    ]
+
+    # api_server.py includes guided_launcher_router exactly once with prefix="".
     include_calls = [
         n
-        for n in ast.walk(tree)
+        for n in ast.walk(api_tree)
         if isinstance(n, ast.Call)
         and isinstance(n.func, ast.Attribute)
         and n.func.attr == "include_router"
-        and n.args
-        and isinstance(n.args[0], ast.Name)
-        and "guided" in n.args[0].id
     ]
-    assert not include_calls
+    guided_includes = [
+        n
+        for n in include_calls
+        if n.args
+        and isinstance(n.args[0], ast.Name)
+        and n.args[0].id == "guided_launcher_router"
+    ]
+    assert len(guided_includes) == 1
+    assert any(
+        kw.arg == "prefix" and ast.unparse(kw.value) == "''"
+        for kw in guided_includes[0].keywords
+    )
+
+    # guided_launcher_routes.py exists and defines guided_launcher_router = APIRouter().
+    assert GUIDED_LAUNCHER_ROUTER_PATH.is_file()
+    router_assigns = [
+        n
+        for n in router_tree.body
+        if isinstance(n, ast.Assign)
+        and any(isinstance(t, ast.Name) and t.id == "guided_launcher_router" for t in n.targets)
+    ]
+    assert len(router_assigns) == 1
+    assert ast.unparse(router_assigns[0].value) == "APIRouter()"
+
+    # guided_launcher_routes.py imports exactly the 5 guided action modules
+    # with exactly the 29 expected names.
+    router_guided_imports = {
+        n.module: tuple(a.name for a in n.names)
+        for n in _import_froms(router_tree)
+        if n.module in EXPECTED_GUIDED_IMPORTS
+    }
+    assert router_guided_imports == EXPECTED_GUIDED_IMPORTS
+    assert sum(len(names) for names in router_guided_imports.values()) == 29
+
+    # guided_launcher_routes.py imports exactly fastapi + api_models + the 5
+    # guided action modules; no service modules and no C1/C2/Repair/Changelog/
+    # Self-modification/tool/patch/evidence modules.
+    allowed_modules = set(EXPECTED_GUIDED_IMPORTS) | {"fastapi", "aether.interface.api_models"}
+    router_modules = {n.module for n in _import_froms(router_tree)}
+    assert router_modules == allowed_modules
+
+    # No other guided router file exists, especially guided_routes.py.
+    router_dir = PROJECT_ROOT / "aether/interface/routers"
+    guided_router_files = sorted(p.name for p in router_dir.glob("guided_*_routes.py"))
+    assert guided_router_files == ["guided_launcher_routes.py"]
+    assert not (router_dir / "guided_routes.py").exists()
 
 
 def test_guided_test_module_never_invokes_endpoints():

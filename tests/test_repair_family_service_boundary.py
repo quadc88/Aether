@@ -885,7 +885,8 @@ def test_api_server_import_boundary_mixed_model():
     - import repair_router from aether.interface.routers.repair_routes exactly once
     - include repair_router exactly once (empty prefix)
     - NOT import any of the 7 Repair Family service modules (they moved to the router)
-    - NOT import any direct Repair Family action module (guided_repair_* are out of scope)
+    - NOT import any direct Repair Family action module; after 82AR Build the
+      guided modules moved to guided_launcher_routes.py, so api_server has none
     """
     source = (PROJECT_ROOT / "aether/interface/api_server.py").read_text(encoding="utf-8")
     tree = ast.parse(source)
@@ -914,15 +915,14 @@ def test_api_server_import_boundary_mixed_model():
         f"{service_imports}"
     )
 
-    # no direct Repair Family action imports in api_server
-    guided_action_modules = {
-        "aether.action.guided_repair_intake",
-        "aether.action.guided_repair_plan_launcher",
-    }
+    # no direct Repair Family action imports in api_server; the guided modules
+    # moved to guided_launcher_routes.py in 82AR Build
+    guided_action_modules: set[str] = set()
     assert repair_imports <= guided_action_modules, (
         f"Unexpected direct repair action imports in api_server.py: "
         f"{repair_imports - guided_action_modules}"
     )
+    assert not repair_imports
 
     # exactly one include_router(repair_router, prefix="")
     include_calls = [

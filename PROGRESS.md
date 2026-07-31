@@ -1,17 +1,17 @@
 # Aether Project Progress Ledger
 
-**Last updated:** Milestone 82AQ Build — Guided Launcher Boundary Tests (finalized, committed, tagged, pushed)
+**Last updated:** Milestone 82AR Build — Guided Launcher Router Extraction (complete locally, not committed)
 **Aether version:** 0.2.0  
-**Current completed local milestone:** 82AQ Build — Guided Launcher Boundary Tests (finalized)
-**Current active milestone/module:** None; 82AQ finalized and 82AR has not started
-**Current status:** Guided Launcher boundary tests committed, tagged, and pushed; ready for 82AR planning
-**Next milestone:** 82AR Plan — Guided Launcher Router Extraction Plan
+**Current completed local milestone:** 82AR Build — Guided Launcher Router Extraction (not committed)
+**Current active milestone/module:** None; 82AR Build validation complete and 82AS has not started
+**Current status:** 29 Guided Launcher routes extracted to guided_launcher_router locally, not committed, tagged, or pushed
+**Next milestone:** 82AR Finalization — Guided Launcher Router Extraction
 **Test baseline:** 1581/1581 passed, 0 failures, 0 errors
 **OpenAPI baseline:** 300 paths / 103 schemas
 **Latest local tag:** `milestone-82AQ-guided-launcher-boundary-tests` at `f25cc2f`
-**Latest pushed GitHub/origin status:** `origin/main` contains the 82AQ finalized ledger correction commit; remote tag `milestone-82AQ-guided-launcher-boundary-tests` at `f25cc2f`; 82AR not started
+**Latest pushed GitHub/origin status:** `origin/main` contains the 82AQ finalized ledger correction commit; remote tag `milestone-82AQ-guided-launcher-boundary-tests` at `f25cc2f`; 82AR Build is not pushed
 **Runtime-state reset authorization:** Yes; human authority retroactively authorized the 82AD identity-guard runtime-state reset on 2026-07-30, with audit retained at `/home/aether/summaries/milestone_82AD_runtime_state_review.txt`.
-**Pipeline maturity:** Full declarative safety chain (approval through evidence contract record stores) with thin interface refactor (80B-80M) and cognitive runtime observability (81A-81E) complete. Observation contract builder added (82B). Interface API model extraction complete (82C). File and self-inspection service extraction complete (82D). Patch lifecycle service extraction complete (82E). Mutation log service extraction complete (82F). Proposal console service extraction complete (82G). Code review and review bridge service extraction complete (82H). Code review router extraction complete (82J). Mutation log router extraction complete (82K). Proposal console router extraction complete (82L). File router extraction complete (82N). Patch router extraction complete (82O). Approval router extraction complete (82P). Dry run and sandbox contract router extraction complete (82Q). Simulation plan and simulation result router extraction complete (82R). Verification verdict and apply gate router extraction complete (82S). Human authorization and apply execution gate router extraction complete (82T). Executor contract and executor plan router extraction complete (82U). Evidence contract and collection plan router extraction complete (82V). Verification plan router extraction complete (82W). Tool registry and tool plan router extraction complete (82X). Memory state fixture isolation complete (82Z). Memory router extraction complete (82AA). Tool execution safety boundary planning and API-level safety tests complete (82AC-82AD). Tool execution router extraction finalized (82AE). Post-chain C1 state-boundary coverage and full-suite tests-only private/runtime persistence isolation finalized (82AH/82AH-R). Post-chain C1 service extraction finalized (82AI). C2 final real-apply executor safety boundary tests finalized, committed, tagged, and pushed (82AJ). C2 final real-apply executor service extraction finalized, committed, tagged, and pushed (82AK). Repair Family state-boundary tests finalized, committed, tagged, and pushed (82AL Part 1). Repair Family low-risk service extraction finalized, committed, tagged, and pushed (82AL Part 2: repair_planner + repair_workflow_tracker at `f233ba0`). Repair Family medium-risk service extraction finalized, committed, tagged, and pushed (82AL Part 3: repair_workflow_exporter + repair_cycle_completion + repair_learning + repair_guidance at `ff1d728`). Repair Family highest-risk service extraction finalized, committed, tagged, and pushed (82AL Part 4: repair_bridge_selector, the last Repair Family, at `13b84a6`). All 43 Repair Family endpoints are service-backed. Repair Family router extraction finalized, committed, tagged, and pushed (82AM Build: all 43 Repair Family routes moved into `aether/interface/routers/repair_routes.py` at `dfe9949`; `api_server.py` imports and includes `repair_router`; authorized C1 include_router snapshot refresh 16 -> 17; OpenAPI exact match 300/103; full pytest 1572/1572). C1 post-chain router extraction finalized, committed, tagged, and pushed (82AN Build: all 24 C1 post-chain routes moved into `aether/interface/routers/post_chain_c1_routes.py` at `d860616`; `api_server.py` imports and includes `post_chain_c1_router`; authorized C1 include_router snapshot refresh 17 -> 18; OpenAPI exact match 300/103; full pytest 1572/1572). C2 final-real-apply executor router extraction finalized, committed, tagged, and pushed (82AO Build: all 6 C2 routes moved into `aether/interface/routers/final_real_apply_executor_routes.py` at `2a8de72`; `api_server.py` imports and includes `final_real_apply_executor_router`; authorized include_router snapshot refresh 18 -> 19; OpenAPI exact match 300/103; full pytest 1572/1572). No real apply, evidence collection, rollback, or observation exists yet. Guided launcher family tests-only boundary coverage finalized, committed, tagged, and pushed (82AQ Build: all 29 Guided routes across 5 direct-action families locked via AST/OpenAPI-only tests in `tests/test_guided_launcher_boundary.py` at `f25cc2f`; OpenAPI exact match 300/103; full pytest 1581/1581).
+**Pipeline maturity:** Full declarative safety chain (approval through evidence contract record stores) with thin interface refactor (80B-80M) and cognitive runtime observability (81A-81E) complete. Observation contract builder added (82B). Interface API model extraction complete (82C). File and self-inspection service extraction complete (82D). Patch lifecycle service extraction complete (82E). Mutation log service extraction complete (82F). Proposal console service extraction complete (82G). Code review and review bridge service extraction complete (82H). Code review router extraction complete (82J). Mutation log router extraction complete (82K). Proposal console router extraction complete (82L). File router extraction complete (82N). Patch router extraction complete (82O). Approval router extraction complete (82P). Dry run and sandbox contract router extraction complete (82Q). Simulation plan and simulation result router extraction complete (82R). Verification verdict and apply gate router extraction complete (82S). Human authorization and apply execution gate router extraction complete (82T). Executor contract and executor plan router extraction complete (82U). Evidence contract and collection plan router extraction complete (82V). Verification plan router extraction complete (82W). Tool registry and tool plan router extraction complete (82X). Memory state fixture isolation complete (82Z). Memory router extraction complete (82AA). Tool execution safety boundary planning and API-level safety tests complete (82AC-82AD). Tool execution router extraction finalized (82AE). Post-chain C1 state-boundary coverage and full-suite tests-only private/runtime persistence isolation finalized (82AH/82AH-R). Post-chain C1 service extraction finalized (82AI). C2 final real-apply executor safety boundary tests finalized, committed, tagged, and pushed (82AJ). C2 final real-apply executor service extraction finalized, committed, tagged, and pushed (82AK). Repair Family state-boundary tests finalized, committed, tagged, and pushed (82AL Part 1). Repair Family low-risk service extraction finalized, committed, tagged, and pushed (82AL Part 2: repair_planner + repair_workflow_tracker at `f233ba0`). Repair Family medium-risk service extraction finalized, committed, tagged, and pushed (82AL Part 3: repair_workflow_exporter + repair_cycle_completion + repair_learning + repair_guidance at `ff1d728`). Repair Family highest-risk service extraction finalized, committed, tagged, and pushed (82AL Part 4: repair_bridge_selector, the last Repair Family, at `13b84a6`). All 43 Repair Family endpoints are service-backed. Repair Family router extraction finalized, committed, tagged, and pushed (82AM Build: all 43 Repair Family routes moved into `aether/interface/routers/repair_routes.py` at `dfe9949`; `api_server.py` imports and includes `repair_router`; authorized C1 include_router snapshot refresh 16 -> 17; OpenAPI exact match 300/103; full pytest 1572/1572). C1 post-chain router extraction finalized, committed, tagged, and pushed (82AN Build: all 24 C1 post-chain routes moved into `aether/interface/routers/post_chain_c1_routes.py` at `d860616`; `api_server.py` imports and includes `post_chain_c1_router`; authorized C1 include_router snapshot refresh 17 -> 18; OpenAPI exact match 300/103; full pytest 1572/1572). C2 final-real-apply executor router extraction finalized, committed, tagged, and pushed (82AO Build: all 6 C2 routes moved into `aether/interface/routers/final_real_apply_executor_routes.py` at `2a8de72`; `api_server.py` imports and includes `final_real_apply_executor_router`; authorized include_router snapshot refresh 18 -> 19; OpenAPI exact match 300/103; full pytest 1572/1572). No real apply, evidence collection, rollback, or observation exists yet. Guided launcher family tests-only boundary coverage finalized, committed, tagged, and pushed (82AQ Build: all 29 Guided routes across 5 direct-action families locked via AST/OpenAPI-only tests in `tests/test_guided_launcher_boundary.py` at `f25cc2f`; OpenAPI exact match 300/103; full pytest 1581/1581). Guided Launcher router extraction complete locally, not committed (82AR Build: all 29 Guided routes moved into `aether/interface/routers/guided_launcher_routes.py` as `guided_launcher_router`; `api_server.py` imports and includes `guided_launcher_router` exactly once; authorized include_router snapshot refresh 20 -> 21; guided action import snapshot emptied in Repair Family boundary test; OpenAPI exact match 300/103; full pytest 1581/1581).
 
 ---
 
@@ -2959,3 +2959,41 @@ Extracted 18 endpoint handlers (6 proposal-review-console, 6 proposal-revision-c
     - Full pytest: 1581/1581 passed, 0 failures, 0 errors
     - Finalized, committed, tagged, and pushed as `milestone-82AQ-guided-launcher-boundary-tests` at `f25cc2f`
   - Next: 82AR Plan — Guided Launcher Router Extraction Plan
+  - 82AR Build — Guided Launcher Router Extraction (complete locally, not committed)
+    - Guided Launcher router extraction complete locally
+    - Added `aether/interface/routers/guided_launcher_routes.py`
+    - Modified `aether/interface/api_server.py`
+    - Updated `tests/test_guided_launcher_boundary.py`
+    - Updated `tests/test_post_chain_c1_state_boundary.py` only for include_router 20 -> 21
+    - Updated `tests/test_repair_family_service_boundary.py` only for guided direct-action import snapshot
+    - Did not modify `aether/interface/routers/__init__.py`
+    - Did not modify existing routers
+    - Did not modify action modules
+    - Did not modify service modules
+    - Did not modify api_models.py
+    - Moved all 29 Guided routes from `api_server.py` into `guided_launcher_routes.py`
+    - `guided_launcher_router = APIRouter()` with empty prefix
+    - `api_server.py` imports and includes `guided_launcher_router`
+    - direct Guided routes remaining in api_server: none
+    - api_server @app routes after extraction: 17
+    - include_router calls after extraction: 21
+    - all 29 Guided endpoints remain direct-action pass-throughs
+    - 26 wrapped routes + 3 direct-return export routes preserved
+    - operation IDs preserved
+    - OpenAPI exact match: 300 paths / 103 schemas
+    - Guided paths 29
+    - Changelog paths 4
+    - C2 paths 6
+    - C1 paths 24
+    - Repair paths 43
+    - no service extraction
+    - no endpoint invocation
+    - no guided action function invocation
+    - no docs/history write
+    - no runtime/private write
+    - no real apply, rollback, evidence collection, or tool execution
+    - full-suite real-root/docs-history fingerprint passed with drift count 0
+    - Full pytest: 1581/1581 passed, 0 failures, 0 errors
+    - Complete locally; not committed, tagged, or pushed
+  - Next: 82AR Finalization — Guided Launcher Router Extraction
+  - 82AS not started
