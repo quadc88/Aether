@@ -232,28 +232,45 @@ def test_c2_openapi_inventory_operation_ids_and_exact_schema_are_locked():
 
 
 def test_c2_routes_remain_exact_service_pass_throughs():
-    source_path = PROJECT_ROOT / "aether/interface/api_server.py"
-    tree = ast.parse(source_path.read_text(encoding="utf-8"))
+    router_path = PROJECT_ROOT / "aether/interface/routers/final_real_apply_executor_routes.py"
+    api_path = PROJECT_ROOT / "aether/interface/api_server.py"
+    assert router_path.exists()
+    router_tree = ast.parse(router_path.read_text(encoding="utf-8"))
+    api_tree = ast.parse(api_path.read_text(encoding="utf-8"))
+
     expected = {
         details[0]: (details[1], details[4])
         for details in C2_ENDPOINTS.values()
     }
+
+    router_assigns = [
+        node for node in router_tree.body
+        if isinstance(node, ast.Assign)
+        and any(
+            isinstance(t, ast.Name)
+            and t.id == "final_real_apply_executor_router"
+            for t in node.targets
+        )
+    ]
+    assert len(router_assigns) == 1
+    assert ast.unparse(router_assigns[0].value) == "APIRouter()"
+
     found = {}
-
-    imported_from_action = set()
-    imported_from_service = set()
-    for node in tree.body:
-        if isinstance(node, ast.ImportFrom):
-            names = {alias.name for alias in node.names}
-            if node.module == "aether.action.final_real_apply_executor":
-                imported_from_action.update(names)
-            if node.module and "final_real_apply_executor_service" in node.module:
-                imported_from_service.update(names)
-
+    for node in router_tree.body:
         if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             continue
         if node.name not in expected:
             continue
+
+        assert node.decorator_list, f"{node.name}: missing decorator"
+        for dec in node.decorator_list:
+            text = ast.unparse(dec)
+            assert text.startswith("final_real_apply_executor_router."), (
+                f"{node.name}: wrong decorator {text}"
+            )
+            assert not text.startswith("app."), (
+                f"{node.name}: app decorator must not appear in router"
+            )
 
         service_handler_name, wrapper_key = expected[node.name]
         assert len(node.body) == 1
@@ -268,10 +285,67 @@ def test_c2_routes_remain_exact_service_pass_throughs():
         route_name: service_handler_name
         for route_name, (service_handler_name, _) in expected.items()
     }
-    assert imported_from_action == set()
-    assert imported_from_service == {
-        details[1] for details in C2_ENDPOINTS.values()
-    }
+
+    api_route_names = set()
+    for node in api_tree.body:
+        if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            continue
+        if node.name in expected:
+            api_route_names.add(node.name)
+    assert api_route_names == set(), f"api_server still defines C2 routes: {api_route_names}"
+
+    api_router_imports = []
+    api_c2_service_imports = []
+    router_module_imports = []
+    for node in api_tree.body:
+        if isinstance(node, ast.ImportFrom):
+            mod = node.module or ""
+            names = {alias.name for alias in node.names}
+            if mod == "aether.interface.routers.final_real_apply_executor_routes":
+                api_router_imports.append(names)
+            if "final_real_apply_executor_service" in mod:
+                api_c2_service_imports.append((mod, names))
+    assert api_router_imports == [{"final_real_apply_executor_router"}]
+    assert api_c2_service_imports == []
+
+    include_calls = [
+        n for n in ast.walk(api_tree)
+        if isinstance(n, ast.Call)
+        and ast.unparse(n.func) == "app.include_router"
+        and n.args
+        and ast.unparse(n.args[0]) == "final_real_apply_executor_router"
+    ]
+    assert len(include_calls) == 1
+    assert ast.unparse(include_calls[0]) == (
+        "app.include_router(final_real_apply_executor_router, prefix='')"
+    )
+
+    router_service_imports = []
+    router_action_imports = []
+    for node in router_tree.body:
+        if isinstance(node, ast.ImportFrom):
+            mod = node.module or ""
+            names = {alias.name for alias in node.names}
+            if "final_real_apply_executor_service" in mod:
+                router_service_imports.append(names)
+            elif mod.startswith("aether.action."):
+                router_action_imports.append((mod, names))
+    assert router_service_imports == [
+        {details[1] for details in C2_ENDPOINTS.values()}
+    ]
+    assert router_action_imports == []
+
+    router_forbidden_modules = []
+    for node in router_tree.body:
+        if isinstance(node, ast.ImportFrom):
+            mod = node.module or ""
+            if any(x in mod for x in [
+                "approved_dry_run", "dry_run_review", "real_apply_approval",
+                "post_apply_verification", "repair", "guided", "self_modification",
+                "changelog", "tool", "patch", "evidence",
+            ]) and "final_real_apply_executor_service" not in mod:
+                router_forbidden_modules.append(mod)
+    assert router_forbidden_modules == []
 
 
 def test_c2_action_static_risk_is_single_explicit_real_apply_boundary():

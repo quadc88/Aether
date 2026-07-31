@@ -122,7 +122,7 @@ from aether.interface.routers.memory_routes import memory_router
 from aether.interface.routers.tool_executor_routes import tool_executor_router
 from aether.interface.routers.repair_routes import repair_router
 from aether.interface.routers.post_chain_c1_routes import post_chain_c1_router
-from aether.action.services.final_real_apply_executor_service import handle_open_final_real_apply_executor,handle_execute_final_real_apply,handle_get_final_real_apply_executor_status,handle_list_final_real_apply_executor_records,handle_summarize_final_real_apply_executor,handle_get_final_real_apply_executor_record
+from aether.interface.routers.final_real_apply_executor_routes import final_real_apply_executor_router
 from aether.action.guided_repair_intake import open_guided_repair_intake,submit_guided_repair_intake_decision,export_guided_repair_intake_report,export_guided_repair_intake_index,export_private_guided_repair_intake_record,get_guided_repair_intake_record,list_guided_repair_intake_records,guided_repair_intake_status,summarize_guided_repair_intake
 from aether.action.guided_repair_plan_launcher import launch_guided_repair_plan,get_guided_repair_plan_launcher_record,list_guided_repair_plan_launcher_records,guided_repair_plan_launcher_status,summarize_guided_repair_plan_launcher
 from aether.action.guided_bridge_selection_launcher import launch_guided_bridge_selection,get_guided_bridge_selection_launcher_record,list_guided_bridge_selection_launcher_records,guided_bridge_selection_launcher_status,summarize_guided_bridge_selection_launcher
@@ -153,6 +153,7 @@ app.include_router(memory_router, prefix="")
 app.include_router(tool_executor_router, prefix="")
 app.include_router(repair_router, prefix="")
 app.include_router(post_chain_c1_router, prefix="")
+app.include_router(final_real_apply_executor_router, prefix="")
 
 
 # ---- Identity Integrity Endpoints (Milestone 48A) ----
@@ -370,18 +371,6 @@ def export_milestone_changelog_action(request:MilestoneReportExportRequest):retu
 def export_private_changelog_action(request:ChangelogExportRequest):return export_private_changelog_report(request.milestone,request.limit,request.metadata)
 @app.get("/action/changelog/status")
 def get_changelog_status():return changelog_export_status()
-@app.post("/action/final-real-apply-executor/open")
-def open_final_real_apply_executor_action(request:FinalRealApplyExecutorOpenRequest):return handle_open_final_real_apply_executor(request.source_type,request.source_id,request.metadata)
-@app.post("/action/final-real-apply-executor/execute")
-def execute_final_real_apply_action(request:FinalRealApplyExecuteRequest):return handle_execute_final_real_apply(request.executor_record_id,request.metadata)
-@app.get("/action/final-real-apply-executor/status")
-def get_final_real_apply_executor_status_action():return handle_get_final_real_apply_executor_status()
-@app.get("/action/final-real-apply-executor/list")
-def list_final_real_apply_executor_action(status:str|None=None,proposal_id:str|None=None,limit:int=50):return handle_list_final_real_apply_executor_records(status,proposal_id,limit)
-@app.get("/action/final-real-apply-executor/{record_id}/summary")
-def summarize_final_real_apply_executor_action(record_id:str):return handle_summarize_final_real_apply_executor(record_id)
-@app.get("/action/final-real-apply-executor/{record_id}")
-def get_final_real_apply_executor_action(record_id:str):return handle_get_final_real_apply_executor_record(record_id)
 @app.post("/action/guided-repair-intake/open")
 def open_guided_repair_intake_action(request:GuidedRepairIntakeOpenRequest):return {"name":"Aether","record":open_guided_repair_intake(request.request_type,request.requested_scope,request.target_path,request.requester,request.guidance_record_id,request.create_guidance_if_missing,request.export_public,request.export_index,request.export_private,request.metadata)}
 @app.post("/action/guided-repair-intake/submit-decision")

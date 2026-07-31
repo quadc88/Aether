@@ -681,11 +681,11 @@ def test_c1_service_extraction_is_exact_and_c1_router_extraction_is_isolated():
         "dry_run_review_gate_routes.py",
         "real_apply_approval_gate_routes.py",
         "post_apply_verification_gate_routes.py",
-        "final_real_apply_executor_routes.py",
     )
     services_root = PROJECT_ROOT / "aether/action/services"
     assert (services_root / "final_real_apply_executor_service.py").exists()  # C2 service extraction (82AK)
-    assert not (services_root / "final_real_apply_executor_routes.py").exists()  # no C2 router extraction
+    # 82AO Build: the C2 router file lives in aether/interface/routers, not in services.
+    assert not (services_root / "final_real_apply_executor_routes.py").exists()
     assert {
         handler
         for handlers in C1_SERVICE_HANDLER_TO_ACTION.values()
@@ -730,7 +730,7 @@ def test_c1_service_extraction_is_exact_and_c1_router_extraction_is_isolated():
                 assert forbidden not in return_text
 
     # 82AN Build: all 24 C1 post-chain routes moved to post_chain_c1_routes.py.
-    # The 4 family-named C1 router files and the C2 router file remain absent.
+    # The 4 family-named C1 router files remain absent.
     assert not any(
         (PROJECT_ROOT / "aether/interface/routers" / name).exists()
         for name in router_paths
@@ -762,7 +762,10 @@ def test_c1_service_extraction_is_exact_and_c1_router_extraction_is_isolated():
     }
     assert direct_modules.isdisjoint(imported_modules)
     assert service_modules.isdisjoint(imported_modules)
-    assert c2_service_module in imported_modules
+    # 82AO Build: the C2 service import moved into final_real_apply_executor_routes.py;
+    # api_server no longer imports final_real_apply_executor_service directly.
+    assert c2_service_module not in imported_modules
+    assert "aether.interface.routers.final_real_apply_executor_routes" in imported_modules
 
     router_imported_modules = {
         node.module for node in router_tree.body
@@ -834,14 +837,16 @@ def test_c1_service_extraction_is_exact_and_c1_router_extraction_is_isolated():
             for decorator in node.decorator_list
         )
     ]
-    assert len(api_c2_functions) == 6
+    # 82AO Build: all 6 C2 routes moved to final_real_apply_executor_routes.py;
+    # api_server defines no final-real-apply-executor routes.
+    assert len(api_c2_functions) == 0
 
     # 82AN Build added app.include_router(post_chain_c1_router, prefix="") (17 -> 18);
-    # C2 router extraction has not started, so final_real_apply_executor_routes.py is absent.
+    # 82AO Build added app.include_router(final_real_apply_executor_router, prefix="") (18 -> 19).
     include_router_calls = [
         node for node in ast.walk(api_tree)
         if isinstance(node, ast.Call)
         and isinstance(node.func, ast.Attribute)
         and node.func.attr == "include_router"
     ]
-    assert len(include_router_calls) == 18
+    assert len(include_router_calls) == 19
