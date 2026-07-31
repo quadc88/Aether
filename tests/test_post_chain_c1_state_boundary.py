@@ -851,4 +851,4 @@ def test_c1_service_extraction_is_exact_and_c1_router_extraction_is_isolated():
         and isinstance(node.func, ast.Attribute)
         and node.func.attr == "include_router"
     ]
-    assert len(include_router_calls) == 21
+    assert len(include_router_calls) == 22

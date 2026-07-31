@@ -16,6 +16,7 @@ import pytest
 # ---------------------------------------------------------------------------
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 API_SERVER_PATH = PROJECT_ROOT / "aether" / "interface" / "api_server.py"
+ROUTER_PATH = PROJECT_ROOT / "aether" / "interface" / "routers" / "self_modification_routes.py"
 SELF_MODIFICATION_MODULE_PATH = PROJECT_ROOT / "aether" / "action" / "self_modification_cycle.py"
 API_MODELS_PATH = PROJECT_ROOT / "aether" / "interface" / "api_models.py"
 
@@ -178,7 +179,14 @@ FORBIDDEN_ROUTER_NAMES = {
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
-def _parse_api_server():
+def _parse_router():
+    """Parse self_modification_routes.py and return AST tree + source."""
+    source = ROUTER_PATH.read_text(encoding="utf-8")
+    tree = ast.parse(source)
+    return tree, source
+
+
+def _parse_api_server_only():
     """Parse api_server.py and return AST tree + source."""
     source = API_SERVER_PATH.read_text(encoding="utf-8")
     tree = ast.parse(source)
@@ -193,7 +201,7 @@ def _find_self_modification_routes(tree):
             continue
         for dec in node.decorator_list:
             text = ast.unparse(dec)
-            if text.startswith("app.") and "/action/self-modification" in text:
+            if text.startswith("self_modification_router.") and "/action/self-modification" in text:
                 method = text.split("(", 1)[0].split(".", 1)[1].upper()
                 path = None
                 if isinstance(dec, ast.Call) and dec.args:
@@ -214,6 +222,7 @@ def _get_route_info(route_node):
         ast.unparse(c.func)
         for c in ast.walk(route_node)
         if isinstance(c, ast.Call)
+        and not ast.unparse(c.func).startswith("self_modification_router.")
         and not ast.unparse(c.func).startswith("app.")
     ]
     flow = [
@@ -389,46 +398,57 @@ class TestOpenAPIContract:
 
 
 class TestRoutePlacement:
-    """Lock Self-Modification routes remain in api_server.py with app.* decorators."""
+    """Lock Self-Modification routes in self_modification_routes.py with router.* decorators."""
 
-    def test_self_modification_router_not_exists(self):
-        router_path = PROJECT_ROOT / "aether" / "interface" / "routers" / "self_modification_routes.py"
-        assert not router_path.exists(), "self_modification_routes.py should not exist yet"
+    def test_self_modification_router_exists(self):
+        assert ROUTER_PATH.exists(), "self_modification_routes.py should exist"
 
-    def test_no_self_modification_router_import(self):
-        tree, _ = _parse_api_server()
-        for node in tree.body:
-            if isinstance(node, ast.ImportFrom):
-                if node.module and "self_modification" in node.module.lower():
-                    if "routers" in node.module:
-                        pytest.fail("api_server.py should not import self_modification router")
+    def test_self_modification_router_definition(self):
+        source = ROUTER_PATH.read_text(encoding="utf-8")
+        assert "self_modification_router = APIRouter()" in source, \
+            "self_modification_routes.py should define self_modification_router = APIRouter()"
 
-    def test_no_self_modification_include_router(self):
+    def test_self_modification_router_import_in_api_server(self):
         source = API_SERVER_PATH.read_text(encoding="utf-8")
-        assert "include_router(self_modification_router" not in source, \
-            "api_server.py should not include self_modification_router"
-        assert 'include_router(self_modification_router' not in source, \
-            "api_server.py should not include self_modification_router (single quote)"
+        assert "from aether.interface.routers.self_modification_routes import self_modification_router" in source, \
+            "api_server.py should import self_modification_router"
 
-    def test_app_decorators_used(self):
-        tree, _ = _parse_api_server()
-        routes = _find_self_modification_routes(tree)
-        assert len(routes) == 9, f"Expected 9 routes, got {len(routes)}"
-        for (method, path), node in routes.items():
-            has_app_decorator = False
+    def test_self_modification_router_include_in_api_server(self):
+        source = API_SERVER_PATH.read_text(encoding="utf-8")
+        assert "app.include_router(self_modification_router, prefix=\"\")" in source, \
+            "api_server.py should include self_modification_router with prefix=\"\""
+
+    def test_no_self_modification_routes_in_api_server(self):
+        tree, _ = _parse_api_server_only()
+        routes = []
+        for node in tree.body:
+            if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                continue
             for dec in node.decorator_list:
                 text = ast.unparse(dec)
                 if text.startswith("app.") and "/action/self-modification" in text:
-                    has_app_decorator = True
+                    routes.append(node.name)
+        assert not routes, f"Self-Modification routes should not remain in api_server.py: {routes}"
+
+    def test_router_decorators_used(self):
+        tree, _ = _parse_router()
+        routes = _find_self_modification_routes(tree)
+        assert len(routes) == 9, f"Expected 9 routes, got {len(routes)}"
+        for (method, path), node in routes.items():
+            has_router_decorator = False
+            for dec in node.decorator_list:
+                text = ast.unparse(dec)
+                if "self_modification_router" in text and "/action/self-modification" in text:
+                    has_router_decorator = True
                     break
-            assert has_app_decorator, f"Route {node.name} missing app.* decorator"
+            assert has_router_decorator, f"Route {node.name} missing self_modification_router.* decorator"
 
 
 class TestRouteBehavior:
     """Lock exact route behavior: single-return wrapped pass-throughs."""
 
     def test_all_routes_are_wrapped_pass_throughs(self):
-        tree, _ = _parse_api_server()
+        tree, _ = _parse_router()
         routes = _find_self_modification_routes(tree)
         assert len(routes) == 9, f"Expected 9 routes, got {len(routes)}"
 
@@ -447,7 +467,7 @@ class TestRouteBehavior:
                 f"{node.name}: Wrong calls: {info['calls']}"
 
     def test_signatures_match_expected(self):
-        tree, source = _parse_api_server()
+        tree, source = _parse_router()
         routes = _find_self_modification_routes(tree)
 
         expected_signatures = {
@@ -475,7 +495,7 @@ class TestRouteBehavior:
                     break
 
     def test_call_argument_order(self):
-        tree, _ = _parse_api_server()
+        tree, _ = _parse_router()
         routes = _find_self_modification_routes(tree)
 
         for (method, path), node in routes.items():
@@ -512,16 +532,16 @@ class TestRouteBehavior:
 
 
 class TestImportBoundary:
-    """Lock import boundary: only self_modification_cycle import, no router imports."""
+    """Lock import boundary: router imports self_modification_cycle, api_server imports router."""
 
-    def test_exactly_self_modification_cycle_import(self):
-        tree, _ = _parse_api_server()
+    def test_router_exactly_self_modification_cycle_import(self):
+        tree, _ = _parse_router()
         self_mod_imports = []
         for node in tree.body:
             if isinstance(node, ast.ImportFrom):
                 if node.module and "self_modification" in node.module.lower():
                     if not node.module.startswith("aether.action.self_modification_cycle"):
-                        pytest.fail(f"Unexpected self_modification import: {node.module}")
+                        pytest.fail(f"Unexpected self_modification import in router: {node.module}")
                     names = [a.name for a in node.names]
                     self_mod_imports.extend(names)
 
@@ -538,28 +558,43 @@ class TestImportBoundary:
         }
         actual_names = set(self_mod_imports)
         assert actual_names == expected_names, \
-            f"Import mismatch. Missing: {expected_names - actual_names}, Extra: {actual_names - expected_names}"
+            f"Router import mismatch. Missing: {expected_names - actual_names}, Extra: {actual_names - expected_names}"
 
-    def test_no_other_self_modification_direct_action_imports(self):
-        tree, _ = _parse_api_server()
-        other_imports = []
+    def test_api_server_no_self_modification_cycle_import(self):
+        tree, _ = _parse_api_server_only()
         for node in tree.body:
             if isinstance(node, ast.ImportFrom):
-                if node.module and node.module.startswith("aether.action.") and not node.module.startswith("aether.action.services."):
-                    if "self_modification" in node.module.lower():
-                        continue  # Already checked above
-                    # Check if any other action import mentions self_modification
-                    for alias in node.names:
-                        if "self_modification" in alias.name.lower():
-                            other_imports.append(f"{node.module}.{alias.name}")
+                if node.module and node.module.startswith("aether.action.self_modification_cycle"):
+                    pytest.fail("api_server.py should no longer import aether.action.self_modification_cycle")
 
-        assert not other_imports, f"Unexpected self_modification action imports: {other_imports}"
+    def test_api_server_imports_self_modification_router(self):
+        api_tree, _ = _parse_api_server_only()
+        router_imports = []
+        for node in api_tree.body:
+            if isinstance(node, ast.ImportFrom):
+                if node.module and "self_modification" in node.module.lower():
+                    if "routers" in node.module:
+                        router_imports.append(node.module)
+        assert len(router_imports) == 1, f"Expected 1 self_modification router import, got {len(router_imports)}"
+        assert "aether.interface.routers.self_modification_routes" in router_imports[0], \
+            f"Expected import from aether.interface.routers.self_modification_routes, got {router_imports[0]}"
+
+    def test_api_server_includes_self_modification_router(self):
+        api_tree, _ = _parse_api_server_only()
+        include_calls = []
+        for node in ast.walk(api_tree):
+            if isinstance(node, ast.Call) and ast.unparse(node.func) == "app.include_router":
+                include_calls.append(ast.unparse(node))
+        self_mod_includes = [c for c in include_calls if "self_modification_router" in c]
+        assert len(self_mod_includes) == 1, f"Expected 1 self_modification_router include, got {len(self_mod_includes)}"
+        assert "prefix=''" in self_mod_includes[0] or 'prefix=""' in self_mod_includes[0], \
+            f"Expected prefix='' in include_router call, got {self_mod_includes[0]}"
 
     def test_routers_unchanged(self):
         """Verify existing router imports are still present."""
-        tree, _ = _parse_api_server()
+        api_tree, _ = _parse_api_server_only()
         router_modules = []
-        for node in tree.body:
+        for node in api_tree.body:
             if isinstance(node, ast.ImportFrom):
                 if node.module and node.module.startswith("aether.interface.routers."):
                     router_modules.append(node.module.split(".")[-1])

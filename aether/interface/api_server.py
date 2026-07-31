@@ -102,7 +102,6 @@ from aether.verification.risk import classify_risk
 from aether.action.services.runtime_lifecycle_service import (
     handle_awaken,
 )
-from aether.action.self_modification_cycle import create_self_modification_session, review_self_modification_session, dry_run_self_modification_session, apply_self_modification_session, rollback_self_modification_session, self_modification_status, list_self_modification_sessions, get_self_modification_session, summarize_self_modification_session
 from aether.interface.routers.code_review_routes import code_review_router
 from aether.interface.routers.mutation_log_routes import mutation_log_router
 from aether.interface.routers.proposal_console_routes import proposal_console_router
@@ -124,6 +123,7 @@ from aether.interface.routers.post_chain_c1_routes import post_chain_c1_router
 from aether.interface.routers.final_real_apply_executor_routes import final_real_apply_executor_router
 from aether.interface.routers.changelog_routes import changelog_router
 from aether.interface.routers.guided_launcher_routes import guided_launcher_router
+from aether.interface.routers.self_modification_routes import self_modification_router
 
 app = FastAPI(
     title="Aether API",
@@ -152,6 +152,7 @@ app.include_router(post_chain_c1_router, prefix="")
 app.include_router(final_real_apply_executor_router, prefix="")
 app.include_router(changelog_router, prefix="")
 app.include_router(guided_launcher_router, prefix="")
+app.include_router(self_modification_router, prefix="")
 
 
 # ---- Identity Integrity Endpoints (Milestone 48A) ----
@@ -335,29 +336,7 @@ def classify_verification_risk(request: VerificationRequest):
 
 
 
+
 # ===================================================================== #
 # Dry-Run Sandbox Contract Endpoint (Milestone 58A)
 # ===================================================================== #
-
-
-
-
-
-@app.post("/action/self-modification/create")
-def create_self_modification(request:SelfModificationCreateRequest):return {"name":"Aether","session":create_self_modification_session(request.goal,request.target_path,request.proposed_change_summary,request.proposed_excerpt,request.reason,request.original_excerpt,request.create_approval_if_required,request.metadata)}
-@app.post("/action/self-modification/review")
-def review_self_modification(request:SelfModificationReviewRequest):return {"name":"Aether","session":review_self_modification_session(request.session_id,request.decision,request.review_reason,request.reviewer,request.metadata)}
-@app.post("/action/self-modification/dry-run")
-def dry_run_self_modification(request:SelfModificationActionRequest):return {"name":"Aether","session":dry_run_self_modification_session(request.session_id,request.metadata)}
-@app.post("/action/self-modification/apply")
-def apply_self_modification(request:SelfModificationActionRequest):return {"name":"Aether","session":apply_self_modification_session(request.session_id,request.metadata)}
-@app.post("/action/self-modification/rollback")
-def rollback_self_modification(request:SelfModificationActionRequest):return {"name":"Aether","session":rollback_self_modification_session(request.session_id,request.metadata)}
-@app.get("/action/self-modification/status")
-def get_self_modification_status():return {"name":"Aether","self_modification":self_modification_status()}
-@app.get("/action/self-modification/list")
-def list_self_modification(status:str|None=None,target_path:str|None=None,limit:int=50):return {"name":"Aether","sessions":list_self_modification_sessions(status,target_path,limit)}
-@app.get("/action/self-modification/{session_id}/summary")
-def summarize_self_modification(session_id:str):return {"name":"Aether","summary":summarize_self_modification_session(session_id)}
-@app.get("/action/self-modification/{session_id}")
-def get_self_modification(session_id:str):return {"name":"Aether","session":get_self_modification_session(session_id)}
