@@ -1,15 +1,15 @@
-"""Boundary tests for 43 Repair Family endpoints after 82AL Part 3 service extraction.
+"""Boundary tests for 43 Repair Family endpoints after 82AL Part 4 service extraction.
 
 Covers 7 families: repair_planner (5), repair_bridge_selector (5),
 repair_workflow_tracker (5), repair_workflow_exporter (4),
 repair_cycle_completion (8), repair_learning (8), repair_guidance (8).
 
-Boundary model (mixed after 82AL Part 3):
+Boundary model (full service extraction after 82AL Part 4):
 - Service-backed (route -> service handler -> action):
   repair_planner, repair_workflow_tracker, repair_workflow_exporter,
-  repair_cycle_completion, repair_learning, repair_guidance
-- Direct-action (route -> action, no service):
-  repair_bridge_selector only
+  repair_cycle_completion, repair_learning, repair_guidance,
+  repair_bridge_selector
+- Direct-action Repair families: none
 """
 
 from __future__ import annotations
@@ -342,12 +342,12 @@ REPAIR_ENDPOINTS: dict[tuple[str, str], tuple[str, str, str, str | None, str]] =
 
 assert len(REPAIR_ENDPOINTS) == 43, f"Expected 43 repair endpoints, got {len(REPAIR_ENDPOINTS)}"
 
-# ----- Boundary model after 82AL Part 3 -----
+# ----- Boundary model after 82AL Part 4 -----
 # Service-backed families (route -> service handler -> action):
 #   repair_planner, repair_workflow_tracker, repair_workflow_exporter,
-#   repair_cycle_completion, repair_learning, repair_guidance
-# Direct-action family (route -> action, no service):
-#   repair_bridge_selector only
+#   repair_cycle_completion, repair_learning, repair_guidance,
+#   repair_bridge_selector
+# Direct-action families: none
 SERVICE_BACKED_FAMILIES = {
     "repair_planner",
     "repair_workflow_tracker",
@@ -355,10 +355,9 @@ SERVICE_BACKED_FAMILIES = {
     "repair_cycle_completion",
     "repair_learning",
     "repair_guidance",
-}
-DIRECT_ACTION_FAMILIES = {
     "repair_bridge_selector",
 }
+DIRECT_ACTION_FAMILIES: set[str] = set()
 
 # route_func -> (service_handler, action_func)
 ROUTE_TO_SERVICE: dict[str, tuple[str, str]] = {
@@ -367,6 +366,11 @@ ROUTE_TO_SERVICE: dict[str, tuple[str, str]] = {
     "list_repair_plan_action": ("handle_list_repair_plans", "list_repair_plans"),
     "summarize_repair_plan_action": ("handle_summarize_repair_plan", "summarize_repair_plan"),
     "get_repair_plan_action": ("handle_get_repair_plan", "get_repair_plan"),
+    "create_repair_bridge_selection_action": ("handle_create_repair_bridge_selection", "create_bridge_from_repair_plan"),
+    "get_repair_bridge_selection_status_action": ("handle_get_repair_bridge_selection_status", "repair_bridge_selection_status"),
+    "list_repair_bridge_selection_action": ("handle_list_repair_bridge_selections", "list_repair_bridge_selections"),
+    "summarize_repair_bridge_selection_action": ("handle_summarize_repair_bridge_selection", "summarize_repair_bridge_selection"),
+    "get_repair_bridge_selection_action": ("handle_get_repair_bridge_selection", "get_repair_bridge_selection"),
     "trace_repair_workflow_action": ("handle_trace_repair_workflow", "trace_repair_workflow"),
     "get_repair_workflow_status_action": ("handle_get_repair_workflow_status", "repair_workflow_status"),
     "list_repair_workflow_action": ("handle_list_repair_workflow_reports", "list_repair_workflow_reports"),
@@ -454,6 +458,13 @@ SERVICE_HANDLER_MAP: dict[str, dict[str, str]] = {
         "handle_summarize_repair_guidance": "summarize_repair_guidance",
         "handle_get_repair_guidance_record": "get_repair_guidance_record",
     },
+    "aether.action.services.repair_bridge_selector_service": {
+        "handle_create_repair_bridge_selection": "create_bridge_from_repair_plan",
+        "handle_get_repair_bridge_selection_status": "repair_bridge_selection_status",
+        "handle_list_repair_bridge_selections": "list_repair_bridge_selections",
+        "handle_summarize_repair_bridge_selection": "summarize_repair_bridge_selection",
+        "handle_get_repair_bridge_selection": "get_repair_bridge_selection",
+    },
 }
 
 # service module -> its sole action module
@@ -464,6 +475,7 @@ SERVICE_ACTION_MODULES: dict[str, str] = {
     "aether.action.services.repair_cycle_completion_service": "aether.action.repair_cycle_completion_report",
     "aether.action.services.repair_learning_service": "aether.action.repair_learning_index",
     "aether.action.services.repair_guidance_service": "aether.action.repair_guidance_engine",
+    "aether.action.services.repair_bridge_selector_service": "aether.action.repair_bridge_selector",
 }
 
 # handler -> wrapper key (derived from REPAIR_ENDPOINTS for service-backed routes)
@@ -472,8 +484,8 @@ for (method, path), (route_func, action_func, operation_id, wrapper_key, family)
     if family in SERVICE_BACKED_FAMILIES:
         handler, _ = ROUTE_TO_SERVICE[route_func]
         SERVICE_HANDLER_WRAPPER_KEYS[handler] = wrapper_key
-assert len(SERVICE_HANDLER_WRAPPER_KEYS) == 38, (
-    f"Expected 38 service handlers with wrapper keys, got {len(SERVICE_HANDLER_WRAPPER_KEYS)}"
+assert len(SERVICE_HANDLER_WRAPPER_KEYS) == 43, (
+    f"Expected 43 service handlers with wrapper keys, got {len(SERVICE_HANDLER_WRAPPER_KEYS)}"
 )
 
 # Known pre-existing bugs: repair_guidance export functions crash on None
@@ -499,6 +511,7 @@ POST_PAYLOADS: dict[str, dict[str, Any]] = {
         "original_excerpt": "test",
         "proposed_change_summary": "test",
         "reason": "test",
+        "create_approval_if_required": False,
         "metadata": {},
     },
     "/action/repair-workflow/trace": {
@@ -888,31 +901,25 @@ def test_api_server_import_boundary_mixed_model():
             f"Direct action import must be removed after service extraction: {action_module}"
         )
 
-    # Direct-action families: api_server must still import their action modules directly
-    direct_action_modules = {
-        "aether.action.repair_bridge_selector",
+    # After Part 4 there are no direct-action Repair families: none of the 7
+    # Repair Family action modules may be imported directly by api_server.
+    # guided_repair_* action imports are out of 82AL scope and must remain.
+    guided_action_modules = {
+        "aether.action.guided_repair_intake",
+        "aether.action.guided_repair_plan_launcher",
     }
-    for mod in direct_action_modules:
-        assert mod in repair_imports, (
-            f"Missing direct import of repair action module: {mod}"
-        )
-
-    # No other Repair Family service modules may be imported yet
-    forbidden_future = {
-        "aether.action.services.repair_bridge_selector_service",
-    }
-    overlap = service_imports & forbidden_future
-    assert not overlap, (
-        f"Not-yet-extracted service module(s) already imported in api_server.py: {overlap}"
+    assert repair_imports <= guided_action_modules, (
+        f"Unexpected direct repair action imports in api_server.py: "
+        f"{repair_imports - guided_action_modules}"
     )
 
     # Only the extracted service modules may be imported
-    assert service_imports <= set(SERVICE_ACTION_MODULES), (
+    assert service_imports == set(SERVICE_ACTION_MODULES), (
         f"Unexpected service imports in api_server.py: {service_imports - set(SERVICE_ACTION_MODULES)}"
     )
 
 
-# ----- Test 7: Service existence proof (6 present, 1 absent) -----
+# ----- Test 7: Service existence proof (7 present, 0 absent) -----
 
 def test_extracted_service_modules_exist_and_others_do_not():
     present_paths = [
@@ -922,17 +929,16 @@ def test_extracted_service_modules_exist_and_others_do_not():
         PROJECT_ROOT / "aether/action/services/repair_cycle_completion_service.py",
         PROJECT_ROOT / "aether/action/services/repair_learning_service.py",
         PROJECT_ROOT / "aether/action/services/repair_guidance_service.py",
-    ]
-    absent_paths = [
         PROJECT_ROOT / "aether/action/services/repair_bridge_selector_service.py",
     ]
+    absent_paths: list[Path] = []
     for path in present_paths:
         assert path.exists(), (
-            f"Extracted service module missing (should exist after Part 3): {path}"
+            f"Extracted service module missing (should exist after Part 4): {path}"
         )
     for path in absent_paths:
         assert not path.exists(), (
-            f"Service module exists but its family is not extracted yet (Part 4+): {path}"
+            f"Service module exists but its family is not extracted yet: {path}"
         )
 
 
@@ -1020,6 +1026,7 @@ def test_service_modules_no_forbidden_imports_or_calls():
         PROJECT_ROOT / "aether/action/services/repair_cycle_completion_service.py",
         PROJECT_ROOT / "aether/action/services/repair_learning_service.py",
         PROJECT_ROOT / "aether/action/services/repair_guidance_service.py",
+        PROJECT_ROOT / "aether/action/services/repair_bridge_selector_service.py",
     ]
     for module_path in service_paths:
         assert module_path.exists(), f"Missing service module: {module_path}"
@@ -1045,6 +1052,114 @@ def test_service_modules_no_forbidden_imports_or_calls():
         assert not overlap_calls, (
             f"{module_path.name}: forbidden call(s): {overlap_calls}"
         )
+
+
+# ----- Test 7d: Highest-risk bridge argument mapping (pass-through proof) -----
+
+CREATE_APPROVAL_PASS_THROUGH_ARGS = (
+    "repair_plan_id",
+    "finding_id",
+    "proposed_excerpt",
+    "original_excerpt",
+    "proposed_change_summary",
+    "reason",
+    "create_approval_if_required",
+    "metadata",
+)
+
+BRIDGE_CREATE_ROUTE_ARGS = (
+    "request.repair_plan_id",
+    "request.finding_id",
+    "request.proposed_excerpt",
+    "request.original_excerpt",
+    "request.proposed_change_summary",
+    "request.reason",
+    "request.create_approval_if_required",
+    "request.metadata",
+)
+
+
+def test_repair_bridge_selection_create_passes_create_approval_if_required_through():
+    """Highest-risk preservation proof: create_approval_if_required must flow
+    route -> service handler -> action exactly as received, with no hardcoded
+    True/False and no approval creation in the service layer.
+    """
+    api_source = (PROJECT_ROOT / "aether/interface/api_server.py").read_text(encoding="utf-8")
+    api_tree = ast.parse(api_source)
+
+    route_node = None
+    for node in api_tree.body:
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            if node.name == "create_repair_bridge_selection_action":
+                route_node = node
+                break
+    assert route_node is not None, "create_repair_bridge_selection_action not found"
+    assert len(route_node.body) == 1, "route must be a single-return body"
+    route_call = route_node.body[0].value
+    assert isinstance(route_call, ast.Call), "route must return a call"
+    assert ast.unparse(route_call.func) == "handle_create_repair_bridge_selection", (
+        f"route must call handle_create_repair_bridge_selection, got {ast.unparse(route_call.func)}"
+    )
+    route_args = [ast.unparse(a) for a in route_call.args]
+    assert route_args == list(BRIDGE_CREATE_ROUTE_ARGS), (
+        f"route argument order mismatch: {route_args}"
+    )
+
+    service_path = PROJECT_ROOT / "aether/action/services/repair_bridge_selector_service.py"
+    assert service_path.exists(), "repair_bridge_selector_service.py missing"
+    service_tree = ast.parse(service_path.read_text(encoding="utf-8"))
+
+    handler_node = None
+    for node in service_tree.body:
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            if node.name == "handle_create_repair_bridge_selection":
+                handler_node = node
+                break
+    assert handler_node is not None, "handle_create_repair_bridge_selection not found"
+    assert len(handler_node.body) == 1, "handler must be a single-return body"
+    handler_return = handler_node.body[0].value
+    assert isinstance(handler_return, ast.Dict), "handler must return a dict wrapper"
+
+    action_call = None
+    for child in ast.walk(handler_return):
+        if isinstance(child, ast.Call):
+            action_call = child
+    assert action_call is not None, "handler must make exactly one action call"
+    assert ast.unparse(action_call.func) == "create_bridge_from_repair_plan", (
+        f"handler must call create_bridge_from_repair_plan, got {ast.unparse(action_call.func)}"
+    )
+    action_args = [ast.unparse(a) for a in action_call.args]
+    assert action_args == list(CREATE_APPROVAL_PASS_THROUGH_ARGS), (
+        f"handler action argument order mismatch: {action_args}"
+    )
+
+    # create_approval_if_required must not be hardcoded in the service layer
+    for node in ast.walk(service_tree):
+        if isinstance(node, ast.Constant):
+            if node.value in (True, False):
+                raise AssertionError(
+                    f"hardcoded bool {node.value!r} found in service layer at line {node.lineno}"
+                )
+
+    # service must not import approval modules or create approvals directly
+    imported_modules = set()
+    for node in ast.walk(service_tree):
+        if isinstance(node, ast.ImportFrom):
+            imported_modules.add(node.module or "")
+    approval_imports = {
+        m for m in imported_modules if "approval" in m or "gate" in m
+    }
+    assert not approval_imports, (
+        f"service imports approval/gate module(s): {approval_imports}"
+    )
+    service_calls = {
+        ast.unparse(node.func)
+        for node in ast.walk(service_tree)
+        if isinstance(node, ast.Call)
+    }
+    assert not {"create_approval_item", "create_approval_if_required"} & {
+        name.split(".")[-1] for name in service_calls
+    }, "service must not create approval items directly"
 
 
 # ----- Test 8: Action risk static proof (strengthened) -----
