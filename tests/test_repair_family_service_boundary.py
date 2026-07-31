@@ -1,15 +1,15 @@
-"""Boundary tests for 43 Repair Family endpoints after 82AL Part 2 service extraction.
+"""Boundary tests for 43 Repair Family endpoints after 82AL Part 3 service extraction.
 
 Covers 7 families: repair_planner (5), repair_bridge_selector (5),
 repair_workflow_tracker (5), repair_workflow_exporter (4),
 repair_cycle_completion (8), repair_learning (8), repair_guidance (8).
 
-Boundary model (mixed after 82AL Part 2):
+Boundary model (mixed after 82AL Part 3):
 - Service-backed (route -> service handler -> action):
-  repair_planner, repair_workflow_tracker
-- Direct-action (route -> action, no service):
-  repair_bridge_selector, repair_workflow_exporter,
+  repair_planner, repair_workflow_tracker, repair_workflow_exporter,
   repair_cycle_completion, repair_learning, repair_guidance
+- Direct-action (route -> action, no service):
+  repair_bridge_selector only
 """
 
 from __future__ import annotations
@@ -342,19 +342,22 @@ REPAIR_ENDPOINTS: dict[tuple[str, str], tuple[str, str, str, str | None, str]] =
 
 assert len(REPAIR_ENDPOINTS) == 43, f"Expected 43 repair endpoints, got {len(REPAIR_ENDPOINTS)}"
 
-# ----- Boundary model after 82AL Part 2 -----
+# ----- Boundary model after 82AL Part 3 -----
 # Service-backed families (route -> service handler -> action):
-#   repair_planner, repair_workflow_tracker
-# Direct-action families (route -> action, no service):
-#   repair_bridge_selector, repair_workflow_exporter,
+#   repair_planner, repair_workflow_tracker, repair_workflow_exporter,
 #   repair_cycle_completion, repair_learning, repair_guidance
-SERVICE_BACKED_FAMILIES = {"repair_planner", "repair_workflow_tracker"}
-DIRECT_ACTION_FAMILIES = {
-    "repair_bridge_selector",
+# Direct-action family (route -> action, no service):
+#   repair_bridge_selector only
+SERVICE_BACKED_FAMILIES = {
+    "repair_planner",
+    "repair_workflow_tracker",
     "repair_workflow_exporter",
     "repair_cycle_completion",
     "repair_learning",
     "repair_guidance",
+}
+DIRECT_ACTION_FAMILIES = {
+    "repair_bridge_selector",
 }
 
 # route_func -> (service_handler, action_func)
@@ -369,6 +372,34 @@ ROUTE_TO_SERVICE: dict[str, tuple[str, str]] = {
     "list_repair_workflow_action": ("handle_list_repair_workflow_reports", "list_repair_workflow_reports"),
     "summarize_repair_workflow_action": ("handle_summarize_repair_workflow", "summarize_repair_workflow"),
     "get_repair_workflow_action": ("handle_get_repair_workflow_report", "get_repair_workflow_report"),
+    "export_repair_workflow_report_action": ("handle_export_repair_workflow_report", "export_workflow_report"),
+    "export_repair_workflow_index_action": ("handle_export_repair_workflow_index", "export_workflow_index"),
+    "export_private_repair_workflow_report_action": ("handle_export_private_repair_workflow_report", "export_private_workflow_report"),
+    "get_repair_workflow_export_status_action": ("handle_get_repair_workflow_export_status", "repair_workflow_export_status"),
+    "create_repair_cycle_completion_action": ("handle_create_repair_cycle_completion_report", "create_repair_cycle_completion_report"),
+    "export_repair_cycle_report_action": ("handle_export_repair_cycle_report", "export_repair_cycle_report"),
+    "export_repair_cycle_index_action": ("handle_export_repair_cycle_index", "export_repair_cycle_index"),
+    "export_private_repair_cycle_action": ("handle_export_private_repair_cycle_record", "export_private_repair_cycle_record"),
+    "get_repair_cycle_completion_status_action": ("handle_get_repair_cycle_completion_status", "repair_cycle_completion_status"),
+    "list_repair_cycle_completion_action": ("handle_list_repair_cycle_completion_records", "list_repair_cycle_completion_records"),
+    "summarize_repair_cycle_completion_action": ("handle_summarize_repair_cycle_completion", "summarize_repair_cycle_completion"),
+    "get_repair_cycle_completion_action": ("handle_get_repair_cycle_completion_record", "get_repair_cycle_completion_record"),
+    "create_repair_learning_action": ("handle_create_repair_learning_record", "create_repair_learning_record"),
+    "export_repair_learning_report_action": ("handle_export_repair_learning_report", "export_repair_learning_report"),
+    "export_repair_learning_index_action": ("handle_export_repair_learning_index", "export_repair_learning_index"),
+    "export_private_repair_learning_action": ("handle_export_private_repair_learning_record", "export_private_repair_learning_record"),
+    "get_repair_learning_status_action": ("handle_get_repair_learning_status", "repair_learning_index_status"),
+    "list_repair_learning_action": ("handle_list_repair_learning_records", "list_repair_learning_records"),
+    "summarize_repair_learning_action": ("handle_summarize_repair_learning_record", "summarize_repair_learning_record"),
+    "get_repair_learning_action": ("handle_get_repair_learning_record", "get_repair_learning_record"),
+    "create_repair_guidance_action": ("handle_create_repair_guidance", "create_repair_guidance"),
+    "export_repair_guidance_report_action": ("handle_export_repair_guidance_report", "export_repair_guidance_report"),
+    "export_repair_guidance_index_action": ("handle_export_repair_guidance_index", "export_repair_guidance_index"),
+    "export_private_repair_guidance_action": ("handle_export_private_repair_guidance_record", "export_private_repair_guidance_record"),
+    "get_repair_guidance_status_action": ("handle_get_repair_guidance_status", "repair_guidance_engine_status"),
+    "list_repair_guidance_action": ("handle_list_repair_guidance_records", "list_repair_guidance_records"),
+    "summarize_repair_guidance_action": ("handle_summarize_repair_guidance", "summarize_repair_guidance"),
+    "get_repair_guidance_action": ("handle_get_repair_guidance_record", "get_repair_guidance_record"),
 }
 
 # service module -> {handler: action_func}
@@ -387,12 +418,52 @@ SERVICE_HANDLER_MAP: dict[str, dict[str, str]] = {
         "handle_summarize_repair_workflow": "summarize_repair_workflow",
         "handle_get_repair_workflow_report": "get_repair_workflow_report",
     },
+    "aether.action.services.repair_workflow_exporter_service": {
+        "handle_export_repair_workflow_report": "export_workflow_report",
+        "handle_export_repair_workflow_index": "export_workflow_index",
+        "handle_export_private_repair_workflow_report": "export_private_workflow_report",
+        "handle_get_repair_workflow_export_status": "repair_workflow_export_status",
+    },
+    "aether.action.services.repair_cycle_completion_service": {
+        "handle_create_repair_cycle_completion_report": "create_repair_cycle_completion_report",
+        "handle_export_repair_cycle_report": "export_repair_cycle_report",
+        "handle_export_repair_cycle_index": "export_repair_cycle_index",
+        "handle_export_private_repair_cycle_record": "export_private_repair_cycle_record",
+        "handle_get_repair_cycle_completion_status": "repair_cycle_completion_status",
+        "handle_list_repair_cycle_completion_records": "list_repair_cycle_completion_records",
+        "handle_summarize_repair_cycle_completion": "summarize_repair_cycle_completion",
+        "handle_get_repair_cycle_completion_record": "get_repair_cycle_completion_record",
+    },
+    "aether.action.services.repair_learning_service": {
+        "handle_create_repair_learning_record": "create_repair_learning_record",
+        "handle_export_repair_learning_report": "export_repair_learning_report",
+        "handle_export_repair_learning_index": "export_repair_learning_index",
+        "handle_export_private_repair_learning_record": "export_private_repair_learning_record",
+        "handle_get_repair_learning_status": "repair_learning_index_status",
+        "handle_list_repair_learning_records": "list_repair_learning_records",
+        "handle_summarize_repair_learning_record": "summarize_repair_learning_record",
+        "handle_get_repair_learning_record": "get_repair_learning_record",
+    },
+    "aether.action.services.repair_guidance_service": {
+        "handle_create_repair_guidance": "create_repair_guidance",
+        "handle_export_repair_guidance_report": "export_repair_guidance_report",
+        "handle_export_repair_guidance_index": "export_repair_guidance_index",
+        "handle_export_private_repair_guidance_record": "export_private_repair_guidance_record",
+        "handle_get_repair_guidance_status": "repair_guidance_engine_status",
+        "handle_list_repair_guidance_records": "list_repair_guidance_records",
+        "handle_summarize_repair_guidance": "summarize_repair_guidance",
+        "handle_get_repair_guidance_record": "get_repair_guidance_record",
+    },
 }
 
 # service module -> its sole action module
 SERVICE_ACTION_MODULES: dict[str, str] = {
     "aether.action.services.repair_planner_service": "aether.action.repair_planner",
     "aether.action.services.repair_workflow_tracker_service": "aether.action.repair_workflow_tracker",
+    "aether.action.services.repair_workflow_exporter_service": "aether.action.repair_workflow_exporter",
+    "aether.action.services.repair_cycle_completion_service": "aether.action.repair_cycle_completion_report",
+    "aether.action.services.repair_learning_service": "aether.action.repair_learning_index",
+    "aether.action.services.repair_guidance_service": "aether.action.repair_guidance_engine",
 }
 
 # handler -> wrapper key (derived from REPAIR_ENDPOINTS for service-backed routes)
@@ -401,8 +472,8 @@ for (method, path), (route_func, action_func, operation_id, wrapper_key, family)
     if family in SERVICE_BACKED_FAMILIES:
         handler, _ = ROUTE_TO_SERVICE[route_func]
         SERVICE_HANDLER_WRAPPER_KEYS[handler] = wrapper_key
-assert len(SERVICE_HANDLER_WRAPPER_KEYS) == 10, (
-    f"Expected 10 service handlers with wrapper keys, got {len(SERVICE_HANDLER_WRAPPER_KEYS)}"
+assert len(SERVICE_HANDLER_WRAPPER_KEYS) == 38, (
+    f"Expected 38 service handlers with wrapper keys, got {len(SERVICE_HANDLER_WRAPPER_KEYS)}"
 )
 
 # Known pre-existing bugs: repair_guidance export functions crash on None
@@ -820,10 +891,6 @@ def test_api_server_import_boundary_mixed_model():
     # Direct-action families: api_server must still import their action modules directly
     direct_action_modules = {
         "aether.action.repair_bridge_selector",
-        "aether.action.repair_workflow_exporter",
-        "aether.action.repair_cycle_completion_report",
-        "aether.action.repair_learning_index",
-        "aether.action.repair_guidance_engine",
     }
     for mod in direct_action_modules:
         assert mod in repair_imports, (
@@ -833,43 +900,39 @@ def test_api_server_import_boundary_mixed_model():
     # No other Repair Family service modules may be imported yet
     forbidden_future = {
         "aether.action.services.repair_bridge_selector_service",
-        "aether.action.services.repair_workflow_exporter_service",
-        "aether.action.services.repair_cycle_completion_service",
-        "aether.action.services.repair_learning_service",
-        "aether.action.services.repair_guidance_service",
     }
     overlap = service_imports & forbidden_future
     assert not overlap, (
         f"Not-yet-extracted service module(s) already imported in api_server.py: {overlap}"
     )
 
-    # Only the two extracted service modules may be imported
+    # Only the extracted service modules may be imported
     assert service_imports <= set(SERVICE_ACTION_MODULES), (
         f"Unexpected service imports in api_server.py: {service_imports - set(SERVICE_ACTION_MODULES)}"
     )
 
 
-# ----- Test 7: Service existence proof (2 present, 5 absent) -----
+# ----- Test 7: Service existence proof (6 present, 1 absent) -----
 
 def test_extracted_service_modules_exist_and_others_do_not():
     present_paths = [
         PROJECT_ROOT / "aether/action/services/repair_planner_service.py",
         PROJECT_ROOT / "aether/action/services/repair_workflow_tracker_service.py",
-    ]
-    absent_paths = [
-        PROJECT_ROOT / "aether/action/services/repair_bridge_selector_service.py",
         PROJECT_ROOT / "aether/action/services/repair_workflow_exporter_service.py",
         PROJECT_ROOT / "aether/action/services/repair_cycle_completion_service.py",
         PROJECT_ROOT / "aether/action/services/repair_learning_service.py",
         PROJECT_ROOT / "aether/action/services/repair_guidance_service.py",
     ]
+    absent_paths = [
+        PROJECT_ROOT / "aether/action/services/repair_bridge_selector_service.py",
+    ]
     for path in present_paths:
         assert path.exists(), (
-            f"Extracted service module missing (should exist after Part 2): {path}"
+            f"Extracted service module missing (should exist after Part 3): {path}"
         )
     for path in absent_paths:
         assert not path.exists(), (
-            f"Service module exists but its family is not extracted yet (Part 3+): {path}"
+            f"Service module exists but its family is not extracted yet (Part 4+): {path}"
         )
 
 
@@ -878,8 +941,11 @@ def test_extracted_service_modules_exist_and_others_do_not():
 def test_service_handlers_boundary_static():
     """Each service module:
     - defines exactly the expected handle_* functions
-    - each handler is a single return of {"name": "Aether", <wrapper_key>: <action_call>}
+    - each handler is a single return:
+      - wrapped routes: {"name": "Aether", <wrapper_key>: <action_call>}
+      - direct-return routes: <action_call> with no wrapper
     - each handler makes exactly one call, to its expected action function
+    - imports only its own action module
     - no forbidden imports/calls/network
     """
     for service_module, handler_map in SERVICE_HANDLER_MAP.items():
@@ -906,14 +972,22 @@ def test_service_handlers_boundary_static():
             assert isinstance(node.body[0], ast.Return), f"{handler}: expected return"
             ret = node.body[0]
 
-            # wrapper dict
-            assert isinstance(ret.value, ast.Dict), f"{handler}: expected dict return"
-            keys = [ast.unparse(k) for k in ret.value.keys]
-            assert "'name'" in keys, f"{handler}: missing 'name' key"
-            expected_key = SERVICE_HANDLER_WRAPPER_KEYS[handler]
-            assert f"'{expected_key}'" in keys, (
-                f"{handler}: missing wrapper key {expected_key!r}, got keys {keys}"
-            )
+            expected_key = SERVICE_HANDLER_WRAPPER_KEYS.get(handler)
+            if expected_key is not None:
+                # wrapped: return {"name":"Aether","<key>": action_func(...)}
+                assert isinstance(ret.value, ast.Dict), (
+                    f"{handler}: expected dict return for wrapped route"
+                )
+                keys = [ast.unparse(k) for k in ret.value.keys]
+                assert "'name'" in keys, f"{handler}: missing 'name' key"
+                assert f"'{expected_key}'" in keys, (
+                    f"{handler}: missing wrapper key {expected_key!r}, got keys {keys}"
+                )
+            else:
+                # direct-return: return action_func(...) with no wrapper
+                assert isinstance(ret.value, ast.Call), (
+                    f"{handler}: expected direct call return for direct-return route"
+                )
 
             calls = [child for child in ast.walk(ret.value) if isinstance(child, ast.Call)]
             assert len(calls) == 1, f"{handler}: expected exactly 1 call, got {len(calls)}"
@@ -942,6 +1016,10 @@ def test_service_modules_no_forbidden_imports_or_calls():
     service_paths = [
         PROJECT_ROOT / "aether/action/services/repair_planner_service.py",
         PROJECT_ROOT / "aether/action/services/repair_workflow_tracker_service.py",
+        PROJECT_ROOT / "aether/action/services/repair_workflow_exporter_service.py",
+        PROJECT_ROOT / "aether/action/services/repair_cycle_completion_service.py",
+        PROJECT_ROOT / "aether/action/services/repair_learning_service.py",
+        PROJECT_ROOT / "aether/action/services/repair_guidance_service.py",
     ]
     for module_path in service_paths:
         assert module_path.exists(), f"Missing service module: {module_path}"
