@@ -28,6 +28,7 @@ PERSISTENCE_MODULES = (
     "aether.action.apply_executor_plan_queue",
     "aether.action.apply_executor_evidence_contract_queue",
     "aether.action.apply_executor_evidence_collection_plan_queue",
+    "aether.action.observation_record_queue",
     "aether.identity.guard",
     "aether.action.approved_dry_run_gate",
     "aether.action.dry_run_review_gate",

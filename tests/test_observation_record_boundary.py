@@ -1,14 +1,18 @@
 """
-Milestone 83A — Observation Record Pre-Implementation Boundary Tests.
+Milestone 83A/83B/83C — Observation Record Boundary Tests.
 
-This test file intentionally locks the pre-implementation state before any
-Observation Record Store code is added.  It does NOT test the builder
-(aether/action/observation_record.py is covered by test_observation_record.py)
-and does NOT invoke any endpoints.
+This test file intentionally locks the Observation Record boundary as the
+feature line progresses:
 
-Future Builds (83B / 83C / 83D) may intentionally update these assertions as
-implementation is introduced.  api_server.py must remain free of observation
-feature logic at all times.
+- 83A locked the pre-implementation boundary (no store/service/router).
+- 83B added the 5 Observation API schema models to api_models.py.
+- 83C added the service/store foundation (create/get/list only).
+- 83D remains the router/API endpoint milestone.
+
+It does NOT test the builder (aether/action/observation_record.py is covered
+by test_observation_record.py) and does NOT invoke any endpoints.
+
+api_server.py must remain free of observation feature logic at all times.
 """
 
 from __future__ import annotations
@@ -50,28 +54,60 @@ class TestObservationBuilderInventory:
 
 
 # ---------------------------------------------------------------------------
-# 2. Observation Store pre-implementation boundary
+# 2. Observation service/store boundary (83C)
 # ---------------------------------------------------------------------------
 
-class TestObservationStoreAbsent:
-    """Assert no Observation Record Store artifacts exist yet."""
+class TestObservationServiceStorePresent:
+    """Assert the 83C service/store foundation exists (create/get/list only)."""
 
-    def test_no_observation_record_service(self):
+    def test_observation_record_service_exists(self):
         path = PROJECT_ROOT / "aether" / "action" / "services" / "observation_record_service.py"
-        assert not path.exists(), (
-            "83A must not create observation_record_service.py"
+        assert path.exists(), (
+            "83C must add observation_record_service.py"
         )
 
-    def test_no_observation_record_queue(self):
+    def test_observation_record_queue_exists(self):
         path = PROJECT_ROOT / "aether" / "action" / "observation_record_queue.py"
-        assert not path.exists(), (
-            "83A must not create observation_record_queue.py"
+        assert path.exists(), (
+            "83C must add observation_record_queue.py"
         )
+
+    def test_observation_queue_tests_exist(self):
+        path = PROJECT_ROOT / "tests" / "test_observation_record_queue.py"
+        assert path.exists(), (
+            "83C must add test_observation_record_queue.py"
+        )
+
+    def test_observation_service_tests_exist(self):
+        path = PROJECT_ROOT / "tests" / "test_observation_record_service.py"
+        assert path.exists(), (
+            "83C must add test_observation_record_service.py"
+        )
+
+    def test_service_implements_create_get_list_only(self):
+        """83C implements create/get/list only; update_status/cancel deferred."""
+        path = PROJECT_ROOT / "aether" / "action" / "services" / "observation_record_service.py"
+        source = path.read_text(encoding="utf-8")
+        assert "def handle_create_observation_record" in source
+        assert "def handle_get_observation_record" in source
+        assert "def handle_list_observation_records" in source
+        assert "def handle_update_observation_record_status" not in source
+        assert "def handle_cancel_observation_record" not in source
+
+    def test_queue_implements_save_load_list_only(self):
+        """83C implements save/load/list only; update/cancel deferred."""
+        path = PROJECT_ROOT / "aether" / "action" / "observation_record_queue.py"
+        source = path.read_text(encoding="utf-8")
+        assert "def save_observation_record" in source
+        assert "def load_observation_record" in source
+        assert "def list_observation_records" in source
+        assert "def update_observation_record_status" not in source
+        assert "def cancel_observation_record" not in source
 
     def test_no_observation_routes_router(self):
         path = PROJECT_ROOT / "aether" / "interface" / "routers" / "observation_routes.py"
         assert not path.exists(), (
-            "83A must not create observation_routes.py"
+            "83C must not create observation_routes.py"
         )
 
     def test_no_protected_core_observation_routers(self):
@@ -83,7 +119,7 @@ class TestObservationStoreAbsent:
         routers_dir = PROJECT_ROOT / "aether" / "interface" / "routers"
         for name in candidates:
             assert not (routers_dir / name).exists(), (
-                f"83A must not create {name}"
+                f"83C must not create {name}"
             )
 
     def test_no_observation_records_in_git_index(self):
@@ -431,17 +467,18 @@ class TestNoInvocationSelfCheck:
 
 class TestFutureMigrationNotes:
     """
-    These tests encode the migration narrative for future 83C/83D builds.
+    These tests encode the migration narrative for the 83A-83D sequence.
 
     83A intentionally locked the pre-implementation boundary.
     83B intentionally added Observation Record schema models to api_models.py.
-    Later Builds (83C/83D) may intentionally update these tests as store/service
-   /router implementation is introduced.  api_server.py must still remain free
-    of observation feature logic at all times.
+    83C intentionally added the service/store foundation (create/get/list only).
+    83D remains the router/API endpoint milestone.
+
+    api_server.py must still remain free of observation feature logic at all times.
     """
 
     def test_migration_note_present_in_source(self):
-        """The test file should contain migration notes for future Builds."""
+        """The test file should contain migration notes referencing future Builds."""
         path = Path(__file__)
         source = path.read_text(encoding="utf-8")
         assert "83B" in source or "83C" in source or "83D" in source, (
