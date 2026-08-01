@@ -3091,7 +3091,7 @@ Extracted 18 endpoint handlers (6 proposal-review-console, 6 proposal-revision-c
     - Finalized, committed, tagged, and pushed as `milestone-82AU-protected-core-route-boundary-tests` at `7bc1a62`
   - Next: 82AV Plan — Protected/Core Extraction Decision or Thin Interface Stop/Reassessment
   - 82AV not started
-  - 82AV Build — Protected/Core Thin Interface Decision Record (complete locally, not committed)
+  - 82AV Build — Protected/Core Thin Interface Decision Record (finalized, committed, tagged, pushed)
     - Added `docs/architecture/PROTECTED_CORE_INTERFACE_DECISION.md`
     - Decision accepted: stop extraction at protected/core boundary
     - `api_server.py` is intentionally defined as the Protected Core Interface
