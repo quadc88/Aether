@@ -65,7 +65,7 @@ This closure covers the complete interface and thin-refactor sequence spanning m
 
 ## Next Development Line
 - The recommended next new-feature line is:
-  `82AX Plan — Observation Record Store`
+  `Milestone 83 Plan — Observation Record Store`
 - Observation Record Store must start with Plan only.
 - It must not be implemented during closure.
 - It must preserve declarative pipeline safety.
