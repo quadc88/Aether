@@ -4,7 +4,7 @@
 **Aether version:** 0.2.0  
 **Current completed local milestone:** 82AW Build — Post-Refactor Closure Record (finalized)
 **Current active milestone/module:** None; 82AW finalized and Milestone 83 has not started
-**Current status:** Post-refactor closure record committed, tagged, and pushed; interface/thin-refactor phase is closed; ready for Observation Record Store planning
+**Current status:** Post-refactor closure record committed, tagged, and pushed; interface/thin-refactor phase is closed; architecture rule recorded in docs/ARCHITECTURE.md; new feature code must not be added to api_server.py
 **Next milestone:** Milestone 83 Plan — Observation Record Store
 **Test baseline:** 1628/1628 passed, 0 failures, 0 errors
 **OpenAPI baseline:** 300 paths / 103 schemas

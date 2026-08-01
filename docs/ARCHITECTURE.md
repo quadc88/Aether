@@ -1529,3 +1529,39 @@ Vector finds the meaning.
 Graph understands the relationship.
 ```
 
+---
+
+## 17. Protected Core Interface Feature Boundary
+
+`aether/interface/api_server.py` is the Protected Core Interface.
+
+No new feature code should be added directly to `api_server.py`.
+
+New feature surfaces must use the router / service / model / test structure:
+
+- HTTP/API entrypoints belong in `aether/interface/routers/`.
+- Business logic and orchestration belong in service modules.
+- Request/response contracts belong in model/schema modules.
+- Behavior must be protected by focused tests and boundary tests.
+
+`api_server.py` should remain limited to:
+
+- the final protected/core routes,
+- application creation,
+- lifecycle wiring,
+- router registration,
+- protected core interface responsibilities.
+
+The protected/core boundary must not be reopened casually.
+
+Any future change that adds feature logic to `api_server.py`, extracts protected/core routes, or changes the role of `api_server.py` requires:
+
+- a new Plan milestone,
+- explicit risk assessment,
+- OpenAPI compatibility checks,
+- focused and full test validation as appropriate,
+- manual audit before finalization,
+- and a decision record that explicitly reopens the boundary.
+
+New feature lines after the 82AW closure must not add feature code to `api_server.py`. They must be implemented through router / service / model / test structure unless a future decision record explicitly reopens the protected/core boundary.
+
