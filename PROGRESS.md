@@ -1,14 +1,14 @@
 # Aether Project Progress Ledger
 
-**Last updated:** Milestone 83E Finalization — Observation Record Update/Cancel Lifecycle (finalized, committed, tagged, and pushed)
+**Last updated:** Milestone 83F Finalization — Observation Record Completion / Closure Record (validated; commit/tag/push pending)
 **Aether version:** 0.2.0  
-**Current completed local milestone:** 83E Finalization — Observation Record Update/Cancel Lifecycle (finalized; committed at `f3e13c3`; tagged `milestone-83E-observation-record-update-cancel-lifecycle`; pushed)
-**Current active milestone/module:** None
-**Current status:** Observation Record update-status/cancel lifecycle finalized and fully validated (PATCH /observation-records/{observation_id}/status and POST /observation-records/{observation_id}/cancel with raw-body forbidden-key rejection; "cancelled" in VALID_STATUSES; missing record update/cancel return None; service missing envelopes found=False with observation_record=None; decision == new_status with decision_reason == reason; pure ObservationRecordResponse shape with no envelope/store lifecycle leakage; OpenAPI 304/108; full pytest 1888/1888; drift 0); committed, tagged, and pushed
-**Test baseline:** 1888/1888 passed, 0 failures, 0 errors (full suite at 83E Finalization)
+**Current completed local milestone:** 83F Finalization — Observation Record Completion / Closure Record (validated; commit/tag/push pending)
+**Current active milestone/module:** None; 83F Finalization validation complete and commit/tag/push pending
+**Current status:** Closure record document (docs/architecture/MILESTONE_83_OBSERVATION_RECORD_CLOSURE.md) and doc-only closure test (tests/test_milestone_83_observation_record_closure.py) validated; Option A closure record only; no completed status; no endpoint added; no runtime/source/API changes; OpenAPI remains 304/108; api_server remains 8/23/zero direct /action/*; closure test 9/9 passed; focused observation suite 308 passed; full suite 1897/1897 passed; drift 0; Milestone 83 will be declared CLOSED only after commit/tag/push verification; next milestone after 83F Finalization acceptance: Milestone 84 Plan
+**Test baseline:** 1897/1897 passed, 0 failures, 0 errors (full suite at 83F Finalization: 1888 + 9 closure tests)
 **OpenAPI baseline:** 304 paths / 108 schemas
-**Latest local tag:** `milestone-83E-observation-record-update-cancel-lifecycle` at `f3e13c3`
-**Latest pushed GitHub/origin status:** `origin/main` contains the 83E finalized implementation commit at `f3e13c3`; remote tag `milestone-83E-observation-record-update-cancel-lifecycle` at `f3e13c3`; 83F not started; Milestone 84 not started
+**Latest local tag:** `milestone-83E-observation-record-update-cancel-lifecycle` at `f3e13c3` (83F tag pending until tag step)
+**Latest pushed GitHub/origin status:** `origin/main` contains the 83E final ledger commit at `645e04c`; remote tag `milestone-83E-observation-record-update-cancel-lifecycle` at `f3e13c3`; 83F Finalization validated locally — commit/tag/push pending until after commit step; Milestone 83 to be declared CLOSED only after commit/tag/push verification; Milestone 84 not started
 **Runtime-state reset authorization:** Yes; human authority retroactively authorized the 82AD identity-guard runtime-state reset on 2026-07-30, with audit retained at `/home/aether/summaries/milestone_82AD_runtime_state_review.txt`.
 **Pipeline maturity:** Full declarative safety chain (approval through evidence contract record stores) with thin interface refactor (80B-80M) and cognitive runtime observability (81A-81E) complete. Observation contract builder added (82B). Interface API model extraction complete (82C). File and self-inspection service extraction complete (82D). Patch lifecycle service extraction complete (82E). Mutation log service extraction complete (82F). Proposal console service extraction complete (82G). Code review and review bridge service extraction complete (82H). Code review router extraction complete (82J). Mutation log router extraction complete (82K). Proposal console router extraction complete (82L). File router extraction complete (82N). Patch router extraction complete (82O). Approval router extraction complete (82P). Dry run and sandbox contract router extraction complete (82Q). Simulation plan and simulation result router extraction complete (82R). Verification verdict and apply gate router extraction complete (82S). Human authorization and apply execution gate router extraction complete (82T). Executor contract and executor plan router extraction complete (82U). Evidence contract and collection plan router extraction complete (82V). Verification plan router extraction complete (82W). Tool registry and tool plan router extraction complete (82X). Memory state fixture isolation complete (82Z). Memory router extraction complete (82AA). Tool execution safety boundary planning and API-level safety tests complete (82AC-82AD). Tool execution router extraction finalized (82AE). Post-chain C1 state-boundary coverage and full-suite tests-only private/runtime persistence isolation finalized (82AH/82AH-R). Post-chain C1 service extraction finalized (82AI). C2 final real-apply executor safety boundary tests finalized, committed, tagged, and pushed (82AJ). C2 final real-apply executor service extraction finalized, committed, tagged, and pushed (82AK). Repair Family state-boundary tests finalized, committed, tagged, and pushed (82AL Part 1). Repair Family low-risk service extraction finalized, committed, tagged, and pushed (82AL Part 2: repair_planner + repair_workflow_tracker at `f233ba0`). Repair Family medium-risk service extraction finalized, committed, tagged, and pushed (82AL Part 3: repair_workflow_exporter + repair_cycle_completion + repair_learning + repair_guidance at `ff1d728`). Repair Family highest-risk service extraction finalized, committed, tagged, and pushed (82AL Part 4: repair_bridge_selector, the last Repair Family, at `13b84a6`). All 43 Repair Family endpoints are service-backed. Repair Family router extraction finalized, committed, tagged, and pushed (82AM Build: all 43 Repair Family routes moved into `aether/interface/routers/repair_routes.py` at `dfe9949`; `api_server.py` imports and includes `repair_router`; authorized C1 include_router snapshot refresh 16 -> 17; OpenAPI exact match 300/103; full pytest 1572/1572). C1 post-chain router extraction finalized, committed, tagged, and pushed (82AN Build: all 24 C1 post-chain routes moved into `aether/interface/routers/post_chain_c1_routes.py` at `d860616`; `api_server.py` imports and includes `post_chain_c1_router`; authorized C1 include_router snapshot refresh 17 -> 18; OpenAPI exact match 300/103; full pytest 1572/1572). C2 final-real-apply executor router extraction finalized, committed, tagged, and pushed (82AO Build: all 6 C2 routes moved into `aether/interface/routers/final_real_apply_executor_routes.py` at `2a8de72`; `api_server.py` imports and includes `final_real_apply_executor_router`; authorized include_router snapshot refresh 18 -> 19; OpenAPI exact match 300/103; full pytest 1572/1572). No real apply, evidence collection, rollback, or observation exists yet. Guided launcher family tests-only boundary coverage finalized, committed, tagged, and pushed (82AQ Build: all 29 Guided routes across 5 direct-action families locked via AST/OpenAPI-only tests in `tests/test_guided_launcher_boundary.py` at `f25cc2f`; OpenAPI exact match 300/103; full pytest 1581/1581). Guided Launcher router extraction finalized, committed, tagged, and pushed (82AR Build: all 29 Guided routes moved into `aether/interface/routers/guided_launcher_routes.py` as `guided_launcher_router`; `api_server.py` imports and includes `guided_launcher_router` exactly once; authorized include_router snapshot refresh 20 -> 21; guided action import snapshot emptied in Repair Family boundary test; OpenAPI exact match 300/103; full pytest 1581/1581). Self-Modification boundary tests finalized, committed, tagged, and pushed (82AS Build: 20 AST/OpenAPI-only boundary tests added in `tests/test_self_modification_boundary.py`; locked 9 Self-Modification routes in `api_server.py` as app.* direct-action pass-throughs; locked exact operation IDs and request-body model $refs; locked exact import boundary; locked static risk profile of `aether/action/self_modification_cycle.py`; expected high-risk terms present and locked: apply_patch_proposal, rollback_patch_apply, write_text, Path(; forbidden terms absent: collect_evidence, execute_tool, subprocess, os.system, requests., httpx., shutil, git; no endpoint invocation; no self_modification action function invocation; OpenAPI exact match 300/103; full pytest 1601/1601). Self-Modification router extraction finalized, committed, tagged, and pushed (82AT Build: all 9 Self-Modification routes moved into `aether/interface/routers/self_modification_routes.py` as `self_modification_router`; `api_server.py` imports and includes `self_modification_router` exactly once; `api_server.py` no longer imports `aether.action.self_modification_cycle`; authorized include_router snapshot refresh 21 -> 22; OpenAPI exact match 300/103; full pytest 1605/1605). Protected/Core route boundary tests finalized, committed, tagged, and pushed (82AU Build: 23 AST/OpenAPI-only boundary tests added in `tests/test_protected_core_routes_boundary.py`; locked 8 protected/core routes in `api_server.py` with exact operation IDs, signatures, call profiles, and control-flow profiles; locked no protected/core router files; locked import/dependency profile; locked high-risk terms absent from protected/core route bodies; no endpoint invocation; no TestClient; OpenAPI exact match 300/103; full pytest 1628/1628).
 
@@ -3355,7 +3355,7 @@ Extracted 18 endpoint handlers (6 proposal-review-console, 6 proposal-revision-c
     - Next: 83E Finalization — Observation Record Update/Cancel Lifecycle
     - 83F not started
     - Milestone 84 not started
-  - 83E Finalization — Observation Record Update/Cancel Lifecycle (pending commit/tag/push)
+  - 83E Finalization — Observation Record Update/Cancel Lifecycle
     - update/cancel lifecycle finalized
     - missing record returns None verified
     - decision == new_status verified
@@ -3371,4 +3371,40 @@ Extracted 18 endpoint handlers (6 proposal-review-console, 6 proposal-revision-c
     - tagged milestone-83E-observation-record-update-cancel-lifecycle and pushed
     - Next: 83F Plan — Observation Record Completion / Closure Record
     - 83F not started
+    - Milestone 84 not started
+  - 83F Build — Observation Record Completion / Closure Record (complete locally, not committed)
+    - docs/architecture/MILESTONE_83_OBSERVATION_RECORD_CLOSURE.md added (Option A closure record)
+    - tests/test_milestone_83_observation_record_closure.py added (9 doc-only content tests)
+    - Option A closure record only implemented
+    - completed status not added
+    - no endpoint added
+    - api_server.py unchanged
+    - api_models.py unchanged
+    - aether/action/* unchanged
+    - aether/interface/routers/* unchanged
+    - OpenAPI remains 304/108
+    - api_server remains 8/23/zero direct /action/*
+    - focused observation suite: 308 passed
+    - closure test: 9/9 passed
+    - full suite: 1897/1897 passed, 0 failures, 0 errors (1888 + 9 new closure tests)
+    - real-root/docs/history drift 0
+    - no commit/tag/push
+    - Milestone 83 NOT closed yet (requires 83F Finalization accepted)
+    - Next: 83F Finalization — Observation Record Completion / Closure Record
+    - 83F Finalization not started
+    - Milestone 84 not started
+  - 83F Finalization — Observation Record Completion / Closure Record (validated; commit/tag/push pending)
+    - 83F closure doc and closure test validated
+    - Option A closure record only
+    - no completed status
+    - no endpoint added
+    - no runtime/source/API changes
+    - OpenAPI remains 304/108
+    - api_server remains 8/23/zero direct /action/*
+    - closure test 9/9 passed
+    - focused observation suite 308 passed
+    - full suite 1897/1897 passed, 0 failures, 0 errors
+    - real-root/docs/history drift 0
+    - Milestone 83 will be declared CLOSED only after commit/tag/push verification
+    - Next milestone after 83F Finalization acceptance: Milestone 84 Plan
     - Milestone 84 not started
