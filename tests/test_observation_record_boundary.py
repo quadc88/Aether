@@ -276,32 +276,32 @@ class TestOpenAPIStrictBaseline:
 # ---------------------------------------------------------------------------
 
 class TestApiModelsBoundary:
-    """Assert no Observation Record API Pydantic models exist yet."""
+    """Assert Observation Record API Pydantic models exist (added in 83B)."""
 
-    def test_no_observation_record_create_request(self):
+    def test_observation_record_create_request_exists(self):
         path = PROJECT_ROOT / "aether" / "interface" / "api_models.py"
         source = path.read_text(encoding="utf-8")
-        assert "ObservationRecordCreateRequest" not in source
+        assert "ObservationRecordCreateRequest" in source
 
-    def test_no_observation_record_response(self):
+    def test_observation_record_response_exists(self):
         path = PROJECT_ROOT / "aether" / "interface" / "api_models.py"
         source = path.read_text(encoding="utf-8")
-        assert "ObservationRecordResponse" not in source
+        assert "ObservationRecordResponse" in source
 
-    def test_no_observation_record_list_response(self):
+    def test_observation_record_list_response_exists(self):
         path = PROJECT_ROOT / "aether" / "interface" / "api_models.py"
         source = path.read_text(encoding="utf-8")
-        assert "ObservationRecordListResponse" not in source
+        assert "ObservationRecordListResponse" in source
 
-    def test_no_observation_record_update_status_request(self):
+    def test_observation_record_update_status_request_exists(self):
         path = PROJECT_ROOT / "aether" / "interface" / "api_models.py"
         source = path.read_text(encoding="utf-8")
-        assert "ObservationRecordUpdateStatusRequest" not in source
+        assert "ObservationRecordUpdateStatusRequest" in source
 
-    def test_no_observation_record_cancel_request(self):
+    def test_observation_record_cancel_request_exists(self):
         path = PROJECT_ROOT / "aether" / "interface" / "api_models.py"
         source = path.read_text(encoding="utf-8")
-        assert "ObservationRecordCancelRequest" not in source
+        assert "ObservationRecordCancelRequest" in source
 
 
 # ---------------------------------------------------------------------------
@@ -431,11 +431,13 @@ class TestNoInvocationSelfCheck:
 
 class TestFutureMigrationNotes:
     """
-    These tests encode the migration narrative for future 83B/83C/83D builds.
+    These tests encode the migration narrative for future 83C/83D builds.
 
-    83A intentionally locks the pre-implementation boundary.
-    Later Builds may intentionally update these tests as implementation is introduced.
-    api_server.py must still remain free of feature logic at all times.
+    83A intentionally locked the pre-implementation boundary.
+    83B intentionally added Observation Record schema models to api_models.py.
+    Later Builds (83C/83D) may intentionally update these tests as store/service
+   /router implementation is introduced.  api_server.py must still remain free
+    of observation feature logic at all times.
     """
 
     def test_migration_note_present_in_source(self):

@@ -674,3 +674,52 @@ class ApprovalIntentBody(BaseModel):
 class SimPlanDecisionBody(BaseModel):
     reviewer: str | None = None
     reason: str | None = None
+
+
+# ===================================================================== #
+# Observation Record Store API Models (Milestone 83B)
+# ===================================================================== #
+
+
+class ObservationRecordCreateRequest(BaseModel):
+    plan_step_id: str | None = None
+    evidence_item_id: str | None = None
+    target: str
+    observed_value: object | None = None
+    expected_value: object | None = None
+    status: str = "pending"
+    collector_contract_id: str | None = None
+    metadata: dict | None = None
+
+
+class ObservationRecordResponse(BaseModel):
+    observation_id: str
+    observation_type: str = "observation_record"
+    plan_step_id: str | None = None
+    evidence_item_id: str | None = None
+    collector_contract_id: str | None = None
+    target: str
+    observed_value: object | None = None
+    expected_value: object | None = None
+    status: str
+    observed_at: str
+    metadata: dict = {}
+    safety_flags: dict = {}
+
+
+class ObservationRecordListResponse(BaseModel):
+    records: list["ObservationRecordResponse"] = []
+    total: int = 0
+    limit: int = 50
+    offset: int = 0
+
+
+class ObservationRecordUpdateStatusRequest(BaseModel):
+    new_status: str
+    reviewer: str
+    reason: str | None = None
+
+
+class ObservationRecordCancelRequest(BaseModel):
+    reviewer: str
+    reason: str | None = None
