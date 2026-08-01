@@ -302,6 +302,124 @@ class TestIsolation:
             assert p.is_relative_to(store_dir), f"write escaped store dir: {p}"
 
 
+class TestUpdateStatus:
+    def test_update_pending_to_matched(self, store_dir):
+        obs_queue.save_observation_record(_valid_record(observation_id="0" * 32))
+        result = obs_queue.update_observation_record_status("0" * 32, "matched")
+        assert result["status"] == "matched"
+        loaded = obs_queue.load_observation_record("0" * 32)
+        assert loaded["status"] == "matched"
+
+    def test_update_sets_lifecycle_fields(self, store_dir):
+        obs_queue.save_observation_record(_valid_record(observation_id="0" * 32))
+        result = obs_queue.update_observation_record_status(
+            "0" * 32,
+            "matched",
+            reviewer="human_001",
+            reason="manual audit matched reason",
+            context={"session_id": "s1"},
+        )
+        assert result["reviewer"] == "human_001"
+        assert result["decision"] == "matched"
+        assert result["decision_reason"] == "manual audit matched reason"
+        assert result["decision"] != result["decision_reason"]
+        assert result["decided_at"] is not None
+        assert result["updated_at"] is not None
+        assert result["context_metadata"] == {"session_id": "s1"}
+        loaded = obs_queue.load_observation_record("0" * 32)
+        assert loaded["status"] == "matched"
+        assert loaded["decision"] == "matched"
+        assert loaded["decision_reason"] == "manual audit matched reason"
+        assert loaded["reviewer"] == "human_001"
+
+    def test_update_invalid_status_raises(self, store_dir):
+        with pytest.raises(ValueError, match="Invalid status"):
+            obs_queue.update_observation_record_status("0" * 32, "not_a_status")
+
+    def test_update_missing_record_returns_none(self, store_dir):
+        result = obs_queue.update_observation_record_status("f" * 32, "matched")
+        assert result is None
+
+    def test_update_non_pending_returns_unchanged_record(self, store_dir):
+        obs_queue.save_observation_record(_valid_record(observation_id="0" * 32, status="matched"))
+        result = obs_queue.update_observation_record_status("0" * 32, "error")
+        assert result["status"] == "matched"
+        assert obs_queue.load_observation_record("0" * 32)["status"] == "matched"
+
+    def test_update_non_pending_warning_in_memory_only(self, store_dir):
+        obs_queue.save_observation_record(_valid_record(observation_id="0" * 32, status="error"))
+        result = obs_queue.update_observation_record_status("0" * 32, "matched")
+        assert any("not pending" in w for w in result.get("warnings", []))
+        loaded = obs_queue.load_observation_record("0" * 32)
+        assert loaded.get("warnings") in (None, [])
+
+    def test_update_preserves_immutable_fields(self, store_dir):
+        obs_queue.save_observation_record(_valid_record(observation_id="0" * 32))
+        before = obs_queue.load_observation_record("0" * 32)
+        after = obs_queue.update_observation_record_status("0" * 32, "matched")
+        assert after["observation_id"] == before["observation_id"]
+        assert after["observed_at"] == before["observed_at"]
+        assert after["safety_flags"] == before["safety_flags"]
+        assert after["created_at"] == before["created_at"]
+        assert after["observation_type"] == "observation_record"
+
+    def test_update_context_metadata_replaced_only_when_context_given(self, store_dir):
+        obs_queue.save_observation_record(_valid_record(observation_id="0" * 32))
+        obs_queue.update_observation_record_status(
+            "0" * 32, "matched", context={"session_id": "s1"}
+        )
+        obs_queue.save_observation_record(_valid_record(observation_id="1" * 32))
+        obs_queue.update_observation_record_status("1" * 32, "matched")
+        first = obs_queue.load_observation_record("0" * 32)
+        second = obs_queue.load_observation_record("1" * 32)
+        assert first["context_metadata"] == {"session_id": "s1"}
+        assert second["context_metadata"] == {}
+
+
+class TestCancel:
+    def test_cancel_pending_record(self, store_dir):
+        obs_queue.save_observation_record(_valid_record(observation_id="0" * 32))
+        result = obs_queue.cancel_observation_record(
+            "0" * 32, reviewer="human_001", reason="manual audit cancel reason"
+        )
+        assert result["status"] == "cancelled"
+        assert result["decision"] == "cancelled"
+        assert result["reviewer"] == "human_001"
+        assert result["decision_reason"] == "manual audit cancel reason"
+        assert result["decision"] != result["decision_reason"]
+        loaded = obs_queue.load_observation_record("0" * 32)
+        assert loaded["status"] == "cancelled"
+        assert loaded["decision"] == "cancelled"
+        assert loaded["decision_reason"] == "manual audit cancel reason"
+        assert loaded["reviewer"] == "human_001"
+        assert loaded["decision"] != loaded["decision_reason"]
+
+    def test_cancel_missing_record_returns_none(self, store_dir):
+        result = obs_queue.cancel_observation_record("f" * 32)
+        assert result is None
+
+    def test_cancel_non_pending_unchanged(self, store_dir):
+        obs_queue.save_observation_record(_valid_record(observation_id="0" * 32, status="matched"))
+        result = obs_queue.cancel_observation_record("0" * 32)
+        assert result["status"] == "matched"
+        assert obs_queue.load_observation_record("0" * 32)["status"] == "matched"
+
+    def test_cancel_after_update_unchanged(self, store_dir):
+        obs_queue.save_observation_record(_valid_record(observation_id="0" * 32))
+        obs_queue.update_observation_record_status("0" * 32, "matched")
+        result = obs_queue.cancel_observation_record("0" * 32)
+        assert result["status"] == "matched"
+        assert obs_queue.load_observation_record("0" * 32)["status"] == "matched"
+
+    def test_list_status_filter_cancelled(self, store_dir):
+        obs_queue.save_observation_record(_valid_record(observation_id="0" * 32))
+        obs_queue.save_observation_record(_valid_record(observation_id="1" * 32))
+        obs_queue.cancel_observation_record("0" * 32)
+        result = obs_queue.list_observation_records(status="cancelled")
+        assert result["total"] == 1
+        assert result["records"][0]["observation_id"] == "0" * 32
+
+
 class TestNoInvocationSelfCheck:
     """Parse this file and assert it does not violate boundary rules."""
 
@@ -344,17 +462,9 @@ class TestNoInvocationSelfCheck:
                     if f in func:
                         pytest.fail(f"Queue tests must not call {f}")
 
-    def test_no_update_cancel_calls(self, this_tree):
-        forbidden = [
-            "update_observation_record_status(",
-            "cancel_observation_record(",
-        ]
-        for node in ast.walk(this_tree):
-            if isinstance(node, ast.Call):
-                func = ast.unparse(node.func)
-                for f in forbidden:
-                    if f in func:
-                        pytest.fail(f"Queue tests must not call {f}")
+    def test_module_exposes_update_cancel_functions(self):
+        assert hasattr(obs_queue, "update_observation_record_status")
+        assert hasattr(obs_queue, "cancel_observation_record")
 
     def test_no_real_private_path_string(self):
         path = Path(__file__)

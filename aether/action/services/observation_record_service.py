@@ -2,17 +2,18 @@
 
 Service foundation for the Observation Record Store feature line.
 
-Implements create/get/list only:
+Implements create/get/list plus update_status/cancel:
 - handle_create_observation_record
 - handle_get_observation_record
 - handle_list_observation_records
+- handle_update_observation_record_status
+- handle_cancel_observation_record
 
-update_status and cancel are intentionally deferred.
-Router/API endpoints belong to the 83D milestone.
+Router/API endpoints belong to the 83D/83E milestones.
 
 This module must not import from the interface layer. Request payloads are
-plain dicts; the 83D router will convert its Pydantic request models to
-dicts before calling this service.
+plain dicts; the router will convert its Pydantic request models to dicts
+before calling this service.
 """
 
 from __future__ import annotations
@@ -24,9 +25,11 @@ from aether.core.runtime import runtime
 from aether.action.observation_record import VALID_STATUSES, build_observation_record
 from aether.action.observation_record_queue import (
     _ensure_json_serializable,
+    cancel_observation_record,
     load_observation_record,
     list_observation_records,
     save_observation_record,
+    update_observation_record_status,
 )
 
 _FORBIDDEN_CREATE_KEYS = (
@@ -152,4 +155,84 @@ def handle_list_observation_records(
         "total": result["total"],
         "limit": result["limit"],
         "offset": result["offset"],
+    }
+
+
+def _validate_reviewer_reason(request: dict) -> None:
+    """Validate lifecycle request payloads at the service boundary."""
+    if not isinstance(request, dict):
+        raise ValueError("request must be a dict.")
+    for key in ("reviewer", "reason"):
+        if key in request and request[key] is not None and not isinstance(request[key], str):
+            raise ValueError(f"{key} must be a string or None.")
+
+
+def handle_update_observation_record_status(
+    observation_id: str,
+    request: dict,
+    context: dict | None = None,
+) -> dict:
+    """Update the status of an observation record lifecycle request."""
+    _validate_reviewer_reason(request)
+    new_status = request.get("new_status")
+    if new_status not in VALID_STATUSES:
+        raise ValueError(
+            f"Invalid status '{new_status}'. Must be one of: "
+            + ", ".join(sorted(VALID_STATUSES))
+            + "."
+        )
+
+    record = update_observation_record_status(
+        observation_id,
+        new_status,
+        reviewer=request.get("reviewer"),
+        reason=request.get("reason"),
+        context=context,
+    )
+    if not record:
+        return {
+            "name": "Aether",
+            "status": runtime.status(),
+            "observation_record": None,
+            "found": False,
+            "updated": False,
+        }
+    return {
+        "name": "Aether",
+        "status": runtime.status(),
+        "observation_record": record,
+        "found": True,
+        "updated": record.get("status") == new_status,
+    }
+
+
+def handle_cancel_observation_record(
+    observation_id: str,
+    request: dict | None = None,
+    context: dict | None = None,
+) -> dict:
+    """Cancel a pending observation record lifecycle request."""
+    payload = request if request is not None else {}
+    _validate_reviewer_reason(payload)
+
+    record = cancel_observation_record(
+        observation_id,
+        reviewer=payload.get("reviewer"),
+        reason=payload.get("reason"),
+        context=context,
+    )
+    if not record:
+        return {
+            "name": "Aether",
+            "status": runtime.status(),
+            "observation_record": None,
+            "found": False,
+            "cancelled": False,
+        }
+    return {
+        "name": "Aether",
+        "status": runtime.status(),
+        "observation_record": record,
+        "found": True,
+        "cancelled": record.get("status") == "cancelled",
     }

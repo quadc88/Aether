@@ -12,7 +12,8 @@ This is a pure declarative record store. It does NOT:
 - invoke endpoints, routers, or services
 - modify the ObservationRecord builder
 
-Only create/get/list are implemented. update_status and cancel are deferred.
+Create/get/list plus update_status/cancel are implemented. update_status and
+cancel transition lifecycle fields on persisted records (Milestone 83E).
 """
 
 from __future__ import annotations
@@ -23,6 +24,7 @@ from datetime import datetime, timezone as _tz
 from pathlib import Path
 
 from aether.core.config import get_private_dir
+from aether.action.observation_record import VALID_STATUSES
 
 
 OBSERVATION_RECORD_ID_PATTERN = re.compile(r"^[0-9a-f]{32}$")
@@ -203,3 +205,72 @@ def list_observation_records(
         "limit": limit,
         "offset": offset,
     }
+
+
+def update_observation_record_status(
+    observation_id: str,
+    status: str,
+    reviewer: str | None = None,
+    reason: str | None = None,
+    context: dict | None = None,
+) -> dict | None:
+    """Update the status of a persisted observation record.
+
+    Loads the record, applies the lifecycle transition, and persists it.
+    Returns the updated record dict; returns None when the record does not
+    exist. Raises ValueError for an invalid status.
+
+    The record must currently be "pending"; non-pending records are returned
+    unchanged with a warning recorded in ``warnings`` (in memory only — the
+    warning is intentionally not persisted).
+    """
+    if status not in VALID_STATUSES:
+        raise ValueError(
+            f"Invalid status '{status}'. Must be one of: "
+            + ", ".join(sorted(VALID_STATUSES))
+            + "."
+        )
+
+    path = _record_path(observation_id)
+    record = load_observation_record(observation_id)
+    if record is None:
+        return None
+
+    if record.get("status") != "pending":
+        record.setdefault("warnings", []).append(
+            f"status not updated: record is not pending (status='{record.get('status')}')"
+        )
+        return record
+
+    now_iso = datetime.now(_tz.utc).isoformat()
+    record["status"] = status
+    record["updated_at"] = now_iso
+    record["decision"] = status
+    record["decided_at"] = now_iso
+    record["reviewer"] = reviewer
+    record["decision_reason"] = reason
+    if context is not None:
+        record["context_metadata"] = dict(context)
+    path.write_text(json.dumps(record, indent=2, default=str), encoding="utf-8")
+    return record
+
+
+def cancel_observation_record(
+    observation_id: str,
+    reviewer: str | None = None,
+    reason: str | None = None,
+    context: dict | None = None,
+) -> dict | None:
+    """Cancel a pending observation record (thin wrapper around the status update).
+
+    Transitions the record to "cancelled" with decision set to "cancelled" and
+    decision_reason set to the supplied reason. Returns the updated record
+    dict; returns None when the record does not exist.
+    """
+    return update_observation_record_status(
+        observation_id,
+        "cancelled",
+        reviewer=reviewer,
+        reason=reason,
+        context=context,
+    )

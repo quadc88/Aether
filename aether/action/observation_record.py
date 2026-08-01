@@ -24,7 +24,7 @@ import uuid
 from datetime import datetime, timezone
 
 
-VALID_STATUSES = frozenset({"pending", "matched", "mismatched", "error"})
+VALID_STATUSES = frozenset({"pending", "matched", "mismatched", "error", "cancelled"})
 
 
 def _ensure_json_serializable(value: object, path: str = "") -> None:
@@ -66,7 +66,7 @@ def build_observation_record(
         target: What was observed (e.g. file path, API response, system metric).
         observed_value: The actual observed value. Must be JSON-serializable.
         expected_value: The expected value (from plan or contract). Must be JSON-serializable.
-        status: One of "pending", "matched", "mismatched", "error".
+        status: One of "pending", "matched", "mismatched", "error", "cancelled".
         collector_contract_id: Optional ID of the collector contract that produced this observation.
         metadata: Optional dict of additional metadata. Must be JSON-serializable.
 

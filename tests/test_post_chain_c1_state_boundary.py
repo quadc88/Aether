@@ -496,8 +496,8 @@ def isolated_c1_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
 
 def test_c1_openapi_contract_and_operation_ids_are_locked():
     schema = app.openapi()
-    assert len(schema.get("paths", {})) == 302
-    assert len(schema.get("components", {}).get("schemas", {})) == 106
+    assert len(schema.get("paths", {})) == 304
+    assert len(schema.get("components", {}).get("schemas", {})) == 108
     assert len(C1_ENDPOINTS) == 24
 
     for (method, path), (_, _, operation_id, _) in C1_ENDPOINTS.items():

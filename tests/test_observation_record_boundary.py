@@ -8,6 +8,7 @@ feature line progresses:
 - 83B added the 5 Observation API schema models to api_models.py.
 - 83C added the service/store foundation (create/get/list only).
 - 83D added the router/API endpoints (create/get/list only).
+- 83E added the update-status/cancel lifecycle endpoints.
 
 It does NOT test the builder (aether/action/observation_record.py is covered
 by test_observation_record.py) and does NOT invoke any endpoints.
@@ -84,25 +85,25 @@ class TestObservationServiceStorePresent:
             "83C must add test_observation_record_service.py"
         )
 
-    def test_service_implements_create_get_list_only(self):
-        """83C implements create/get/list only; update_status/cancel deferred."""
+    def test_service_implements_create_get_list_update_cancel(self):
+        """83C/83E: service implements create/get/list plus update/cancel."""
         path = PROJECT_ROOT / "aether" / "action" / "services" / "observation_record_service.py"
         source = path.read_text(encoding="utf-8")
         assert "def handle_create_observation_record" in source
         assert "def handle_get_observation_record" in source
         assert "def handle_list_observation_records" in source
-        assert "def handle_update_observation_record_status" not in source
-        assert "def handle_cancel_observation_record" not in source
+        assert "def handle_update_observation_record_status" in source
+        assert "def handle_cancel_observation_record" in source
 
-    def test_queue_implements_save_load_list_only(self):
-        """83C implements save/load/list only; update/cancel deferred."""
+    def test_queue_implements_save_load_list_update_cancel(self):
+        """83C/83E: queue implements save/load/list plus update/cancel."""
         path = PROJECT_ROOT / "aether" / "action" / "observation_record_queue.py"
         source = path.read_text(encoding="utf-8")
         assert "def save_observation_record" in source
         assert "def load_observation_record" in source
         assert "def list_observation_records" in source
-        assert "def update_observation_record_status" not in source
-        assert "def cancel_observation_record" not in source
+        assert "def update_observation_record_status" in source
+        assert "def cancel_observation_record" in source
 
     def test_observation_routes_router_exists(self):
         path = PROJECT_ROOT / "aether" / "interface" / "routers" / "observation_routes.py"
@@ -247,25 +248,28 @@ class TestOpenAPIStrictBaseline:
         from aether.interface.api_server import app
         return app.openapi()
 
-    def test_openapi_path_count_302(self, openapi_schema):
+    def test_openapi_path_count_304(self, openapi_schema):
         paths = len(openapi_schema.get("paths", {}))
-        assert paths == 302, f"Expected 302 paths; got {paths}"
+        assert paths == 304, f"Expected 304 paths; got {paths}"
 
-    def test_openapi_schema_count_106(self, openapi_schema):
+    def test_openapi_schema_count_108(self, openapi_schema):
         schemas = len(openapi_schema.get("components", {}).get("schemas", {}))
-        assert schemas == 106, f"Expected 106 schemas; got {schemas}"
+        assert schemas == 108, f"Expected 108 schemas; got {schemas}"
 
     def test_observation_paths_exact(self, openapi_schema):
         paths = openapi_schema.get("paths", {})
-        observation_paths = [
-            p for p in paths
-            if "observation" in p.lower()
-        ]
-        assert observation_paths == [
-            "/observation-records",
-            "/observation-records/{observation_id}",
-        ], (
-            f"Expected the two 83D observation paths; found: {observation_paths}"
+        observation_paths = sorted(
+            p for p in paths if "observation" in p.lower()
+        )
+        assert observation_paths == sorted(
+            [
+                "/observation-records",
+                "/observation-records/{observation_id}",
+                "/observation-records/{observation_id}/cancel",
+                "/observation-records/{observation_id}/status",
+            ]
+        ), (
+            f"Expected the four 83D/83E observation paths; found: {observation_paths}"
         )
 
     def test_observation_operation_ids_exact(self, openapi_schema):
@@ -276,11 +280,13 @@ class TestOpenAPIStrictBaseline:
                 if "observation" in op_id.lower():
                     operation_ids.append(op_id)
         assert sorted(operation_ids) == [
+            "cancel_observation_record",
             "create_observation_record",
             "get_observation_record",
             "list_observation_records",
+            "update_observation_record_status",
         ], (
-            f"Expected the three 83D observation operationIds; found: {operation_ids}"
+            f"Expected the five 83D/83E observation operationIds; found: {operation_ids}"
         )
 
     def test_family_counts_unchanged(self, openapi_schema):

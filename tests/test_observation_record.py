@@ -53,6 +53,11 @@ def test_default_status_is_pending():
     assert rec["status"] == "pending"
 
 
+def test_cancelled_status_accepted():
+    rec = build_observation_record(**_default_kwargs(status="cancelled"))
+    assert rec["status"] == "cancelled"
+
+
 def test_non_dict_metadata_raises_value_error():
     with pytest.raises(ValueError, match="metadata must be a dict or None"):
         build_observation_record(**_default_kwargs(metadata="not_a_dict"))

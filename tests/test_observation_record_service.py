@@ -14,9 +14,11 @@ import pytest
 
 import aether.action.observation_record_queue as obs_queue
 from aether.action.services.observation_record_service import (
+    handle_cancel_observation_record,
     handle_create_observation_record,
     handle_get_observation_record,
     handle_list_observation_records,
+    handle_update_observation_record_status,
 )
 
 
@@ -228,7 +230,7 @@ class TestList:
 
 
 class TestScope:
-    def test_no_update_cancel_functions_in_service_module(self):
+    def test_update_cancel_functions_in_service_module(self):
         service_path = (
             Path(__file__).resolve().parent.parent
             / "aether" / "action" / "services" / "observation_record_service.py"
@@ -237,8 +239,139 @@ class TestScope:
         assert "def handle_create_observation_record" in source
         assert "def handle_get_observation_record" in source
         assert "def handle_list_observation_records" in source
-        assert "def handle_update_observation_record_status" not in source
-        assert "def handle_cancel_observation_record" not in source
+        assert "def handle_update_observation_record_status" in source
+        assert "def handle_cancel_observation_record" in source
+
+
+class TestUpdateStatusService:
+    def test_update_status_valid(self, store_dir):
+        created = handle_create_observation_record(_valid_request())
+        result = handle_update_observation_record_status(
+            created["observation_id"],
+            {
+                "new_status": "matched",
+                "reviewer": "human_001",
+                "reason": "manual audit matched reason",
+            },
+        )
+        assert result["found"] is True
+        assert result["updated"] is True
+        assert result["observation_record"]["status"] == "matched"
+        assert result["observation_record"]["decision"] == "matched"
+        assert result["observation_record"]["decision_reason"] == "manual audit matched reason"
+        assert result["observation_record"]["decision"] != result["observation_record"]["decision_reason"]
+        assert result["name"] == "Aether"
+
+    def test_update_status_persisted(self, store_dir):
+        created = handle_create_observation_record(_valid_request())
+        handle_update_observation_record_status(
+            created["observation_id"],
+            {
+                "new_status": "error",
+                "reviewer": "system",
+                "reason": "manual audit error reason",
+            },
+        )
+        loaded = obs_queue.load_observation_record(created["observation_id"])
+        assert loaded["status"] == "error"
+        assert loaded["decision"] == "error"
+        assert loaded["decision_reason"] == "manual audit error reason"
+        assert loaded["reviewer"] == "system"
+
+    def test_update_status_not_found(self, store_dir):
+        result = handle_update_observation_record_status("f" * 32, {"new_status": "matched"})
+        assert result["found"] is False
+        assert result["updated"] is False
+        assert result["observation_record"] is None
+
+    def test_update_status_invalid_new_status_raises(self, store_dir):
+        created = handle_create_observation_record(_valid_request())
+        with pytest.raises(ValueError, match="Invalid status"):
+            handle_update_observation_record_status(
+                created["observation_id"], {"new_status": "not_a_status"}
+            )
+
+    def test_update_status_non_pending_not_updated(self, store_dir):
+        created = handle_create_observation_record(
+            _valid_request(status="matched")
+        )
+        result = handle_update_observation_record_status(
+            created["observation_id"], {"new_status": "error"}
+        )
+        assert result["found"] is True
+        assert result["updated"] is False
+        assert result["observation_record"]["status"] == "matched"
+
+    def test_update_status_reject_non_dict_request(self, store_dir):
+        created = handle_create_observation_record(_valid_request())
+        with pytest.raises(ValueError, match="request must be a dict"):
+            handle_update_observation_record_status(created["observation_id"], "x")
+
+    def test_update_status_reject_non_string_reviewer(self, store_dir):
+        created = handle_create_observation_record(_valid_request())
+        with pytest.raises(ValueError, match="reviewer must be a string"):
+            handle_update_observation_record_status(
+                created["observation_id"], {"new_status": "matched", "reviewer": 7}
+            )
+
+    def test_update_status_reject_non_string_reason(self, store_dir):
+        created = handle_create_observation_record(_valid_request())
+        with pytest.raises(ValueError, match="reason must be a string"):
+            handle_update_observation_record_status(
+                created["observation_id"], {"new_status": "matched", "reason": []}
+            )
+
+
+class TestCancelService:
+    def test_cancel_valid(self, store_dir):
+        created = handle_create_observation_record(_valid_request())
+        result = handle_cancel_observation_record(
+            created["observation_id"],
+            {"reviewer": "human_001", "reason": "manual audit cancel reason"},
+        )
+        assert result["found"] is True
+        assert result["cancelled"] is True
+        assert result["observation_record"]["status"] == "cancelled"
+        assert result["observation_record"]["decision"] == "cancelled"
+        assert result["observation_record"]["decision_reason"] == "manual audit cancel reason"
+        assert result["observation_record"]["decision"] != result["observation_record"]["decision_reason"]
+        assert result["name"] == "Aether"
+
+    def test_cancel_persisted(self, store_dir):
+        created = handle_create_observation_record(_valid_request())
+        handle_cancel_observation_record(
+            created["observation_id"],
+            {"reviewer": "human_001", "reason": "manual audit cancel reason"},
+        )
+        loaded = obs_queue.load_observation_record(created["observation_id"])
+        assert loaded["status"] == "cancelled"
+        assert loaded["decision"] == "cancelled"
+        assert loaded["decision_reason"] == "manual audit cancel reason"
+        assert loaded["reviewer"] == "human_001"
+        assert loaded["decision"] != loaded["decision_reason"]
+
+    def test_cancel_not_found(self, store_dir):
+        result = handle_cancel_observation_record("f" * 32)
+        assert result["found"] is False
+        assert result["cancelled"] is False
+        assert result["observation_record"] is None
+
+    def test_cancel_requires_no_request(self, store_dir):
+        created = handle_create_observation_record(_valid_request())
+        result = handle_cancel_observation_record(created["observation_id"])
+        assert result["cancelled"] is True
+
+    def test_cancel_non_pending_not_cancelled(self, store_dir):
+        created = handle_create_observation_record(_valid_request(status="error"))
+        result = handle_cancel_observation_record(created["observation_id"])
+        assert result["found"] is True
+        assert result["cancelled"] is False
+        assert result["observation_record"]["status"] == "error"
+
+    def test_cancel_reject_non_dict_request(self, store_dir):
+        created = handle_create_observation_record(_valid_request())
+        with pytest.raises(ValueError, match="request must be a dict"):
+            handle_cancel_observation_record(created["observation_id"], "x")
 
 
 class TestNoInvocationSelfCheck:

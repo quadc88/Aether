@@ -306,8 +306,8 @@ class TestOpenAPIContract:
         schema = app.openapi()
         paths = len(schema.get("paths", {}))
         schemas = len(schema.get("components", {}).get("schemas", {}))
-        assert paths == 302, f"Expected 302 paths, got {paths}"
-        assert schemas == 106, f"Expected 106 schemas, got {schemas}"
+        assert paths == 304, f"Expected 304 paths, got {paths}"
+        assert schemas == 108, f"Expected 108 schemas, got {schemas}"
 
     def test_self_modification_paths_present(self):
         from aether.interface.api_server import app

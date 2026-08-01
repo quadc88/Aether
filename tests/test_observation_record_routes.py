@@ -1,15 +1,15 @@
-"""Route tests for the Observation Record router (Milestone 83D).
+"""Route tests for the Observation Record router (Milestone 83D/83E).
 
-TestClient is allowed in this file because 83D is the API router milestone.
-Only the three observation endpoints may be called:
+TestClient is allowed in this file because 83D/83E are the API router
+milestones. Only the observation endpoints may be called:
 - POST /observation-records
 - GET /observation-records
 - GET /observation-records/{observation_id}
+- PATCH /observation-records/{observation_id}/status
+- POST /observation-records/{observation_id}/cancel
 
-The two absence probes below assert that the update/cancel endpoints do NOT
-exist and must return 404. Persistence is isolated via tmp_path + monkeypatch
-of the store directory. No real private data, docs/history, or protected/core
-endpoints are touched.
+Persistence is isolated via tmp_path + monkeypatch of the store directory.
+No real private data, docs/history, or protected/core endpoints are touched.
 """
 
 import ast
@@ -46,6 +46,57 @@ FORBIDDEN_ENVELOPE_KEYS = [
 ]
 
 LIST_FORBIDDEN_ENVELOPE_KEYS = ["name", "status", "count", "observation_records"]
+
+
+def _assert_pure_observation_response_shape(payload: dict) -> None:
+    """Lock API responses to the pure 83B ObservationRecordResponse shape.
+
+    API responses must NOT leak service envelope fields (name, found,
+    updated, cancelled, observation_record) nor store/lifecycle fields
+    (created_at, updated_at, decision, decided_at, reviewer,
+    decision_reason, warnings, context_metadata). Those fields are verified
+    only through queue load or service tests, never in the API response.
+    """
+    expected_keys = {
+        "observation_id",
+        "observation_type",
+        "plan_step_id",
+        "evidence_item_id",
+        "collector_contract_id",
+        "target",
+        "observed_value",
+        "expected_value",
+        "status",
+        "observed_at",
+        "metadata",
+        "safety_flags",
+    }
+    forbidden_envelope_or_store_keys = {
+        # service envelope keys
+        "name",
+        "found",
+        "updated",
+        "cancelled",
+        "observation_record",
+        # store/envelope lifecycle fields
+        "created_at",
+        "updated_at",
+        "decision",
+        "decided_at",
+        "reviewer",
+        "decision_reason",
+        "warnings",
+        "context_metadata",
+    }
+    assert set(payload) == expected_keys, (
+        "API response must be exactly the pure ObservationRecordResponse shape; "
+        "no service envelope or store lifecycle leakage; got: "
+        + ", ".join(sorted(payload))
+    )
+    assert not (forbidden_envelope_or_store_keys & set(payload)), (
+        "service envelope/store lifecycle keys leaked into API response: "
+        + ", ".join(sorted(forbidden_envelope_or_store_keys & set(payload)))
+    )
 
 
 @pytest.fixture
@@ -233,37 +284,252 @@ class TestListEndpoint:
             assert key not in body, f"envelope key leaked: {key}"
 
 
-class TestEndpointAbsence:
-    def test_no_update_status_endpoint(self, client, store_dir):
-        response = client.patch(f"/observation-records/{'a' * 32}/status")
-        assert response.status_code in (404, 405)
+class TestUpdateStatusEndpoint:
+    def test_patch_valid_status_update(self, client, store_dir):
+        record = _create_record(client, store_dir)
+        response = client.patch(
+            f"/observation-records/{record['observation_id']}/status",
+            json={"new_status": "matched", "reviewer": "human_001"},
+        )
+        assert response.status_code == 200
+        body = response.json()
+        assert body["status"] == "matched"
+        _assert_pure_observation_response_shape(body)
 
-    def test_no_cancel_endpoint(self, client, store_dir):
-        response = client.post(f"/observation-records/{'a' * 32}/cancel")
-        assert response.status_code in (404, 405)
+    def test_patch_response_pure_observation_record_shape(self, client, store_dir):
+        record = _create_record(client, store_dir)
+        response = client.patch(
+            f"/observation-records/{record['observation_id']}/status",
+            json={"new_status": "error", "reviewer": "human_001"},
+        )
+        assert response.status_code == 200
+        _assert_pure_observation_response_shape(response.json())
 
-    def test_openapi_no_update_cancel_observation_paths(self):
-        schema = ap_mod.app.openapi()
-        paths = schema.get("paths", {})
-        assert "/observation-records/{observation_id}/status" not in paths
-        assert "/observation-records/{observation_id}/cancel" not in paths
-        operation_ids = [
-            spec.get("operationId", "")
-            for methods in paths.values()
-            for spec in methods.values()
+    def test_patch_persisted_status_change(self, client, store_dir):
+        record = _create_record(client, store_dir)
+        client.patch(
+            f"/observation-records/{record['observation_id']}/status",
+            json={"new_status": "matched", "reviewer": "human_001"},
+        )
+        loaded = obs_queue.load_observation_record(record["observation_id"])
+        assert loaded["status"] == "matched"
+        assert loaded["reviewer"] == "human_001"
+
+    def test_patch_persisted_lifecycle_fields(self, client, store_dir):
+        record = _create_record(client, store_dir)
+        client.patch(
+            f"/observation-records/{record['observation_id']}/status",
+            json={
+                "new_status": "matched",
+                "reviewer": "human_001",
+                "reason": "manual audit matched reason",
+            },
+        )
+        loaded = obs_queue.load_observation_record(record["observation_id"])
+        assert loaded["status"] == "matched"
+        assert loaded["decision"] == "matched"
+        assert loaded["reviewer"] == "human_001"
+        assert loaded["decision_reason"] == "manual audit matched reason"
+        assert loaded["decision"] != loaded["decision_reason"]
+        assert loaded["decided_at"] is not None
+        assert loaded["updated_at"] is not None
+
+    def test_patch_sets_reviewer_and_reason(self, client, store_dir):
+        record = _create_record(client, store_dir)
+        response = client.patch(
+            f"/observation-records/{record['observation_id']}/status",
+            json={"new_status": "mismatched", "reviewer": "human_001", "reason": "values differ"},
+        )
+        assert response.status_code == 200
+        loaded = obs_queue.load_observation_record(record["observation_id"])
+        assert loaded["reviewer"] == "human_001"
+        assert loaded["decision_reason"] == "values differ"
+
+    def test_patch_missing_record_404(self, client, store_dir):
+        response = client.patch(
+            f"/observation-records/{'b' * 32}/status",
+            json={"new_status": "matched", "reviewer": "human_001"},
+        )
+        assert response.status_code == 404
+
+    def test_patch_invalid_id_400(self, client, store_dir):
+        response = client.patch(
+            "/observation-records/not-a-valid-id/status",
+            json={"new_status": "matched", "reviewer": "human_001"},
+        )
+        assert response.status_code == 400
+
+    def test_patch_invalid_new_status_400(self, client, store_dir):
+        record = _create_record(client, store_dir)
+        response = client.patch(
+            f"/observation-records/{record['observation_id']}/status",
+            json={"new_status": "not_a_status", "reviewer": "human_001"},
+        )
+        assert response.status_code == 400
+
+    def test_patch_missing_new_status_422(self, client, store_dir):
+        record = _create_record(client, store_dir)
+        response = client.patch(
+            f"/observation-records/{record['observation_id']}/status",
+            json={"reviewer": "human_001"},
+        )
+        assert response.status_code == 422
+
+    def test_patch_rejects_status_key(self, client, store_dir):
+        record = _create_record(client, store_dir)
+        response = client.patch(
+            f"/observation-records/{record['observation_id']}/status",
+            json={"new_status": "matched", "reviewer": "human_001", "status": "matched"},
+        )
+        assert response.status_code == 400
+        assert "generated/internal" in response.json()["detail"]
+        assert obs_queue.load_observation_record(record["observation_id"])["status"] == "pending"
+
+    def test_patch_rejects_observation_id_key(self, client, store_dir):
+        record = _create_record(client, store_dir)
+        response = client.patch(
+            f"/observation-records/{record['observation_id']}/status",
+            json={"new_status": "matched", "reviewer": "human_001", "observation_id": "c" * 32},
+        )
+        assert response.status_code == 400
+        assert "generated/internal" in response.json()["detail"]
+
+    def test_patch_rejects_lifecycle_key(self, client, store_dir):
+        record = _create_record(client, store_dir)
+        response = client.patch(
+            f"/observation-records/{record['observation_id']}/status",
+            json={"new_status": "matched", "reviewer": "human_001", "decision": "nope"},
+        )
+        assert response.status_code == 400
+        assert "generated/internal" in response.json()["detail"]
+        assert obs_queue.load_observation_record(record["observation_id"])["status"] == "pending"
+
+    def test_patch_non_pending_record_unchanged(self, client, store_dir):
+        record = _create_record(client, store_dir, status="matched")
+        response = client.patch(
+            f"/observation-records/{record['observation_id']}/status",
+            json={"new_status": "error", "reviewer": "human_001"},
+        )
+        assert response.status_code == 200
+        assert response.json()["status"] == "matched"
+
+    def test_get_after_update_pure_shape(self, client, store_dir):
+        record = _create_record(client, store_dir)
+        client.patch(
+            f"/observation-records/{record['observation_id']}/status",
+            json={"new_status": "matched", "reviewer": "human_001"},
+        )
+        response = client.get(f"/observation-records/{record['observation_id']}")
+        assert response.status_code == 200
+        _assert_pure_observation_response_shape(response.json())
+        assert response.json()["status"] == "matched"
+
+
+class TestCancelEndpoint:
+    def test_post_cancel_valid(self, client, store_dir):
+        record = _create_record(client, store_dir)
+        response = client.post(
+            f"/observation-records/{record['observation_id']}/cancel",
+            json={"reviewer": "human_001", "reason": "incorrect observation"},
+        )
+        assert response.status_code == 200
+        body = response.json()
+        assert body["status"] == "cancelled"
+        _assert_pure_observation_response_shape(body)
+
+    def test_post_cancel_response_pure_shape(self, client, store_dir):
+        record = _create_record(client, store_dir)
+        response = client.post(
+            f"/observation-records/{record['observation_id']}/cancel",
+            json={"reviewer": "human_001"},
+        )
+        assert response.status_code == 200
+        _assert_pure_observation_response_shape(response.json())
+
+    def test_post_cancel_persisted(self, client, store_dir):
+        record = _create_record(client, store_dir)
+        client.post(
+            f"/observation-records/{record['observation_id']}/cancel",
+            json={"reviewer": "human_001", "reason": "manual audit cancel reason"},
+        )
+        loaded = obs_queue.load_observation_record(record["observation_id"])
+        assert loaded["status"] == "cancelled"
+        assert loaded["decision"] == "cancelled"
+        assert loaded["reviewer"] == "human_001"
+        assert loaded["decision_reason"] == "manual audit cancel reason"
+        assert loaded["decision"] != loaded["decision_reason"]
+        assert loaded["decided_at"] is not None
+        assert loaded["updated_at"] is not None
+
+    def test_post_cancel_missing_record_404(self, client, store_dir):
+        response = client.post(f"/observation-records/{'b' * 32}/cancel", json={"reviewer": "human_001"})
+        assert response.status_code == 404
+
+    def test_post_cancel_invalid_id_400(self, client, store_dir):
+        response = client.post("/observation-records/not-a-valid-id/cancel", json={"reviewer": "human_001"})
+        assert response.status_code == 400
+
+    def test_post_cancel_rejects_new_status_key(self, client, store_dir):
+        record = _create_record(client, store_dir)
+        response = client.post(
+            f"/observation-records/{record['observation_id']}/cancel",
+            json={"reviewer": "human_001", "new_status": "cancelled"},
+        )
+        assert response.status_code == 400
+        assert "generated/internal" in response.json()["detail"]
+        assert obs_queue.load_observation_record(record["observation_id"])["status"] == "pending"
+
+    def test_post_cancel_rejects_status_key(self, client, store_dir):
+        record = _create_record(client, store_dir)
+        response = client.post(
+            f"/observation-records/{record['observation_id']}/cancel",
+            json={"reviewer": "human_001", "status": "cancelled"},
+        )
+        assert response.status_code == 400
+        assert "generated/internal" in response.json()["detail"]
+
+    def test_post_cancel_rejects_lifecycle_key(self, client, store_dir):
+        record = _create_record(client, store_dir)
+        response = client.post(
+            f"/observation-records/{record['observation_id']}/cancel",
+            json={"reviewer": "human_001", "decision_reason": "nope"},
+        )
+        assert response.status_code == 400
+        assert "generated/internal" in response.json()["detail"]
+
+    def test_post_cancel_non_pending_record_unchanged(self, client, store_dir):
+        record = _create_record(client, store_dir, status="error")
+        response = client.post(
+            f"/observation-records/{record['observation_id']}/cancel", json={"reviewer": "human_001"}
+        )
+        assert response.status_code == 200
+        assert response.json()["status"] == "error"
+
+    def test_list_after_cancel_pure_shape(self, client, store_dir):
+        record = _create_record(client, store_dir)
+        client.post(
+            f"/observation-records/{record['observation_id']}/cancel",
+            json={"reviewer": "human_001"},
+        )
+        response = client.get("/observation-records")
+        assert response.status_code == 200
+        body = response.json()
+        assert [r["observation_id"] for r in body["records"]] == [
+            record["observation_id"]
         ]
-        assert "update_observation_record_status" not in operation_ids
-        assert "cancel_observation_record" not in operation_ids
+        for item in body["records"]:
+            _assert_pure_observation_response_shape(item)
+        assert body["records"][0]["status"] == "cancelled"
 
 
 class TestOpenAPI:
-    def test_openapi_path_count_302(self):
+    def test_openapi_path_count_304(self):
         schema = ap_mod.app.openapi()
-        assert len(schema.get("paths", {})) == 302
+        assert len(schema.get("paths", {})) == 304
 
-    def test_openapi_schema_count_106(self):
+    def test_openapi_schema_count_108(self):
         schema = ap_mod.app.openapi()
-        assert len(schema.get("components", {}).get("schemas", {})) == 106
+        assert len(schema.get("components", {}).get("schemas", {})) == 108
 
     def test_openapi_observation_paths_exact(self):
         schema = ap_mod.app.openapi()
@@ -272,7 +538,12 @@ class TestOpenAPI:
             p for p in paths if "observation" in p.lower()
         )
         assert observation_paths == sorted(
-            ["/observation-records", "/observation-records/{observation_id}"]
+            [
+                "/observation-records",
+                "/observation-records/{observation_id}",
+                "/observation-records/{observation_id}/cancel",
+                "/observation-records/{observation_id}/status",
+            ]
         )
 
     def test_openapi_observation_operation_ids_exact(self):
@@ -286,9 +557,11 @@ class TestOpenAPI:
         )
         assert operation_ids == sorted(
             [
+                "cancel_observation_record",
                 "create_observation_record",
                 "get_observation_record",
                 "list_observation_records",
+                "update_observation_record_status",
             ]
         )
 
