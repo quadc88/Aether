@@ -1,15 +1,15 @@
 # Aether Project Progress Ledger
 
-**Last updated:** Milestone 82AW Build — Post-Refactor Closure Record (finalized, committed, tagged, pushed)
+**Last updated:** Milestone 83A Build — Observation Record Boundary Tests (complete locally, not committed)
 **Aether version:** 0.2.0  
-**Current completed local milestone:** 82AW Build — Post-Refactor Closure Record (finalized)
-**Current active milestone/module:** None; 82AW finalized and Milestone 83 has not started
-**Current status:** Post-refactor closure record committed, tagged, and pushed; interface/thin-refactor phase is closed; architecture rule recorded in docs/ARCHITECTURE.md; new feature code must not be added to api_server.py
-**Next milestone:** Milestone 83 Plan — Observation Record Store
-**Test baseline:** 1628/1628 passed, 0 failures, 0 errors
+**Current completed local milestone:** 83A Build — Observation Record Boundary Tests (not committed)
+**Current active milestone/module:** None; 83A Build validation complete and 83B has not started
+**Current status:** Observation Record pre-implementation boundary tests added locally; no production implementation; api_server.py unchanged
+**Next milestone:** 83A Finalization — Observation Record Boundary Tests
+**Test baseline:** 1665/1665 passed, 0 failures, 0 errors
 **OpenAPI baseline:** 300 paths / 103 schemas
 **Latest local tag:** `milestone-82AW-post-refactor-closure-record` at `70cb957`
-**Latest pushed GitHub/origin status:** `origin/main` contains the 82AW finalized ledger correction commit; remote tag `milestone-82AW-post-refactor-closure-record` at `70cb957`; Milestone 83 not started
+**Latest pushed GitHub/origin status:** `origin/main` contains the 82AW architecture rule correction commit; remote tag `milestone-82AW-post-refactor-closure-record` at `70cb957`; 83A Build is not pushed
 **Runtime-state reset authorization:** Yes; human authority retroactively authorized the 82AD identity-guard runtime-state reset on 2026-07-30, with audit retained at `/home/aether/summaries/milestone_82AD_runtime_state_review.txt`.
 **Pipeline maturity:** Full declarative safety chain (approval through evidence contract record stores) with thin interface refactor (80B-80M) and cognitive runtime observability (81A-81E) complete. Observation contract builder added (82B). Interface API model extraction complete (82C). File and self-inspection service extraction complete (82D). Patch lifecycle service extraction complete (82E). Mutation log service extraction complete (82F). Proposal console service extraction complete (82G). Code review and review bridge service extraction complete (82H). Code review router extraction complete (82J). Mutation log router extraction complete (82K). Proposal console router extraction complete (82L). File router extraction complete (82N). Patch router extraction complete (82O). Approval router extraction complete (82P). Dry run and sandbox contract router extraction complete (82Q). Simulation plan and simulation result router extraction complete (82R). Verification verdict and apply gate router extraction complete (82S). Human authorization and apply execution gate router extraction complete (82T). Executor contract and executor plan router extraction complete (82U). Evidence contract and collection plan router extraction complete (82V). Verification plan router extraction complete (82W). Tool registry and tool plan router extraction complete (82X). Memory state fixture isolation complete (82Z). Memory router extraction complete (82AA). Tool execution safety boundary planning and API-level safety tests complete (82AC-82AD). Tool execution router extraction finalized (82AE). Post-chain C1 state-boundary coverage and full-suite tests-only private/runtime persistence isolation finalized (82AH/82AH-R). Post-chain C1 service extraction finalized (82AI). C2 final real-apply executor safety boundary tests finalized, committed, tagged, and pushed (82AJ). C2 final real-apply executor service extraction finalized, committed, tagged, and pushed (82AK). Repair Family state-boundary tests finalized, committed, tagged, and pushed (82AL Part 1). Repair Family low-risk service extraction finalized, committed, tagged, and pushed (82AL Part 2: repair_planner + repair_workflow_tracker at `f233ba0`). Repair Family medium-risk service extraction finalized, committed, tagged, and pushed (82AL Part 3: repair_workflow_exporter + repair_cycle_completion + repair_learning + repair_guidance at `ff1d728`). Repair Family highest-risk service extraction finalized, committed, tagged, and pushed (82AL Part 4: repair_bridge_selector, the last Repair Family, at `13b84a6`). All 43 Repair Family endpoints are service-backed. Repair Family router extraction finalized, committed, tagged, and pushed (82AM Build: all 43 Repair Family routes moved into `aether/interface/routers/repair_routes.py` at `dfe9949`; `api_server.py` imports and includes `repair_router`; authorized C1 include_router snapshot refresh 16 -> 17; OpenAPI exact match 300/103; full pytest 1572/1572). C1 post-chain router extraction finalized, committed, tagged, and pushed (82AN Build: all 24 C1 post-chain routes moved into `aether/interface/routers/post_chain_c1_routes.py` at `d860616`; `api_server.py` imports and includes `post_chain_c1_router`; authorized C1 include_router snapshot refresh 17 -> 18; OpenAPI exact match 300/103; full pytest 1572/1572). C2 final-real-apply executor router extraction finalized, committed, tagged, and pushed (82AO Build: all 6 C2 routes moved into `aether/interface/routers/final_real_apply_executor_routes.py` at `2a8de72`; `api_server.py` imports and includes `final_real_apply_executor_router`; authorized include_router snapshot refresh 18 -> 19; OpenAPI exact match 300/103; full pytest 1572/1572). No real apply, evidence collection, rollback, or observation exists yet. Guided launcher family tests-only boundary coverage finalized, committed, tagged, and pushed (82AQ Build: all 29 Guided routes across 5 direct-action families locked via AST/OpenAPI-only tests in `tests/test_guided_launcher_boundary.py` at `f25cc2f`; OpenAPI exact match 300/103; full pytest 1581/1581). Guided Launcher router extraction finalized, committed, tagged, and pushed (82AR Build: all 29 Guided routes moved into `aether/interface/routers/guided_launcher_routes.py` as `guided_launcher_router`; `api_server.py` imports and includes `guided_launcher_router` exactly once; authorized include_router snapshot refresh 20 -> 21; guided action import snapshot emptied in Repair Family boundary test; OpenAPI exact match 300/103; full pytest 1581/1581). Self-Modification boundary tests finalized, committed, tagged, and pushed (82AS Build: 20 AST/OpenAPI-only boundary tests added in `tests/test_self_modification_boundary.py`; locked 9 Self-Modification routes in `api_server.py` as app.* direct-action pass-throughs; locked exact operation IDs and request-body model $refs; locked exact import boundary; locked static risk profile of `aether/action/self_modification_cycle.py`; expected high-risk terms present and locked: apply_patch_proposal, rollback_patch_apply, write_text, Path(; forbidden terms absent: collect_evidence, execute_tool, subprocess, os.system, requests., httpx., shutil, git; no endpoint invocation; no self_modification action function invocation; OpenAPI exact match 300/103; full pytest 1601/1601). Self-Modification router extraction finalized, committed, tagged, and pushed (82AT Build: all 9 Self-Modification routes moved into `aether/interface/routers/self_modification_routes.py` as `self_modification_router`; `api_server.py` imports and includes `self_modification_router` exactly once; `api_server.py` no longer imports `aether.action.self_modification_cycle`; authorized include_router snapshot refresh 21 -> 22; OpenAPI exact match 300/103; full pytest 1605/1605). Protected/Core route boundary tests finalized, committed, tagged, and pushed (82AU Build: 23 AST/OpenAPI-only boundary tests added in `tests/test_protected_core_routes_boundary.py`; locked 8 protected/core routes in `api_server.py` with exact operation IDs, signatures, call profiles, and control-flow profiles; locked no protected/core router files; locked import/dependency profile; locked high-risk terms absent from protected/core route bodies; no endpoint invocation; no TestClient; OpenAPI exact match 300/103; full pytest 1628/1628).
 
@@ -3145,3 +3145,31 @@ Extracted 18 endpoint handlers (6 proposal-review-console, 6 proposal-revision-c
     - Finalized, committed, tagged, and pushed as `milestone-82AW-post-refactor-closure-record` at `70cb957`
   - Next: Milestone 83 Plan — Observation Record Store
   - Milestone 83 not started
+  - 83A Build — Observation Record Boundary Tests (complete locally, not committed)
+    - Added `tests/test_observation_record_boundary.py` (37 tests)
+    - Locked pre-implementation boundary:
+      - Observation builder exists (82B)
+      - Observation Record Store not implemented
+      - Observation router/service/store absent
+      - No observation API models in api_models.py
+      - No observation API paths or operation IDs in OpenAPI
+      - api_server.py unchanged (8 routes, 22 include_router, zero /action/*)
+      - OpenAPI remains 300 paths / 103 schemas
+    - Confirmed future Observation implementation must use router/service/model/test structure
+    - No production code changes
+    - No api_server.py change
+    - No router changes
+    - No action/service/api_models changes
+    - No existing tests changed
+    - No docs changed
+    - `docs/ARCHITECTURE.md` unchanged
+    - `docs/CONSTITUTION.md` unchanged
+    - `docs/THIN_INTERFACE_REFACTOR_PLAN.md` unchanged
+    - `docs/architecture/PROTECTED_CORE_INTERFACE_DECISION.md` unchanged
+    - `docs/architecture/POST_REFACTOR_CLOSURE.md` unchanged
+    - Full pytest: 1665/1665 passed, 0 failures, 0 errors
+    - real-root/docs-history fingerprint drift 0
+    - Complete locally; not committed, tagged, or pushed
+    - Next: 83A Finalization — Observation Record Boundary Tests
+    - 83B not started
+    - Milestone 84 not started
