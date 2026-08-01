@@ -7,7 +7,7 @@ feature line progresses:
 - 83A locked the pre-implementation boundary (no store/service/router).
 - 83B added the 5 Observation API schema models to api_models.py.
 - 83C added the service/store foundation (create/get/list only).
-- 83D remains the router/API endpoint milestone.
+- 83D added the router/API endpoints (create/get/list only).
 
 It does NOT test the builder (aether/action/observation_record.py is covered
 by test_observation_record.py) and does NOT invoke any endpoints.
@@ -104,22 +104,21 @@ class TestObservationServiceStorePresent:
         assert "def update_observation_record_status" not in source
         assert "def cancel_observation_record" not in source
 
-    def test_no_observation_routes_router(self):
+    def test_observation_routes_router_exists(self):
         path = PROJECT_ROOT / "aether" / "interface" / "routers" / "observation_routes.py"
-        assert not path.exists(), (
-            "83C must not create observation_routes.py"
+        assert path.exists(), (
+            "83D must create observation_routes.py"
         )
 
     def test_no_protected_core_observation_routers(self):
         """Protected/core observation routers must not exist."""
         candidates = [
             "observation_record_routes.py",
-            "observation_routes.py",
         ]
         routers_dir = PROJECT_ROOT / "aether" / "interface" / "routers"
         for name in candidates:
             assert not (routers_dir / name).exists(), (
-                f"83C must not create {name}"
+                f"83D must not create {name}"
             )
 
     def test_no_observation_records_in_git_index(self):
@@ -183,9 +182,9 @@ class TestApiServerBoundary:
         }
         assert routes == expected, f"Expected 8 protected/core routes; got {routes}"
 
-    def test_exactly_22_include_router_calls(self, api_routes):
+    def test_exactly_23_include_router_calls(self, api_routes):
         _, count, _ = api_routes
-        assert count == 22, f"Expected 22 include_router calls; got {count}"
+        assert count == 23, f"Expected 23 include_router calls; got {count}"
 
     def test_zero_action_routes_in_api_server(self, api_routes):
         _, _, action_routes = api_routes
@@ -193,42 +192,41 @@ class TestApiServerBoundary:
             f"Zero /action/* routes should remain in api_server.py; found {action_routes}"
         )
 
-    def test_no_observation_router_import(self, api_routes):
-        """api_server.py must not import an observation router."""
+    def test_observation_router_imported(self, api_routes):
+        """api_server.py must import the observation router (registration only)."""
         api_path = PROJECT_ROOT / "aether" / "interface" / "api_server.py"
         source = api_path.read_text(encoding="utf-8")
         tree = ast.parse(source)
+        found = False
         for node in ast.walk(tree):
             if isinstance(node, ast.ImportFrom) and node.module:
-                if "observation" in node.module.lower():
-                    pytest.fail(
-                        f"api_server.py must not import observation modules; "
-                        f"found: from {node.module} import ..."
-                    )
+                if "observation_routes" in node.module:
+                    found = True
+        assert found, "api_server.py must import the observation router"
 
-    def test_no_observation_include_router(self, api_routes):
-        """api_server.py must not include_router an observation router."""
+    def test_observation_router_included_exactly_once(self, api_routes):
+        """api_server.py must include_router the observation router exactly once."""
         api_path = PROJECT_ROOT / "aether" / "interface" / "api_server.py"
         source = api_path.read_text(encoding="utf-8")
         tree = ast.parse(source)
+        count = 0
         for node in ast.walk(tree):
             if isinstance(node, ast.Call):
                 text = ast.unparse(node)
-                if "include_router" in text and "observation" in text.lower():
-                    pytest.fail(
-                        f"api_server.py must not include_router an observation router; "
-                        f"found: {text}"
-                    )
+                if "include_router" in text and "observation_router" in text:
+                    count += 1
+        assert count == 1, (
+            f"observation_router must be included exactly once; found {count}"
+        )
 
     def test_no_observation_feature_logic_in_api_server(self, api_routes):
-        """No observation-related logic should appear in api_server.py routes."""
+        """No observation feature logic should appear in api_server.py routes."""
         api_path = PROJECT_ROOT / "aether" / "interface" / "api_server.py"
         source = api_path.read_text(encoding="utf-8")
         # Check that the source does not reference observation record store concepts
         forbidden_terms = [
             "observation_record_service",
             "observation_record_queue",
-            "observation_routes",
         ]
         for term in forbidden_terms:
             assert term not in source, (
@@ -242,40 +240,47 @@ class TestApiServerBoundary:
 # ---------------------------------------------------------------------------
 
 class TestOpenAPIStrictBaseline:
-    """Lock OpenAPI at the pre-implementation baseline."""
+    """Lock OpenAPI at the 83D router baseline."""
 
     @pytest.fixture(scope="class")
     def openapi_schema(self):
         from aether.interface.api_server import app
         return app.openapi()
 
-    def test_openapi_path_count_300(self, openapi_schema):
+    def test_openapi_path_count_302(self, openapi_schema):
         paths = len(openapi_schema.get("paths", {}))
-        assert paths == 300, f"Expected 300 paths; got {paths}"
+        assert paths == 302, f"Expected 302 paths; got {paths}"
 
-    def test_openapi_schema_count_103(self, openapi_schema):
+    def test_openapi_schema_count_106(self, openapi_schema):
         schemas = len(openapi_schema.get("components", {}).get("schemas", {}))
-        assert schemas == 103, f"Expected 103 schemas; got {schemas}"
+        assert schemas == 106, f"Expected 106 schemas; got {schemas}"
 
-    def test_no_observation_paths(self, openapi_schema):
+    def test_observation_paths_exact(self, openapi_schema):
         paths = openapi_schema.get("paths", {})
         observation_paths = [
             p for p in paths
             if "observation" in p.lower()
         ]
-        assert observation_paths == [], (
-            f"Expected no observation paths; found: {observation_paths}"
+        assert observation_paths == [
+            "/observation-records",
+            "/observation-records/{observation_id}",
+        ], (
+            f"Expected the two 83D observation paths; found: {observation_paths}"
         )
 
-    def test_no_observation_operation_ids(self, openapi_schema):
+    def test_observation_operation_ids_exact(self, openapi_schema):
         operation_ids = []
         for methods in openapi_schema.get("paths", {}).values():
             for spec in methods.values():
                 op_id = spec.get("operationId", "")
                 if "observation" in op_id.lower():
                     operation_ids.append(op_id)
-        assert operation_ids == [], (
-            f"Expected no observation operationIds; found: {operation_ids}"
+        assert sorted(operation_ids) == [
+            "create_observation_record",
+            "get_observation_record",
+            "list_observation_records",
+        ], (
+            f"Expected the three 83D observation operationIds; found: {operation_ids}"
         )
 
     def test_family_counts_unchanged(self, openapi_schema):

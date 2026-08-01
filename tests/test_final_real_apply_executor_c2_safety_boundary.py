@@ -19,7 +19,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 REAL_DATA_ROOT = Path("/home/aether/data")
 OPENAPI_BASELINE_PATH = Path("/tmp/aether_82AJ_openapi_before.json")
 EXPECTED_OPENAPI_SHA256 = (
-    "26d0b93fd8b0e37eafdd2ea93716f3b8d4f589d60ab4d58aa786fe724642691f"
+    "8e152e0214c4df54a31f6786151612eba987206e2520d276d3fe36d9740e8a3e"
 )
 
 C2_ENDPOINTS = {
@@ -217,8 +217,8 @@ def denied_c2_api(
 
 def test_c2_openapi_inventory_operation_ids_and_exact_schema_are_locked():
     schema = app.openapi()
-    assert len(schema.get("paths", {})) == 300
-    assert len(schema.get("components", {}).get("schemas", {})) == 103
+    assert len(schema.get("paths", {})) == 302
+    assert len(schema.get("components", {}).get("schemas", {})) == 106
     assert len(C2_ENDPOINTS) == 6
 
     for (method, path), (_, _, _, operation_id, _) in C2_ENDPOINTS.items():

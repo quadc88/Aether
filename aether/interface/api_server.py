@@ -124,6 +124,7 @@ from aether.interface.routers.final_real_apply_executor_routes import final_real
 from aether.interface.routers.changelog_routes import changelog_router
 from aether.interface.routers.guided_launcher_routes import guided_launcher_router
 from aether.interface.routers.self_modification_routes import self_modification_router
+from aether.interface.routers.observation_routes import observation_router
 
 app = FastAPI(
     title="Aether API",
@@ -153,6 +154,7 @@ app.include_router(final_real_apply_executor_router, prefix="")
 app.include_router(changelog_router, prefix="")
 app.include_router(guided_launcher_router, prefix="")
 app.include_router(self_modification_router, prefix="")
+app.include_router(observation_router, prefix="")
 
 
 # ---- Identity Integrity Endpoints (Milestone 48A) ----

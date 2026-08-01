@@ -72,8 +72,8 @@ def seeded_client(client):
     return client
 
 
-OPENAPI_PATH_COUNT = 300
-OPENAPI_SCHEMA_COUNT = 103
+OPENAPI_PATH_COUNT = 302
+OPENAPI_SCHEMA_COUNT = 106
 
 # ---------------------------------------------------------------------- #
 # 1. Seed sandbox tools

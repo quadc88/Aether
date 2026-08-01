@@ -182,8 +182,8 @@ class TestProtectedCoreOpenAPIContract:
         schema = app.openapi()
         paths = len(schema.get("paths", {}))
         schemas = len(schema.get("components", {}).get("schemas", {}))
-        assert paths == 300, f"Expected 300 paths, got {paths}"
-        assert schemas == 103, f"Expected 103 schemas, got {schemas}"
+        assert paths == 302, f"Expected 302 paths, got {paths}"
+        assert schemas == 106, f"Expected 106 schemas, got {schemas}"
 
     def test_protected_core_paths_present(self):
         from aether.interface.api_server import app
@@ -282,13 +282,13 @@ class TestProtectedCoreRoutePlacement:
                     routes.append(node.name)
         assert len(routes) == 8, f"Expected 8 @app routes, got {len(routes)}"
 
-    def test_api_server_has_exactly_22_include_router_calls(self):
+    def test_api_server_has_exactly_23_include_router_calls(self):
         tree, _ = _parse_api_server()
         calls = []
         for node in ast.walk(tree):
             if isinstance(node, ast.Call) and ast.unparse(node.func) == "app.include_router":
                 calls.append(ast.unparse(node))
-        assert len(calls) == 22, f"Expected 22 include_router calls, got {len(calls)}"
+        assert len(calls) == 23, f"Expected 23 include_router calls, got {len(calls)}"
 
     def test_no_action_routes_remain_in_api_server(self):
         tree, _ = _parse_api_server()
