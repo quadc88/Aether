@@ -1,14 +1,14 @@
 # Aether Project Progress Ledger
 
-**Last updated:** Milestone 83F Finalization — Observation Record Completion / Closure Record (finalized, committed, tagged, and pushed; Milestone 83 CLOSED)
+**Last updated:** Milestone 84A Finalization — Observation Intake Bridge Design Record (validated; commit/tag/push verification pending; Milestone 83 CLOSED)
 **Aether version:** 0.2.0  
-**Current completed local milestone:** 83F Finalization — Observation Record Completion / Closure Record (finalized; committed at `d0e26fd`; tagged `milestone-83F-observation-record-completion-closure`; pushed; Milestone 83 CLOSED)
+**Current completed local milestone:** 84A Finalization — Observation Intake Bridge Design Record (validated; commit/tag/push verification pending; Milestone 83 CLOSED)
 **Current active milestone/module:** None
-**Current status:** Milestone 83 — Observation Record Store CLOSED. Closure record document (docs/architecture/MILESTONE_83_OBSERVATION_RECORD_CLOSURE.md) and doc-only closure test (tests/test_milestone_83_observation_record_closure.py) finalized, committed, tagged, and pushed; Option A closure record only; no completed status; no endpoint added; no runtime/source/API changes; OpenAPI remains 304/108; api_server remains 8/23/zero direct /action/*; closure test 9/9 passed; focused observation suite 308 passed; full suite 1897/1897 passed; drift 0; next milestone: Milestone 84 Plan (not started)
-**Test baseline:** 1897/1897 passed, 0 failures, 0 errors (full suite at 83F Finalization: 1888 + 9 closure tests)
+**Current status:** Milestone 84A Finalization — Observation Intake Bridge Design Record validated and ready for finalization (commit/tag/push verification pending). FINAL_84A_DESIGN_ARTIFACT_AUDIT_OK=yes; design record (docs/architecture/OBSERVATION_INTAKE_BRIDGE_DESIGN.md) and doc-only design lock test (tests/test_observation_intake_bridge_design.py, 14/14 passed); design record only — no runtime implementation, no service module, no boundary-tests file, no endpoint, no API model, no router; aether/action/* and aether/interface/* unchanged; api_server unchanged; OpenAPI remains 304/108; combined focused observation/protected/closure/design suite 331 passed; full suite 1911/1911 passed; drift 0; Next: 84A Build Boundary Tests — Observation Intake Bridge Contract Boundary Tests (not started); 84B not started; Milestone 85 not started; Milestone 84 not closed
+**Test baseline:** 1911/1911 passed, 0 failures, 0 errors (full suite at 84A Build: 1897 + 14 design lock tests)
 **OpenAPI baseline:** 304 paths / 108 schemas
 **Latest local tag:** `milestone-83F-observation-record-completion-closure` at `d0e26fd`
-**Latest pushed GitHub/origin status:** `origin/main` contains the 83F finalized implementation commit at `d0e26fd`; remote tag `milestone-83F-observation-record-completion-closure` at `d0e26fd`; Milestone 83 CLOSED; Milestone 84 Plan is the next milestone, not started; Milestone 84 not started
+**Latest pushed GitHub/origin status:** `origin/main` == HEAD == `98bc274` (pre-84A-Finalization); remote tag `milestone-83F-observation-record-completion-closure` at `d0e26fd`; Milestone 83 CLOSED; 84A Finalization commit/tag/push verification pending; 84A Build Boundary Tests not started; 84B not started; Milestone 85 not started
 **Runtime-state reset authorization:** Yes; human authority retroactively authorized the 82AD identity-guard runtime-state reset on 2026-07-30, with audit retained at `/home/aether/summaries/milestone_82AD_runtime_state_review.txt`.
 **Pipeline maturity:** Full declarative safety chain (approval through evidence contract record stores) with thin interface refactor (80B-80M) and cognitive runtime observability (81A-81E) complete. Observation contract builder added (82B). Interface API model extraction complete (82C). File and self-inspection service extraction complete (82D). Patch lifecycle service extraction complete (82E). Mutation log service extraction complete (82F). Proposal console service extraction complete (82G). Code review and review bridge service extraction complete (82H). Code review router extraction complete (82J). Mutation log router extraction complete (82K). Proposal console router extraction complete (82L). File router extraction complete (82N). Patch router extraction complete (82O). Approval router extraction complete (82P). Dry run and sandbox contract router extraction complete (82Q). Simulation plan and simulation result router extraction complete (82R). Verification verdict and apply gate router extraction complete (82S). Human authorization and apply execution gate router extraction complete (82T). Executor contract and executor plan router extraction complete (82U). Evidence contract and collection plan router extraction complete (82V). Verification plan router extraction complete (82W). Tool registry and tool plan router extraction complete (82X). Memory state fixture isolation complete (82Z). Memory router extraction complete (82AA). Tool execution safety boundary planning and API-level safety tests complete (82AC-82AD). Tool execution router extraction finalized (82AE). Post-chain C1 state-boundary coverage and full-suite tests-only private/runtime persistence isolation finalized (82AH/82AH-R). Post-chain C1 service extraction finalized (82AI). C2 final real-apply executor safety boundary tests finalized, committed, tagged, and pushed (82AJ). C2 final real-apply executor service extraction finalized, committed, tagged, and pushed (82AK). Repair Family state-boundary tests finalized, committed, tagged, and pushed (82AL Part 1). Repair Family low-risk service extraction finalized, committed, tagged, and pushed (82AL Part 2: repair_planner + repair_workflow_tracker at `f233ba0`). Repair Family medium-risk service extraction finalized, committed, tagged, and pushed (82AL Part 3: repair_workflow_exporter + repair_cycle_completion + repair_learning + repair_guidance at `ff1d728`). Repair Family highest-risk service extraction finalized, committed, tagged, and pushed (82AL Part 4: repair_bridge_selector, the last Repair Family, at `13b84a6`). All 43 Repair Family endpoints are service-backed. Repair Family router extraction finalized, committed, tagged, and pushed (82AM Build: all 43 Repair Family routes moved into `aether/interface/routers/repair_routes.py` at `dfe9949`; `api_server.py` imports and includes `repair_router`; authorized C1 include_router snapshot refresh 16 -> 17; OpenAPI exact match 300/103; full pytest 1572/1572). C1 post-chain router extraction finalized, committed, tagged, and pushed (82AN Build: all 24 C1 post-chain routes moved into `aether/interface/routers/post_chain_c1_routes.py` at `d860616`; `api_server.py` imports and includes `post_chain_c1_router`; authorized C1 include_router snapshot refresh 17 -> 18; OpenAPI exact match 300/103; full pytest 1572/1572). C2 final-real-apply executor router extraction finalized, committed, tagged, and pushed (82AO Build: all 6 C2 routes moved into `aether/interface/routers/final_real_apply_executor_routes.py` at `2a8de72`; `api_server.py` imports and includes `final_real_apply_executor_router`; authorized include_router snapshot refresh 18 -> 19; OpenAPI exact match 300/103; full pytest 1572/1572). No real apply, evidence collection, rollback, or observation exists yet. Guided launcher family tests-only boundary coverage finalized, committed, tagged, and pushed (82AQ Build: all 29 Guided routes across 5 direct-action families locked via AST/OpenAPI-only tests in `tests/test_guided_launcher_boundary.py` at `f25cc2f`; OpenAPI exact match 300/103; full pytest 1581/1581). Guided Launcher router extraction finalized, committed, tagged, and pushed (82AR Build: all 29 Guided routes moved into `aether/interface/routers/guided_launcher_routes.py` as `guided_launcher_router`; `api_server.py` imports and includes `guided_launcher_router` exactly once; authorized include_router snapshot refresh 20 -> 21; guided action import snapshot emptied in Repair Family boundary test; OpenAPI exact match 300/103; full pytest 1581/1581). Self-Modification boundary tests finalized, committed, tagged, and pushed (82AS Build: 20 AST/OpenAPI-only boundary tests added in `tests/test_self_modification_boundary.py`; locked 9 Self-Modification routes in `api_server.py` as app.* direct-action pass-throughs; locked exact operation IDs and request-body model $refs; locked exact import boundary; locked static risk profile of `aether/action/self_modification_cycle.py`; expected high-risk terms present and locked: apply_patch_proposal, rollback_patch_apply, write_text, Path(; forbidden terms absent: collect_evidence, execute_tool, subprocess, os.system, requests., httpx., shutil, git; no endpoint invocation; no self_modification action function invocation; OpenAPI exact match 300/103; full pytest 1601/1601). Self-Modification router extraction finalized, committed, tagged, and pushed (82AT Build: all 9 Self-Modification routes moved into `aether/interface/routers/self_modification_routes.py` as `self_modification_router`; `api_server.py` imports and includes `self_modification_router` exactly once; `api_server.py` no longer imports `aether.action.self_modification_cycle`; authorized include_router snapshot refresh 21 -> 22; OpenAPI exact match 300/103; full pytest 1605/1605). Protected/Core route boundary tests finalized, committed, tagged, and pushed (82AU Build: 23 AST/OpenAPI-only boundary tests added in `tests/test_protected_core_routes_boundary.py`; locked 8 protected/core routes in `api_server.py` with exact operation IDs, signatures, call profiles, and control-flow profiles; locked no protected/core router files; locked import/dependency profile; locked high-risk terms absent from protected/core route bodies; no endpoint invocation; no TestClient; OpenAPI exact match 300/103; full pytest 1628/1628).
 
@@ -3410,3 +3410,42 @@ Extracted 18 endpoint handlers (6 proposal-review-console, 6 proposal-revision-c
     - Milestone 83 CLOSED
     - Next milestone: Milestone 84 Plan (not started)
     - Milestone 84 not started
+  - 84A Build — Observation Intake Bridge Design Record (complete locally, not committed)
+    - docs/architecture/OBSERVATION_INTAKE_BRIDGE_DESIGN.md added (16-section design record)
+    - tests/test_observation_intake_bridge_design.py added (14 doc-only design lock tests)
+    - Milestone 84 Plan selected Candidate A (non-executing observation intake bridge)
+    - design record only: no runtime implementation, no service module, no endpoint, no API model, no router
+    - aether/action/* unchanged
+    - aether/interface/* unchanged (api_server.py, api_models.py, routers unchanged)
+    - OpenAPI remains 304/108
+    - api_server remains 8/23/zero direct /action/*
+    - design lock test: 14/14 passed
+    - focused observation suite: 317 passed
+    - full suite: 1911/1911 passed, 0 failures, 0 errors (1897 + 14 new design lock tests)
+    - real-root/docs/history drift 0
+    - no commit/tag/push
+    - Next: 84A Finalization — Observation Intake Bridge Design Record
+    - 84A Finalization not started
+    - 84A Build Boundary Tests not started
+    - 84B not started
+    - Milestone 85 not started
+  - 84A Finalization — Observation Intake Bridge Design Record (validated; commit/tag/push verification pending)
+    - FINAL_84A_DESIGN_ARTIFACT_AUDIT_OK=yes (all 17 doc sections and all required phrases present; design lock test count 14; no forbidden test content)
+    - docs/architecture/OBSERVATION_INTAKE_BRIDGE_DESIGN.md verified (16-section design record)
+    - tests/test_observation_intake_bridge_design.py verified (14 doc-only design lock tests)
+    - design lock test: 14/14 passed
+    - combined focused observation/protected/closure/design suite: 331 passed
+    - full suite: 1911/1911 passed, 0 failures, 0 errors
+    - real-root/docs/history drift 0
+    - OpenAPI remains 304/108 (FINAL_84A_OPENAPI_API_SERVER_AUDIT_OK=yes)
+    - api_server remains 8/23/zero direct /action/*
+    - no runtime implementation: no service module, no boundary-tests file, no router/API/API model
+    - aether/action/* unchanged
+    - aether/interface/* unchanged (api_server.py, api_models.py, routers unchanged)
+    - existing tests unchanged
+    - commit/tag/push verification pending
+    - Next: 84A Build Boundary Tests — Observation Intake Bridge Contract Boundary Tests
+    - 84A Build Boundary Tests not started
+    - 84B not started
+    - Milestone 85 not started
+    - Milestone 84 not closed
