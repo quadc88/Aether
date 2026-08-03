@@ -93,6 +93,8 @@ Current safety constraints:
 
 Tools, models, and plugins are resources or organs Aether may use. They are not Aether itself. Aether maintains identity, memory, time, verification, policy, and action safety.
 
+Aether coordinates its work through an authoritative shared cognitive-context framework. Each active task has one authoritative context, and governance and coordination are internal cross-cutting layers of one persistent mind, not separate agents.
+
 \## Project status
 
 

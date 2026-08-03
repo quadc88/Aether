@@ -1,6 +1,6 @@
 # Aether Architecture
 
-**Version:** 0.2.0  
+**Version:** 0.3.0
 **Status:** Foundational architecture  
 **Depends on:** The Aether Constitution v0.2.0  
 **Project:** Aether
@@ -308,6 +308,41 @@ Possible configuration:
 ```text
 config/time.yaml
 ```
+
+### 4.9 Temporal context and multi-timescale reasoning
+
+Temporal context and multi-timescale reasoning belong to the Time cognitive organ. AetherOS Infrastructure supplies only timing mechanisms and raw clock facts: clock, timer, scheduler mechanism, and system timestamp sources. Temporal reasoning is cognition, not infrastructure.
+
+Four time semantics are distinguished:
+
+1. EVENT TIME — when the external or internal event actually occurred.
+2. OBSERVATION TIME — when Aether or another observer perceived or obtained the event.
+3. RECORDING TIME — when the information entered an Aether record, memory, timeline, or store.
+4. DECISION TIME — when Aether formed or authorized a conclusion based on the information.
+
+The four semantics may differ because of observation latency, batching or delayed persistence, re-observation, delayed evaluation, and re-authorization after new evidence.
+
+Distinguishing them matters because:
+
+- Causality — ordering by event time can differ from ordering by recording time; causality must not be inferred from recording order alone.
+- Evidence freshness — a fact may be old at decision time even when freshly recorded.
+- Auditability — records must distinguish the four timestamps so review can reconstruct what was known when.
+- Verification — outdated-information detection (section 4.5) depends on separating event time from decision time.
+- Planning — deadlines and schedules use event and decision time, not recording time.
+- Memory integrity — recency, expiry, and review scheduling (sections 4.4, 5.11) rely on the four semantics.
+- Learning — whether a lesson still applies depends on when it was learned versus when conditions changed (sections 4.6, 10.3).
+
+Five temporal reasoning scopes are defined:
+
+1. IMMEDIATE CONTEXT — the current moment, response, or action.
+2. EXECUTION CONTEXT — the duration of the current task or plan.
+3. PERSONAL TIMELINE — the temporally ordered history relevant to Aether's identity continuity and its relationship with the human authority or current person context.
+4. DOMAIN / SOCIAL CONTEXT — the external domain and social environment.
+5. LONG-TERM CONTEXT — identity continuity, memory aging, and growth.
+
+These are reasoning scopes, not mandatory separate storage systems. Multi-timescale reasoning must not create a separate temporal agent; it is a property of the single mind.
+
+Time provides context, not authority. Historical patterns and long-term habits must not override explicit current human instructions. A past authorization must not be treated as permanent authorization. AetherOS supplies timing mechanisms; the Time organ interprets them.
 
 \---
 
@@ -892,6 +927,8 @@ Workflow Model is not Aether.
 
 It is Aether's learned decision habit.
 
+The items listed above are proposals, not authorizations. The Workflow and Policy Layer proposes workflows, risk framing, and resource needs; whether a proposed path is allowed is decided by Core Governance (section 18). Thinking proposes. Governance authorizes.
+
 ### 7.5 Future implementation
 
 Possible future components:
@@ -1333,31 +1370,25 @@ Important: the approval request is only a structured pending request. It does no
 ## 13\. High-Level Data Flow
 
 ```text
-User
- ↓
-Interface
- ↓
-Aether Core
- ↓
-Identity ── Time ── Memory
- ↓
-Perception
- ↓
-Workflow / Policy
- ↓
-Thinking
- ↓
-Verification
- ↓
-Action / Tools
- ↓
-Result
- ↓
-Learning / Reflection
- ↓
-Memory Update
- ↓
-Timeline / Wiki / Vector / Graph
+Human Authority
+        │
+        ▼
+Constitution / Core Governance ─── cross-cutting plane (governs
+        │                          all stages)
+        ▼
+Authoritative Shared Cognitive Context framework ─── owned by Core
+        │                                Coordination; one selected
+        │                                current task context
+        ▼
+User → Interface → Aether Core → Perception → Thinking
+        (Workflow / Policy proposes; Governance authorizes)
+        → Verification → Action / Tools
+        │
+        ▼
+Result → Learning / Reflection → Memory Update
+        → Timeline / Wiki / Vector / Graph
+Identity ── Time ── Memory ── AetherOS Infrastructure
+(cross-cutting support)
 ```
 
 The flow is not always linear.
@@ -1564,4 +1595,196 @@ Any future change that adds feature logic to `api_server.py`, extracts protected
 - and a decision record that explicitly reopens the boundary.
 
 New feature lines after the 82AW closure must not add feature code to `api_server.py`. They must be implemented through router / service / model / test structure unless a future decision record explicitly reopens the protected/core boundary.
+
+\---
+
+## 18. Architecture Evolution — Governance, Coordination, and AetherOS Infrastructure
+
+### 18.1 Evolution Scope and One-Mind Model
+
+Aether is one persistent mind. This section records the Milestone 86 architecture evolution: governance, coordination, authoritative shared cognitive context, controlled background continuity, time reasoning, resource observation, and optional economic capability. It introduces no runtime capability.
+
+Diagram A — top-level architecture:
+
+```text
+Aether — one persistent identity
+  ┌────────────────────────────────────────────┐
+  │ Cross-cutting planes (span every loop stage)│
+  │   Core Governance          Core Coordination│
+  └────────────────────────────────────────────┘
+  ├── Nine Cognitive Organs: Identity, Time, Memory,
+  │   Perception, Thinking, Verification, Action,
+  │   Learning, Interface
+  ├── AetherOS Infrastructure (underneath): Resource
+  │   Observation, clocks, timers, scheduler mechanism,
+  │   models, tools, storage, hardware, provider
+  │   availability, runtime environment
+  └── Optional Extensions (outside the Core): Economic
+      Capability; future domain capabilities
+```
+
+### 18.2 Identity and Constitutional Foundation
+
+Aether has one persistent identity. The Identity and Constitutional Foundation is the foundational continuity and constitutional anchor of the same single Aether identity: a reference, not a duplicate. The Identity organ, one of the nine cognitive organs, loads, represents, protects, and verifies that same continuous identity. It is not a second Identity component, not a second cognitive organ, and not a second authority source. There is one identity, one mind, one agent.
+
+### 18.3 Cross-Cutting Governance and Coordination
+
+Core Governance and Core Coordination are internal cross-cutting layers of the single mind. They span every Execution Loop stage. They are never separate agents, never additional minds, and never additional identity components.
+
+### 18.4 Core Governance
+
+Core Governance owns Constitution Runtime Enforcement, Governance Policy, Cognitive Signal Arbitration, Resource Governance, permission scope, privacy boundaries, safety prohibitions, mandatory verification requirements, approval boundaries, and the operative risk classification used for authorization (Verification supplies evidence).
+
+Core Governance applies the existing Constitution; it is itself bounded by the same hard constraints it enforces.
+
+### 18.5 Execution and Context Relationship
+
+Diagram B — execution and context relationship:
+
+```text
+Human Authority
+        │
+        ▼
+Constitution / Core Governance
+        │
+        ▼
+Authoritative Shared Cognitive Context framework (owned by Core
+        │  Coordination; one selected current task context)
+        │
+        ▼
+Receive → Understand → Think → Plan → Act → Observe → Verify
+                 ↑                       │
+                 └── Repair ← Critic ────┘
+                        │
+                        ▼
+                     Learn → Report
+Cross-cutting support: Identity, Time, Memory, Governance, AetherOS
+```
+
+The canonical Execution Loop (section 12.1) remains unchanged.
+
+### 18.6 Authoritative Shared Cognitive Context
+
+The Authoritative Shared Cognitive Context (ASC) is an architecture framework, not one global mutable task object. The ASC framework is owned by Core Coordination.
+
+- One ASC architecture framework exists.
+- Every active task has exactly one authoritative task context.
+- One reasoning turn has exactly one current task context.
+- Waiting, paused, or background tasks may retain separate task contexts.
+- No silent merging or overwriting of task contexts occurs.
+- Switching the current task context is an explicit Core Coordination operation, subject to Core Governance constraints.
+
+The ASC carries four categories of content:
+
+- Goal and Task Context: current goal, active task, execution phase, completion criteria.
+- Authority and Governance Context: permission scope, policy profile, risk classification, resource budget, temporal scope, approval state.
+- Operational Context: execution-phase state and working-memory references relevant to the task.
+- Cognitive References: references to memory, observation, and verification content relevant to the task.
+
+The ASC is not a database, not a memory tier, not a scheduler, not a queue, not a new cognitive organ, and not an authorization source.
+
+### 18.7 Context Ownership and State Separation
+
+Every authoritative category has exactly one owner. Read access does not imply write authority. A contributor may propose an update without becoming the owner. The detailed ownership table lives in the Milestone 86 decision record.
+
+Context is not memory. Current state and historical trace are separate. Historical information may inform current state but may not silently overwrite it. Memory may supply context but may not independently redefine current Goal, permission, authority, or execution phase.
+
+### 18.8 Cognitive Signal Arbitration and Policy Boundary
+
+Cognitive Signal Arbitration belongs to Core Governance.
+
+Hard constraints define the allowed decision space. Soft decision signals rank options only inside that allowed space. Hard constraints must never be overridden by optimization.
+
+Hard constraints include: the Constitution; valid Human Authority boundaries; safety prohibitions; identity integrity; permission scope; privacy; mandatory verification; resource hard limits; minimum reversibility requirements where applicable; explicit execution prohibitions.
+
+Soft decision signals include: goal relevance; evidence strength; time sensitivity; resource feasibility; degree of reversibility; expected quality; latency; learning value; operational efficiency; convenience.
+
+No numerical weights and no universal scoring function are defined. Reversibility has a dual role: mandatory reversibility requirements may be hard constraints, while among allowed options, greater reversibility may be a soft preference.
+
+Thinking proposes. Governance authorizes. Verification supplies evidence. Action executes only within authorization.
+
+### 18.9 Resource Observation and Resource Governance
+
+Resource Observation remains part of AetherOS Infrastructure. It is explicitly distinct from the Execution Loop Observe stage: Resource Observation reports factual, time-bounded conditions about the operating environment; the Observe stage verifies observable evidence of intended effects.
+
+Resource Observation may report factual, time-bounded conditions such as: CPU/GPU/NPU/RAM/storage state; model load and availability; provider availability; quota and rate limits; tool health; network state; latency; active workload; data locality; privacy zone; background-task consumption.
+
+Resource Observation does not authorize, allocate, select, terminate, or expand resources.
+
+Resource facts are time-bounded. Resource Observation reports; Resource Governance decides.
+
+### 18.10 Controlled Background Continuity
+
+Controlled background continuity is the continued progress of an authorized goal across turns, under binding constraints.
+
+- Core Coordination owns continuation state and task continuity.
+- Core Governance owns continuing authorization and constraints.
+- Time / AetherOS provide wake, expiry, scheduling, and timer mechanisms.
+
+Every background continuation must remain bound to: the originating goal; the exact task; the authoritative task-context identifier; the Human Authority scope; the permission scope; the policy profile; the risk state; the resource budget; the wake condition; the expiry; the cancellation mechanism; the checkpoint; the verification criteria; and the audit trail.
+
+Background continuity continues an authorized goal. It does not create a new goal or new authority. It must not: extend expired authority; retry indefinitely; silently perform external actions; reinterpret old permissions as permanent; change completion criteria without authorization; or silently merge context into another task.
+
+No scheduler and no background runtime is implemented by Milestone 86.
+
+### 18.11 Time Reasoning and AetherOS Timing Boundary
+
+Temporal context and multi-timescale reasoning are owned by the Time cognitive organ (section 4.9). AetherOS Infrastructure supplies only timing mechanisms and raw clock facts. Temporal reasoning is cognition, not infrastructure. AetherOS supplies timing mechanisms; the Time organ interprets them.
+
+Time provides context, not authority. There is no separate temporal agent.
+
+### 18.12 Optional Economic Capability
+
+Economic Reasoning is an optional analysis capability: cost comparison, budgeting, financial research, business planning, and economic simulation.
+
+Economic Agency is an optional execution capability: purchasing, payment, transfer, investment execution, financial commitments, and contractual financial actions.
+
+Milestone 86 does not define wallets, tokens, autonomous earning, autonomous trading, payment infrastructure, or market agents. Economic Agency requires a separate future authorized architecture and safety milestone. Optional extensions cannot redefine the Core.
+
+### 18.13 Architecture Invariants and Existing-Record Relationship
+
+Architecture invariants (23):
+
+1. One Persistent Identity.
+2. Nine Cognitive Organs Remain.
+3. Governance Is Cross-Cutting.
+4. Coordination Is Cross-Cutting.
+5. One ASC Architecture Framework.
+6. One Authoritative Context Per Active Task.
+7. One Current Task Context Per Reasoning Turn.
+8. No Silent Cross-Task Context Merging.
+9. Context Is Not Memory.
+10. Every Authoritative Category Has an Owner.
+11. Read Access Does Not Imply Write Authority.
+12. Hard Constraints Before Optimization.
+13. Time Provides Context, Not Authority.
+14. Resource Observation Reports, Governance Decides.
+15. Resource Facts Are Time-Bounded.
+16. Background Continuity Does Not Create Authority.
+17. Budget Cannot Override Safety.
+18. Current State and Historical Trace Are Separate.
+19. Optional Extensions Cannot Redefine the Core.
+20. Thinking Proposes, Governance Authorizes.
+21. Canonical Execution Loop Remains Unchanged.
+22. Milestone 85 Observation/Verification Boundary Remains in Force.
+23. Milestone 86 Adds No Runtime Capability.
+
+Regression locks (kept separately, not as invariants):
+
+- OpenAPI: 304 paths / 108 schemas.
+- api_server.py: 8 @app routes / 23 include_router / zero direct /action/*.
+- Full-suite baseline: 2106 passed (2084 baseline + 22 Milestone 85A design-lock tests).
+- Focused baseline: 209 passed.
+- Drift: 0 — canonical fingerprint 600fd549588be7f536f704bc999be1987dcdf550225f2dc11dbf2fbf63ec2bcd.
+- Tracked private/runtime: empty; docs/history: clean.
+
+This revision is the explicitly authorized architecture evolution for Milestone 86. It incorporates the Milestone 85 Observation Classification / Verification Aggregation / Lifecycle Decision Boundary Record by reference and does not alter it; that record remains fully in force. The governance, coordination, and infrastructure sections added by this revision extend the architecture without reopening the observation/verification boundary.
+
+### 18.14 Future Capability Gates and Milestone 86 Closure Rule
+
+- No future milestone may introduce a runtime component described here (scheduler, background runtime, economic agency, temporal agent, resource governor, or new cognitive organ) without a separately authorized architecture and safety milestone.
+- Producer-proof gate: any future component that could feed the ASC framework or Resource Observation must be justified by an actual, proven consumer.
+- Aggregator-proof gate: no aggregation behavior may be added without a proven consumer and a separately authorized plan.
+- Critic/Repair-proof gate: no critic or repair triggering may be wired without a separately authorized plan.
+- Milestone 86 is not considered closed until 86A Finalization is accepted. The local 86A Build does not close Milestone 86 and does not start Milestone 87. Milestone 87 may not start automatically.
 
