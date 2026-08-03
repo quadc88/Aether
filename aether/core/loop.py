@@ -163,12 +163,14 @@ def run_core_chat_loop(
         warnings_count=len(thinking_policy.get("warnings", [])),
     ))
 
-    # --- Step 7c: Policy Enforcement Gate ---
-    from aether.action.policy_gate import enforce_policy_gate
-    policy_gate_result = enforce_policy_gate(
+    # --- Step 7c: Policy Enforcement Gate (Core Governance) ---
+    from aether.core.governance import evaluate_authorization_envelope
+    policy_gate_result = evaluate_authorization_envelope(
         thinking_policy=thinking_policy,
         requested_action=suggested_tool,
         context={"session_id": session_id},
+        risk_evidence=risk,
+        identity_integrity_evidence=identity_status,
     )
     execution_allowed = policy_gate_result.get("allowed", False)
     execution_decision = policy_gate_result.get("decision", "invalid_policy")

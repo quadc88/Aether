@@ -172,14 +172,23 @@ class TestProductionChainAndImporters:
         loop = _function(LOOP, "run_core_chat_loop")
         calls = _call_names(loop)
         assert calls.count("decide_chat_policy") == 1
-        assert calls.count("enforce_policy_gate") == 1
+        assert calls.count("evaluate_authorization_envelope") == 1
         assert calls.count("build_approval_request") == 1
-        assert calls.index("decide_chat_policy") < calls.index("enforce_policy_gate")
+        assert calls.index("decide_chat_policy") < calls.index("evaluate_authorization_envelope")
 
     def test_12_production_policy_gate_importers_are_exact(self):
-        assert _production_importers(
+        # enforce_policy_gate is now only in the Action compatibility facade
+        # Production importers of enforce_policy_gate should be empty
+        # (loop no longer imports it; only tests import it directly)
+        facade_importers = _production_importers(
             "aether.action.policy_gate", "enforce_policy_gate"
-        ) == {"aether/core/loop.py"}
+        )
+        assert facade_importers == set()
+        # loop imports evaluate_authorization_envelope from governance
+        governance_importers = _production_importers(
+            "aether.core.governance", "evaluate_authorization_envelope"
+        )
+        assert "aether/core/loop.py" in governance_importers
 
     def test_13_record_inventories_direct_importers(self):
         text = _normalized_record()
@@ -349,11 +358,12 @@ class TestNoExecutionAndConsumers:
         assert "execute_tool" not in _call_names(fn)
         assert "apply_patch_proposal" not in _call_names(fn)
         assert "rollback_patch_apply" not in _call_names(fn)
+        assert "evaluate_authorization_envelope" in _call_names(fn)
 
     def test_30_gate_is_followed_by_builder_not_executor(self):
         fn = _function(LOOP, "run_core_chat_loop")
         calls = _call_names(fn)
-        gate_index = calls.index("enforce_policy_gate")
+        gate_index = calls.index("evaluate_authorization_envelope")
         after = calls[gate_index + 1 :]
         assert "build_approval_request" in after
         assert not {"execute_tool", "execute_action", "apply_patch_proposal"}.intersection(after)
@@ -380,7 +390,7 @@ class TestPhysicalHomeAndMigration:
     def test_33_selected_physical_home_is_exact(self):
         text = _normalized_record()
         assert "Selected future physical home: `aether/core/governance.py`" in text
-        assert not (ROOT / "aether/core/governance.py").exists()
+        assert (ROOT / "aether/core/governance.py").exists()
 
     def test_34_dependency_direction_is_locked(self):
         text = _normalized_record()
@@ -411,6 +421,7 @@ class TestPhysicalHomeAndMigration:
                 if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
                     if node.name == "enforce_policy_gate":
                         definitions.append(path.relative_to(ROOT).as_posix())
+        # enforce_policy_gate now exists only in the Action compatibility facade
         assert definitions == ["aether/action/policy_gate.py"]
 
 
@@ -439,7 +450,7 @@ class TestProtectedStructureAndNonGoals:
         assert (app_routes, include_router, direct_action) == (8, 23, 0)
 
     def test_40_no_runtime_module_or_interface_artifact_added(self):
-        assert not (ROOT / "aether/core/governance.py").exists()
+        assert (ROOT / "aether/core/governance.py").exists()
         assert not (ROOT / "aether/interface/routers/governance_routes.py").exists()
         assert not (ROOT / "aether/interface/governance_api_models.py").exists()
 
@@ -487,3 +498,270 @@ class TestProtectedStructureAndNonGoals:
     def test_45_milestone_88_does_not_start_automatically(self):
         text = _normalized_record()
         assert "Milestone 88 does not start automatically" in text
+
+
+class TestGovernanceModuleExtraction:
+    """Tests for the Milestone 87B extraction state."""
+
+    def test_46_governance_module_exists(self):
+        assert (ROOT / "aether/core/governance.py").exists()
+
+    def test_47_governance_module_path_is_exact(self):
+        import aether.core.governance as gov
+        assert gov.__file__ == str(ROOT / "aether/core/governance.py")
+
+    def test_48_governance_has_exact_public_function_name(self):
+        import aether.core.governance as gov
+        assert hasattr(gov, "evaluate_authorization_envelope")
+        assert callable(gov.evaluate_authorization_envelope)
+
+    def test_49_governance_function_signature_exact(self):
+        import aether.core.governance as gov
+        sig = inspect.signature(gov.evaluate_authorization_envelope)
+        params = list(sig.parameters.keys())
+        assert params == [
+            "thinking_policy", "requested_action", "context",
+            "risk_evidence", "identity_integrity_evidence",
+        ]
+        defaults = [
+            sig.parameters["thinking_policy"].default,
+            sig.parameters["requested_action"].default,
+            sig.parameters["context"].default,
+        ]
+        assert all(d is None for d in defaults)
+        kwonly = [
+            p for p, v in sig.parameters.items()
+            if v.kind == inspect.Parameter.KEYWORD_ONLY
+        ]
+        assert set(kwonly) == {"risk_evidence", "identity_integrity_evidence"}
+        assert sig.return_annotation in (dict, "dict")
+
+    def test_50_governance_narrow_scope_docstring(self):
+        import aether.core.governance as gov
+        doc = gov.__doc__ or ""
+        assert "Milestone 87" in doc
+        assert "narrow" in doc.lower() or "decision envelope" in doc.lower()
+        assert "not the complete Governance plane" in doc
+        assert "not a universal Governance runtime" in doc
+
+    def test_51_governance_does_not_import_loop_or_interface(self):
+        import aether.core.governance as gov
+        src = gov.__file__
+        tree = ast.parse(Path(src).read_text(encoding="utf-8"))
+        imported_modules = set()
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ImportFrom) and node.module:
+                imported_modules.add(node.module)
+        assert "aether.core.loop" not in imported_modules
+        assert "aether.interface" not in imported_modules
+        assert "aether.action.approval_queue" not in imported_modules
+        assert "aether.memory.timeline" not in imported_modules
+
+    def test_52_authoritative_logic_only_in_governance(self):
+        # enforce_policy_gate logic exists only in governance module
+        gov_src = (ROOT / "aether/core/governance.py").read_text(encoding="utf-8")
+        facade_src = (ROOT / "aether/action/policy_gate.py").read_text(encoding="utf-8")
+        # Governance has the full decision logic (decision_type checks)
+        assert "decision_type" in gov_src
+        # Facade has only a delegation, no decision branches
+        assert "evaluate_authorization_envelope" in facade_src
+        # Facade does NOT contain decision branching logic
+        assert 'if decision_type == "block"' not in facade_src
+        assert 'if decision_type == "require_approval"' not in facade_src
+
+    def test_53_facade_has_exact_legacy_signature(self):
+        facade_sig = inspect.signature(_gate())
+        assert list(facade_sig.parameters) == [
+            "thinking_policy", "requested_action", "context"
+        ]
+        assert all(
+            p.default is None for p in facade_sig.parameters.values()
+        )
+
+    def test_54_facade_directly_delegates(self):
+        import aether.action.policy_gate as pg
+        import aether.core.governance as gov
+        # Facade returns exactly what Governance returns
+        policy = {"decision_type": "block", "blocked_reason": "test"}
+        g_result = gov.evaluate_authorization_envelope(thinking_policy=policy)
+        f_result = pg.enforce_policy_gate(thinking_policy=policy)
+        assert g_result == f_result
+        # Check source code contains delegation
+        facade_src = Path(pg.__file__).read_text(encoding="utf-8")
+        assert "evaluate_authorization_envelope" in facade_src
+
+    def test_55_facade_contains_no_decision_branches(self):
+        facade_src = (ROOT / "aether/action/policy_gate.py").read_text(encoding="utf-8")
+        # The facade should not have any if/elif decision logic
+        assert 'if decision_type' not in facade_src
+        assert 'if not thinking_policy' not in facade_src
+
+    def test_56_core_loop_imports_governance_directly(self):
+        loop_src = LOOP.read_text(encoding="utf-8")
+        assert "from aether.core.governance import evaluate_authorization_envelope" in loop_src
+        assert "from aether.action.policy_gate import" not in loop_src
+
+    def test_57_core_loop_passes_risk_evidence_directly(self):
+        loop_src = LOOP.read_text(encoding="utf-8")
+        assert "risk_evidence=risk" in loop_src
+
+    def test_58_core_loop_passes_identity_evidence_directly(self):
+        loop_src = LOOP.read_text(encoding="utf-8")
+        assert "identity_integrity_evidence=identity_status" in loop_src
+
+    def test_59_core_loop_does_not_recompute_risk(self):
+        loop_src = LOOP.read_text(encoding="utf-8")
+        # classify_risk is called once (in Step 6) and its result passed through
+        # The loop should not call classify_risk inside the governance call
+        fn = _function(LOOP, "run_core_chat_loop")
+        calls = _call_names(fn)
+        # classify_risk should appear only in Step 6, not in Step 7c
+        classify_idx = calls.index("classify_risk")
+        gov_idx = calls.index("evaluate_authorization_envelope")
+        assert classify_idx < gov_idx
+
+    def test_60_direct_evidence_does_not_alter_envelope(self):
+        import aether.core.governance as gov
+        policy = {"decision_type": "block", "blocked_reason": "test"}
+        risk = {"risk_level": "high", "action_type": "destructive"}
+        identity = {"status": "intact", "changed": False}
+        base = gov.evaluate_authorization_envelope(thinking_policy=policy)
+        with_evidence = gov.evaluate_authorization_envelope(
+            thinking_policy=policy,
+            risk_evidence=risk,
+            identity_integrity_evidence=identity,
+        )
+        assert base == with_evidence
+
+    def test_61_direct_evidence_absent_from_policy_snapshot(self):
+        import aether.core.governance as gov
+        policy = {"decision_type": "block"}
+        risk = {"risk_level": "high"}
+        result = gov.evaluate_authorization_envelope(
+            thinking_policy=policy,
+            risk_evidence=risk,
+        )
+        assert "risk" not in result["policy_snapshot"]
+        assert "risk_evidence" not in result
+
+    def test_62_direct_evidence_absent_from_warnings_and_reason(self):
+        import aether.core.governance as gov
+        policy = {"decision_type": "block"}
+        result = gov.evaluate_authorization_envelope(
+            thinking_policy=policy,
+            risk_evidence={"risk_level": "high"},
+            identity_integrity_evidence={"status": "changed"},
+        )
+        for val in result.values():
+            if isinstance(val, str):
+                assert "risk_level" not in val
+                assert "integrity" not in val.lower()
+
+    def test_63_facade_governance_exact_equivalence_matrix(self):
+        import aether.core.governance as gov
+        import aether.action.policy_gate as pg
+        cases = [
+            None,
+            {},
+            {"decision_type": "unknown"},
+            {"decision_type": "respond_only", "tool_execution_allowed": False},
+            {"decision_type": "block"},
+            {"decision_type": "block", "blocked_reason": "custom reason"},
+            {"decision_type": "require_approval"},
+            {"decision_type": "respond_only", "tool_execution_allowed": True},
+            {"decision_type": "suggest_tool", "tool_execution_allowed": False},
+        ]
+        for policy in cases:
+            g = gov.evaluate_authorization_envelope(thinking_policy=policy)
+            f = pg.enforce_policy_gate(thinking_policy=policy)
+            assert g == f, f"mismatch for {policy}: {g} != {f}"
+
+    def test_64_input_dictionaries_not_mutated(self):
+        import aether.core.governance as gov
+        policy = {"decision_type": "block", "extra": "kept"}
+        risk = {"risk_level": "high", "extra": "kept"}
+        identity = {"status": "intact", "extra": "kept"}
+        policy_copy = dict(policy)
+        risk_copy = dict(risk)
+        identity_copy = dict(identity)
+        gov.evaluate_authorization_envelope(
+            thinking_policy=policy,
+            risk_evidence=risk,
+            identity_integrity_evidence=identity,
+        )
+        assert policy == policy_copy
+        assert risk == risk_copy
+        assert identity == identity_copy
+
+    def test_65_legacy_synthetic_allow_still_compatible(self):
+        import aether.core.governance as gov
+        result = gov.evaluate_authorization_envelope({
+            "decision_type": "respond_only",
+            "tool_execution_allowed": True,
+        })
+        assert result["decision"] == "allow"
+        assert result["allowed"] is True
+        assert result["tool_execution_allowed"] is True
+        assert result["action_execution_allowed"] is True
+
+    def test_66_fail_closed_cases_unchanged(self):
+        import aether.core.governance as gov
+        missing = gov.evaluate_authorization_envelope(None)
+        malformed = gov.evaluate_authorization_envelope({})
+        assert (missing["decision"], missing["allowed"]) == ("invalid_policy", False)
+        assert (malformed["decision"], malformed["allowed"]) == ("deny", False)
+
+    def test_67_allowed_not_execution_authority(self):
+        import aether.core.governance as gov
+        # Even when allowed=True, tool/action execution is separate
+        result = gov.evaluate_authorization_envelope({
+            "decision_type": "respond_only",
+            "tool_execution_allowed": True,
+        })
+        assert result["allowed"] is True
+        assert result["tool_execution_allowed"] is True
+        assert result["action_execution_allowed"] is True
+        # In production /chat these are always False
+        prod_result = gov.evaluate_authorization_envelope({
+            "decision_type": "respond_only",
+            "tool_execution_allowed": False,
+        })
+        assert prod_result["allowed"] is False
+        assert prod_result["tool_execution_allowed"] is False
+        assert prod_result["action_execution_allowed"] is False
+
+    def test_68_no_executor_calls_added_after_governance(self):
+        fn = _function(LOOP, "run_core_chat_loop")
+        calls = _call_names(fn)
+        gov_idx = calls.index("evaluate_authorization_envelope")
+        after = calls[gov_idx + 1:]
+        for bad in ("execute_tool", "execute_action", "apply_patch_proposal",
+                     "rollback_patch_apply", "collect_evidence"):
+            assert bad not in after
+
+    def test_69_governance_has_no_persistence_or_timeline_calls(self):
+        import aether.core.governance as gov
+        src = Path(gov.__file__).read_text(encoding="utf-8")
+        tree = ast.parse(src)
+        calls = _call_names(tree)
+        for forbidden in ("record_event", "create_approval_record", "write_text",
+                          "add_event", "persist"):
+            assert forbidden not in calls
+
+    def test_70_no_second_decision_implementation(self):
+        definitions = []
+        for path in (ROOT / "aether").rglob("*.py"):
+            for node in ast.walk(_tree(path)):
+                if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                    if node.name == "evaluate_authorization_envelope":
+                        definitions.append(path.relative_to(ROOT).as_posix())
+        assert definitions == ["aether/core/governance.py"]
+
+    def test_71_no_fallback_engine_in_facade(self):
+        facade_src = (ROOT / "aether/action/policy_gate.py").read_text(encoding="utf-8")
+        # No if/else branches that implement decision logic
+        assert 'if decision_type' not in facade_src
+        assert 'if not thinking_policy' not in facade_src
+        assert 'if not thinking_policy.get' not in facade_src
+        # Only delegation
+        assert facade_src.count("return") == 1
