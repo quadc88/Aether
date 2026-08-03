@@ -26,8 +26,18 @@ def test_design_doc_exists():
     assert DOC_PATH.exists()
 
 
-def test_future_service_module_does_not_exist():
-    assert not FUTURE_SERVICE_PATH.exists()
+def test_service_module_exists_with_public_function():
+    assert FUTURE_SERVICE_PATH.exists()
+    tree = ast.parse(FUTURE_SERVICE_PATH.read_text(encoding="utf-8"))
+    functions = [n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef)]
+    names = [f.name for f in functions]
+    assert "handle_observation_intake" in names
+    fn = next(f for f in functions if f.name == "handle_observation_intake")
+    positional = [a.arg for a in fn.args.posonlyargs + fn.args.args]
+    assert positional == ["request", "context"]
+    assert len(fn.args.defaults) == 1
+    assert fn.args.defaults[0] is not None
+    assert ast.literal_eval(fn.args.defaults[0]) is None
 
 
 def test_design_doc_locks_non_execution_boundary():
@@ -286,9 +296,8 @@ def test_api_server_ast_surface_locked():
         assert forbidden_name not in source
 
 
-def test_future_artifacts_absent():
+def test_future_router_and_bridge_artifacts_absent():
     for future_path in (
-        FUTURE_SERVICE_PATH,
         FUTURE_ROUTER_PATH,
         FUTURE_BRIDGE_PATH,
     ):
