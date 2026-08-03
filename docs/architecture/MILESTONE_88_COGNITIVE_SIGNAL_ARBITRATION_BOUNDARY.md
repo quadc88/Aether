@@ -203,7 +203,7 @@ response.
 
 ### Rule 2 — Identity missing or failed → require_approval
 
-**Constitution grounding:** §1.1 (Identity Seed integrity), §1.2 (controlled
+**Constitutional support:** §1.1 (Identity Seed integrity), §1.2 (controlled
 modification), §10 (Human Authority — the user may inspect, edit, delete
 memory; disable tools; approve or deny actions), §10.1 (limits of authority —
 Aether must not silently corrupt identity continuity mechanisms).
@@ -213,11 +213,17 @@ guard cannot verify the seed. Proceeding without human review risks silent
 identity corruption (§10.1) and bypasses the human-approved modification
 process (§1.2). Human inspection is required before any action.
 
-**Category: A (Constitutional Hard Constraint).**
+**Category: B (Operational Hard Constraint with constitutional support).**
+
+The Constitution establishes identity-integrity protection and Human Authority
+over identity matters, but does not directly mandate the specific
+`require_approval` output for the missing-or-failed condition. The
+`require_approval` result is an operational implementation choice within the
+constitutional boundary.
 
 ### Rule 4 — Secret terms detected → require_approval
 
-**Constitution grounding:** §6.1 (permission levels — write or execute tools
+**Constitutional support:** §6.1 (permission levels — write or execute tools
 require user permission unless explicitly pre-approved; sensitive terms like
 passwords, API keys, tokens must not be exposed), §10.1 (limits of authority
 — Aether must not conceal consequential actions or bypass safety mechanisms).
@@ -228,7 +234,12 @@ handling without explicit human review. The Constitution requires user
 permission for write/execute actions and prohibits exposure of sensitive
 values. Requiring approval is the minimum safe response.
 
-**Category: A (Constitutional Hard Constraint).**
+**Category: B (Operational Hard Constraint with constitutional support).**
+
+The Constitution establishes permission levels for tools and privacy
+boundaries, but does not directly mandate the specific `require_approval`
+output for secret-term detection. The `require_approval` result is an
+operational implementation choice within the constitutional boundary.
 
 ### Rule 5 — High risk → require_approval
 
@@ -324,9 +335,9 @@ a Governance constraint.
 | Order | Current condition | Current output | Current owner | Architectural category | Basis | Can optimization override it? | Future target owner | Runtime changed by M88A? |
 |---|---|---|---|---|---|---|---|---|
 | 1 | identity_status == "changed" | block, required_user_confirmation=True, tool_execution_allowed=False | aether/thinking/policy.py | Constitutional Hard Constraint | Constitution §1.1, §1.2, §9.1 | No | Core Governance (future, if authorized) | No |
-| 2 | identity_status in ("missing", "failed") | require_approval, required_user_confirmation=True, tool_execution_allowed=False | aether/thinking/policy.py | Constitutional Hard Constraint | Constitution §1.1, §1.2, §10, §10.1 | No | Core Governance (future, if authorized) | No |
+| 2 | identity_status in ("missing", "failed") | require_approval, required_user_confirmation=True, tool_execution_allowed=False | aether/thinking/policy.py | Operational Hard Constraint | Constitution §1.1, §1.2, §10, §10.1 (support; not direct mandate) | No | Core Governance (future, if authorized) | No |
 | 3 | empty/whitespace text | ask_clarification, required_user_confirmation=False, tool_execution_allowed=False | aether/thinking/policy.py | Thinking Workflow / Default Rule | Workflow routing | N/A (workflow) | Thinking (unchanged) | No |
-| 4 | secret terms detected | require_approval, required_user_confirmation=True, tool_execution_allowed=False | aether/thinking/policy.py | Constitutional Hard Constraint | Constitution §6.1, §10.1 | No | Core Governance (future, if authorized) | No |
+| 4 | secret terms detected | require_approval, required_user_confirmation=True, tool_execution_allowed=False | aether/thinking/policy.py | Operational Hard Constraint | Constitution §6.1, §10.1 (support; not direct mandate) | No | Core Governance (future, if authorized) | No |
 | 5 | risk_level == "high" | require_approval, required_user_confirmation=True, tool_execution_allowed=False | aether/thinking/policy.py | Constitutional Hard Constraint | Constitution §5.1, §8.2, §11.1 | No | Core Governance (future, if authorized) | No |
 | 6 | risk_level == "medium" and suggested_tool is not None | require_approval, required_user_confirmation=True, tool_execution_allowed=False | aether/thinking/policy.py | Operational Hard Constraint | Constitution §11.1, §8.2 (operational interpretation) | No | Core Governance (future, if authorized) | No |
 | 7 | risk_level == "low" and suggested_tool is not None | suggest_tool, required_user_confirmation=False, tool_execution_allowed=False | aether/thinking/policy.py | Soft Decision Signal | Operational preference within allowed space | Yes (within hard constraints) | Thinking (unchanged) | No |
@@ -334,8 +345,8 @@ a Governance constraint.
 | 9 | (default) | respond_only, required_user_confirmation=False, tool_execution_allowed=False | aether/thinking/policy.py | Thinking Workflow / Default Rule | Default response mode | N/A (workflow) | Thinking (unchanged) | No |
 
 Summary counts:
-- Constitutional Hard Constraints (A): 4 rules (1, 2, 4, 5)
-- Operational Hard Constraints (B): 1 rule (6)
+- Constitutional Hard Constraints (A): 2 rules (1, 5)
+- Operational Hard Constraints (B): 3 rules (2, 4, 6)
 - Soft Decision Signals (C): 1 rule (7)
 - Thinking Workflow / Default Rules (D): 3 rules (3, 8, 9)
 - Total: 9 rules
@@ -397,9 +408,10 @@ The current runtime behavior is unchanged by Milestone 88A:
 
 The record may identify future possibilities such as:
 
-- Relocating verified Constitutional Hard Constraints (Rules 1, 2, 4, 5) from
+- Relocating verified Constitutional Hard Constraints (Rules 1, 5) from
   Thinking into the Governance envelope as hard-constraint enforcement.
-- Relocating the Operational Hard Constraint (Rule 6) into Governance.
+- Relocating verified Operational Hard Constraints (Rules 2, 4, 6) from
+  Thinking into the Governance envelope.
 - Retaining Soft Decision Signals (Rule 7) and Workflow/Default Rules (Rules
   3, 8, 9) in Thinking.
 - Allowing Governance to receive direct risk and Identity evidence for a
@@ -523,9 +535,11 @@ Finalization sequence. Milestone 89 does not start automatically.
 
 The following behavioral work is deferred and NOT authorized by this record:
 
-- Relocating Constitutional Hard Constraints (Rules 1, 2, 4, 5) from Thinking
+- Relocating verified Constitutional Hard Constraints (Rules 1, 5) from
+  Thinking into the Governance envelope as hard-constraint enforcement.
   into Governance as hard-constraint enforcement.
-- Relocating the Operational Hard Constraint (Rule 6) into Governance.
+- Relocating verified Operational Hard Constraints (Rules 2, 4, 6) from
+  Thinking into the Governance envelope.
 - Activating `risk_evidence` or `identity_integrity_evidence` to alter
   decision results.
 - Adding new allow or deny paths.

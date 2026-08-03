@@ -274,10 +274,10 @@ class TestRuleInventoryAndOutputs:
 
     def test_13_exact_architectural_classification_table(self):
         text = _record()
-        # Constitutional Hard Constraints: 4 rules (1, 2, 4, 5)
-        assert text.count("Constitutional Hard Constraint") >= 4
-        # Operational Hard Constraint: 1 rule (6)
-        assert "Operational Hard Constraint" in text
+        # Constitutional Hard Constraints: 2 rules (1, 5)
+        assert text.count("Constitutional Hard Constraint") >= 2
+        # Operational Hard Constraint: 3 rules (2, 4, 6)
+        assert text.count("Operational Hard Constraint") >= 3
         # Soft Decision Signal: 1 rule (7)
         assert "Soft Decision Signal" in text
         # Thinking Workflow / Default Rule: 3 rules (3, 8, 9)
@@ -575,8 +575,8 @@ class TestClassificationCorrectness:
                     if cat in cat_cell:
                         cat_counts[cat] += 1
                         break
-        assert cat_counts["Constitutional Hard Constraint"] == 4, f"Expected 4, got {cat_counts['Constitutional Hard Constraint']}"
-        assert cat_counts["Operational Hard Constraint"] == 1, f"Expected 1, got {cat_counts['Operational Hard Constraint']}"
+        assert cat_counts["Constitutional Hard Constraint"] == 2, f"Expected 2, got {cat_counts['Constitutional Hard Constraint']}"
+        assert cat_counts["Operational Hard Constraint"] == 3, f"Expected 3, got {cat_counts['Operational Hard Constraint']}"
         assert cat_counts["Soft Decision Signal"] == 1, f"Expected 1, got {cat_counts['Soft Decision Signal']}"
         assert cat_counts["Thinking Workflow / Default Rule"] == 3, f"Expected 3, got {cat_counts['Thinking Workflow / Default Rule']}"
 
@@ -593,11 +593,14 @@ class TestClassificationCorrectness:
 
     def test_50_constitutional_rules_have_article_citations(self):
         text = _record()
-        # Rules 1, 2, 4, 5 must have Constitution section citations
+        # Rules 1 and 5 are Constitutional Hard Constraints with direct grounding
         assert "§1.1" in text
         assert "§1.2" in text
-        assert "§6.1" in text
         assert "§5.1" in text
-        assert "§10" in text or "§10.1" in text
         assert "§8.2" in text
         assert "§11.1" in text
+        # Rules 2 and 4 are Operational Hard Constraints with constitutional support
+        # (they cite §10, §10.1, §6.1 but are not direct mandates)
+        assert "§10" in text
+        assert "§10.1" in text
+        assert "§6.1" in text
