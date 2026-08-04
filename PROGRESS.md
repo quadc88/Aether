@@ -1,11 +1,11 @@
 # Aether Project Progress Ledger
 
-**Last updated:** Milestone 89B-R2 — Reconciliation Evidence Correction and Runtime-Stability Record (COMPLETE locally; not finalized; not committed; not tagged; not pushed; Milestone 89 remains open)
+**Last updated:** Milestone 89C — Identity Hard-Constraint Governance Migration Finalization and Closure (FINALIZED; committed; tagged; pushed; Milestone 89 closed)
 **Aether version:** 0.2.0  
-**Current completed local milestone:** Milestone 89B-R2 — Reconciliation Evidence Correction and Runtime-Stability Record (COMPLETE locally; not finalized; not committed; not tagged; not pushed; Milestone 89 remains open)
-**Current active milestone/module:** None; Milestone 89B-R2 complete locally; Milestone 89 remains open (not finalized); Milestone 90 not started
+**Current completed local milestone:** Milestone 89C — Identity Hard-Constraint Governance Migration Finalization and Closure (FINALIZED; committed; tagged; pushed; Milestone 89 closed)
+**Current active milestone/module:** None; Milestone 89 CLOSED; Milestone 90 not started
 **Current status:** Milestone 89B-R Supersession-Matrix Reconciliation and Build-Record Correction COMPLETE locally; runtime implementation unchanged during reconciliation; production files remain exactly three and byte-identical (aether/core/governance.py, aether/core/loop.py, aether/thinking/policy.py); repository changed paths exactly nine; corrected authoritative supersession matrix: M87 2 amendments (test_60, test_62), M88 7 amendments (test_07, test_10, test_11, test_12, test_29, test_30, test_45), Thinking 5 full + 1 partial (6 tests), total 15 existing tests touched; M88 Tests 07, 10, and 45 are necessary EXPLICIT_89B_SUPERSESSION_AMENDMENT_REQUIRED active-contract supersessions — the independent audit's sole failure was that the original four-test M88 matrix omitted them (an authorization-matrix/documentation defect, not a runtime semantic or test failure); both independent-audit warnings corrected (summary changed-path count 10 -> 9; M88 amendment count 4 -> 7); M88 Tests 08 and 09 remain unchanged historical locks; Milestone 88 remains historically valid as the classification boundary that first inventoried all nine rules; Milestone 89 active migration tests: 150; exact established Governance/policy/core gate: 592 passed; supplemental expanded Governance-related run: 597 passed (supplemental expanded run only); exact established Architecture/Observation gate: 240 passed; supplemental expanded Architecture/Observation run: 534 passed (supplemental expanded run only); PROGRESS consistency: 55 passed; exact combined suite: 362 passed; full suite: 2413/2413 passed, 0 failures, 0 errors, 9 existing warnings; OpenAPI 304 paths / 108 schemas; api_server 8 direct @app routes / 23 include_router / zero direct /action/*; Constitution SHA-256 unchanged at 0055748f683bf753b3471a0317b68677752c312d4030b12fbc71684fd3af3ee1; Architecture v0.3.0 unchanged; canonical drift 0; tracked private/runtime empty; docs/history clean; git diff --check clean; no persistence added; no execution enabled; Rules 1 and 2 remain migrated to Core Governance; Rules 3 through 9 remain preserved in Thinking; Identity evidence operative only in Governance; risk evidence non-operative; T3 trace remains implemented; not committed; not tagged; not pushed; not finalized; Milestone 89: OPEN (89B-R complete locally); Milestone 90: not started; next step: human/project-manager review and independent confirmation of 89B-R
-**Next milestone:** Human/project-manager review and independent confirmation of Milestone 89B-R2; after explicit acceptance, finalize and close Milestone 89; Milestone 90 not started
+**Next milestone:** Human/project-manager planning for Milestone 90 only after Milestone 89 finalization is accepted; Milestone 90 not started
 **Test baseline:** 2413/2413 passed, 0 failures, 0 errors (2401 pre-89B baseline + 12 new/strengthened Milestone 89B boundary tests; 9 existing warnings, no new warnings)
 **OpenAPI baseline:** 304 paths / 108 schemas
 **Latest local tag:** `milestone-88A-cognitive-signal-arbitration-classification` at `227d615` (Milestone 88A implementation commit); `milestone-87B-core-governance-authorization-extraction` at `2ecc23e`; `milestone-87A-core-governance-authorization-boundary` at `589e281`; `milestone-86A-architecture-evolution` at `4e82f6a`; `milestone-85A-observe-verify-lifecycle-boundary-record` at `b5bad54`
@@ -513,7 +513,7 @@ Created a structured refactor plan to thin `aether/interface/api_server.py` acco
 - No runtime/private data modified
 - No commits made
 
-**Next milestone:** Human/project-manager review and independent confirmation of Milestone 89B-R2; after explicit acceptance, finalize and close Milestone 89; Milestone 90 not started
+**Next milestone:** Human/project-manager planning for Milestone 90 only after Milestone 89 finalization is accepted; Milestone 90 not started
 
 **80B has NOT been started.**
 
@@ -3807,3 +3807,48 @@ Extracted 18 endpoint handlers (6 proposal-review-console, 6 proposal-revision-c
     - committed: no; tagged: no; pushed: no; finalized: no
     - Milestone 87: CLOSED; Milestone 88: CLOSED (with correction); Milestone 89: OPEN (89B-R2 complete locally); Milestone 90: not started
     - Next: human/project-manager review and independent confirmation of Milestone 89B-R2; after explicit acceptance, finalize and close Milestone 89
+
+  - 89B — Identity Hard-Constraint Runtime Extraction (FINALIZED; committed; tagged; pushed; Milestone 89 CLOSED)
+    - Implementation commit: 6e5c7b8474314d21723a08c1655843548eb7d65e (message "Migrate identity hard constraints to core governance")
+    - Implementation tag: milestone-89B-identity-hard-constraint-governance-migration at 6e5c7b8474314d21723a08c1655843548eb7d65e (lightweight tag)
+    - Remote tag confirmed via ls-remote
+    - Production files committed: aether/core/governance.py, aether/core/loop.py, aether/thinking/policy.py
+    - Corrected authoritative supersession matrix (final): M87 (2): test_60, test_62; M88 (7): test_07, test_10, test_11, test_12, test_29, test_30, test_45; Thinking (5 full + 1 partial): TestIdentityChanged::test_block_on_identity_changed, TestIdentityChanged::test_block_even_with_tool_and_medium_risk, TestIdentityMissingOrFailed::test_require_approval_when_missing, TestIdentityMissingOrFailed::test_require_approval_when_failed, TestConfidenceLevels::test_identity_issues_have_high_confidence, TestHardRules::test_tool_execution_always_false (partial, 18 of 30 cases)
+    - Total existing tests touched: 15
+    - Original M88 authorized matrix: tests 11, 12, 29, 30; tests 08, 09 unchanged historical locks; added necessary supersessions: tests 07, 10, 45; final M88 matrix: 07, 10, 11, 12, 29, 30, 45
+    - Rules 1 and 2 migrated to Core Governance; Rules 3 through 9 preserved in Thinking
+    - Core Governance sole authoritative evaluator of Identity Rules 1 and 2
+    - Identity evidence operative only for Governance Rules 1 and 2
+    - Risk evidence remains non-operative
+    - T3 Truthful Raw Thinking Proposal Trace implemented
+    - External decision, approval, response shape, and execution flags preserved
+    - Identity-triggered Thinking-stage diagnostic semantics intentionally changed
+    - Core Coordination routing: raw_thinking_policy -> authorization_envelope -> effective_thinking_policy
+    - Exact 150-test boundary contract lock (17 classes)
+    - Validation: M89 150 passed; M88 50 passed; M87 76 passed; Governance/policy/core 592 passed; architecture/Observation 240 passed; PROGRESS consistency 55 passed; combined 362 passed; full suite 2413/2413 passed, 0 failures, 0 errors, 9 existing warnings; OpenAPI 304/108; api_server 8/23/0; Constitution SHA unchanged; Architecture v0.3.0 unchanged; canonical drift 0; tracked private/runtime empty; docs/history clean; git diff --check clean
+    - committed: yes (6e5c7b8); tagged: yes (milestone-89B-identity-hard-constraint-governance-migration); pushed: yes (origin/main and remote tag confirmed)
+    - Milestone 87: CLOSED; Milestone 88: CLOSED (with correction); Milestone 89: CLOSED (89B finalized)
+    - Next: human/project-manager planning for Milestone 90
+
+  - 89B-R — Supersession-Matrix Reconciliation and Build-Record Correction (COMPLETE locally; not finalized; not committed; not tagged; not pushed)
+    - Task: reconcile independent audit failure (omitted three necessary M88 supersession tests) and correct Build records
+    - Original four-test M88 authorization matrix: tests 11, 12, 29, 30
+    - Three necessary active-contract supersessions added: tests 07, 10, 45
+    - Final M88 matrix: 07, 10, 11, 12, 29, 30, 45 (seven tests)
+    - Both independent-audit warnings corrected: summary changed-path count 10 -> 9; M88 amendment count 4 -> 7
+    - Repository changed paths: exactly 9
+    - Production files byte-identical during reconciliation
+    - Validation: M89 150 passed; M88 50 passed; M87 76 passed; Governance/policy/core 592 passed; architecture/Observation 240 passed; PROGRESS consistency 55 passed; combined 362 passed; full suite 2413/2413 passed
+    - committed: no; tagged: no; pushed: no; finalized: no
+
+  - 89B-R2 — Reconciliation Evidence Correction and Runtime-Stability Record (COMPLETE locally; not finalized; not committed; not tagged; not pushed)
+    - Task: correct three remaining record defects from 89B-R; no runtime changes; establish R2 runtime-stability record
+    - Original M88 authorization matrix corrected from misstated (08, 09, 29, 30) to actual (11, 12, 29, 30)
+    - HEAD baseline hashes distinguished from pre-89B-R working-tree hashes
+    - Pre-89B-R current-working-tree hashes: NOT recovered from retained evidence
+    - Historical 89B-R runtime byte stability: not independently provable retrospectively
+    - R2 start hashes == R2 end hashes: proven (governance.py 182fa6a0..., loop.py 6a62b53a..., policy.py 047c202b...)
+    - Milestone 89 test strengthened: test_61 now verifies original matrix reference and tests 08/09 preservation
+    - Exact Thinking amendment names corrected to Class::test_name format
+    - Validation: all gates pass; full suite 2413/2413 passed; R2 runtime byte stability proven
+    - committed: no; tagged: no; pushed: no; finalized: no
