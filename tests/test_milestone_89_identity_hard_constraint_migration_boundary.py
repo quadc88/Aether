@@ -641,7 +641,7 @@ class TestNoProductionChanges:
     def test_55_only_authorized_production_modules_changed(self):
         import subprocess
         result = subprocess.run(
-            ["git", "diff", "--name-only", "--", "aether/"],
+            ["git", "diff", "943b442", "HEAD", "--name-only", "--", "aether/"],
             capture_output=True, text=True, cwd=str(ROOT),
         )
         assert result.stdout.splitlines() == [
@@ -653,7 +653,7 @@ class TestNoProductionChanges:
     def test_56_no_finalized_record_changed(self):
         import subprocess
         result = subprocess.run(
-            ["git", "diff", "--",
+            ["git", "diff", "943b442", "HEAD", "--",
              "docs/architecture/MILESTONE_87_CORE_GOVERNANCE_AUTHORIZATION_BOUNDARY.md",
              "docs/architecture/MILESTONE_88_COGNITIVE_SIGNAL_ARBITRATION_BOUNDARY.md"],
             capture_output=True, text=True, cwd=str(ROOT),
@@ -1043,7 +1043,7 @@ class TestReconciliationAccounting:
         """Verify 89B changed exactly the three authorized production files."""
         import subprocess
         result = subprocess.run(
-            ["git", "diff", "--name-only", "--", "aether/"],
+            ["git", "diff", "943b442", "HEAD", "--name-only", "--", "aether/"],
             capture_output=True, text=True, cwd=str(ROOT),
         )
         assert result.stdout.splitlines() == [
@@ -1055,7 +1055,7 @@ class TestReconciliationAccounting:
     def test_77_m87_m88_records_unchanged_tests_amended_only_as_authorized(self):
         import subprocess
         records = subprocess.run(
-            ["git", "diff", "--",
+            ["git", "diff", "943b442", "HEAD", "--",
              "docs/architecture/MILESTONE_87_CORE_GOVERNANCE_AUTHORIZATION_BOUNDARY.md",
              "docs/architecture/MILESTONE_88_COGNITIVE_SIGNAL_ARBITRATION_BOUNDARY.md"],
             capture_output=True, text=True, cwd=str(ROOT),
@@ -1298,7 +1298,7 @@ class TestR2ContractCorrections:
     def test_109_only_authorized_production_change_during_r2(self):
         import subprocess
         result = subprocess.run(
-            ["git", "diff", "--name-only", "--", "aether/"],
+            ["git", "diff", "943b442", "HEAD", "--name-only", "--", "aether/"],
             capture_output=True, text=True, cwd=str(ROOT),
         )
         assert result.stdout.splitlines() == [
@@ -1310,7 +1310,7 @@ class TestR2ContractCorrections:
     def test_110_m87_m88_records_unchanged_tests_amended_only_as_authorized(self):
         import subprocess
         records = subprocess.run(
-            ["git", "diff", "--",
+            ["git", "diff", "943b442", "HEAD", "--",
              "docs/architecture/MILESTONE_87_CORE_GOVERNANCE_AUTHORIZATION_BOUNDARY.md",
              "docs/architecture/MILESTONE_88_COGNITIVE_SIGNAL_ARBITRATION_BOUNDARY.md"],
             capture_output=True, text=True, cwd=str(ROOT),
@@ -1527,7 +1527,7 @@ class TestR3FinalLock:
     def test_137_only_authorized_production_change_during_r3(self):
         import subprocess
         result = subprocess.run(
-            ["git", "diff", "--name-only", "--", "aether/"],
+            ["git", "diff", "943b442", "HEAD", "--name-only", "--", "aether/"],
             capture_output=True, text=True, cwd=str(ROOT),
         )
         assert result.stdout.splitlines() == [
@@ -1539,7 +1539,7 @@ class TestR3FinalLock:
     def test_138_m87_m88_records_unchanged_tests_amended_only_as_authorized(self):
         import subprocess
         records = subprocess.run(
-            ["git", "diff", "--",
+            ["git", "diff", "943b442", "HEAD", "--",
              "docs/architecture/MILESTONE_87_CORE_GOVERNANCE_AUTHORIZATION_BOUNDARY.md",
              "docs/architecture/MILESTONE_88_COGNITIVE_SIGNAL_ARBITRATION_BOUNDARY.md"],
             capture_output=True, text=True, cwd=str(ROOT),
