@@ -1,11 +1,11 @@
 # Aether Project Progress Ledger
 
-**Last updated:** Milestone 89C-R — Post-Finalization History Preservation and Closure-Record Correction (COMPLETE; committed; tagged; pushed; Milestone 89 CLOSED)
+**Last updated:** Milestone 89C-R2 — Final Closure-Record Completion (COMPLETE; committed; tagged; pushed; Milestone 89 CLOSED)
 **Aether version:** 0.2.0  
-**Current completed local milestone:** Milestone 89C-R — Post-Finalization History Preservation and Closure-Record Correction (COMPLETE; committed; tagged; pushed; Milestone 89 CLOSED)
-**Current active milestone/module:** None; Milestone 89 CLOSED; Milestone 90 not started
-**Current status:** Milestone 89B-R Supersession-Matrix Reconciliation and Build-Record Correction COMPLETE locally; runtime implementation unchanged during reconciliation; production files remain exactly three and byte-identical (aether/core/governance.py, aether/core/loop.py, aether/thinking/policy.py); repository changed paths exactly nine; corrected authoritative supersession matrix: M87 2 amendments (test_60, test_62), M88 7 amendments (test_07, test_10, test_11, test_12, test_29, test_30, test_45), Thinking 5 full + 1 partial (6 tests), total 15 existing tests touched; M88 Tests 07, 10, and 45 are necessary EXPLICIT_89B_SUPERSESSION_AMENDMENT_REQUIRED active-contract supersessions — the independent audit's sole failure was that the original four-test M88 matrix omitted them (an authorization-matrix/documentation defect, not a runtime semantic or test failure); both independent-audit warnings corrected (summary changed-path count 10 -> 9; M88 amendment count 4 -> 7); M88 Tests 08 and 09 remain unchanged historical locks; Milestone 88 remains historically valid as the classification boundary that first inventoried all nine rules; Milestone 89 active migration tests: 150; exact established Governance/policy/core gate: 592 passed; supplemental expanded Governance-related run: 597 passed (supplemental expanded run only); exact established Architecture/Observation gate: 240 passed; supplemental expanded Architecture/Observation run: 534 passed (supplemental expanded run only); PROGRESS consistency: 55 passed; exact combined suite: 362 passed; full suite: 2413/2413 passed, 0 failures, 0 errors, 9 existing warnings; OpenAPI 304 paths / 108 schemas; api_server 8 direct @app routes / 23 include_router / zero direct /action/*; Constitution SHA-256 unchanged at 0055748f683bf753b3471a0317b68677752c312d4030b12fbc71684fd3af3ee1; Architecture v0.3.0 unchanged; canonical drift 0; tracked private/runtime empty; docs/history clean; git diff --check clean; no persistence added; no execution enabled; Rules 1 and 2 remain migrated to Core Governance; Rules 3 through 9 remain preserved in Thinking; Identity evidence operative only in Governance; risk evidence non-operative; T3 trace remains implemented; not committed; not tagged; not pushed; not finalized; Milestone 89: OPEN (89B-R complete locally); Milestone 90: not started; next step: human/project-manager review and independent confirmation of 89B-R
-**Next milestone:** Human/project-manager review of Milestone 89C-R; after acceptance, Milestone 90 planning may begin; Milestone 90 not started
+**Current completed local milestone:** Milestone 89C-R2 — Final Closure-Record Completion (COMPLETE; committed; tagged; pushed; Milestone 89 CLOSED)
+**Current active milestone/module:** None; Milestone 89 CLOSED (final closure records completed by 89C-R2); Milestone 90 not started
+**Current status:** Milestone 89B-R Supersession-Matrix Reconciliation and Build-Record Correction COMPLETE locally; runtime implementation unchanged during reconciliation; production files remain exactly three and byte-identical (aether/core/governance.py, aether/core/loop.py, aether/thinking/policy.py); repository changed paths exactly nine; corrected authoritative supersession matrix: M87 2 amendments (test_60, test_62), M88 7 amendments (test_07, test_10, test_11, test_12, test_29, test_30, test_45), Thinking 5 full + 1 partial (6 tests), total 15 existing tests touched; M88 Tests 07, 10, and 45 are necessary EXPLICIT_89B_SUPERSESSION_AMENDMENT_REQUIRED active-contract supersessions — the independent audit's sole failure was that the original four-test M88 matrix omitted them (an authorization-matrix/documentation defect, not a runtime semantic or test failure); both independent-audit warnings corrected (summary changed-path count 10 -> 9; M88 amendment count 4 -> 7); M88 Tests 08 and 09 remain unchanged historical locks; Milestone 88 remains historically valid as the classification boundary that first inventoried all nine rules; Milestone 89 active migration tests: 150; exact established Governance/policy/core gate: 592 passed; supplemental expanded Governance-related run: 597 passed (supplemental expanded run only); exact established Architecture/Observation gate: 240 passed; supplemental expanded Architecture/Observation run: 534 passed (supplemental expanded run only); PROGRESS consistency: 55 passed; exact combined suite: 362 passed; full suite: 2413/2413 passed, 0 failures, 0 errors, 9 existing warnings; OpenAPI 304 paths / 108 schemas; api_server 8 direct @app routes / 23 include_router / zero direct /action/*; Constitution SHA-256 unchanged at 0055748f683bf753b3471a0317b68677752c312d4030b12fbc71684fd3af3ee1; Architecture v0.3.0 unchanged; canonical drift 0; tracked private/runtime empty; docs/history clean; git diff --check clean; no persistence added; no execution enabled; Rules 1 and 2 remain migrated to Core Governance; Rules 3 through 9 remain preserved in Thinking; Identity evidence operative only in Governance; risk evidence non-operative; T3 trace remains implemented; committed; tagged; pushed; finalized by 89C and closure records completed by 89C-R and 89C-R2; Milestone 89: CLOSED (final closure records completed by 89C-R2); Milestone 90: not started; next step: human/project-manager review and independent audit of Milestone 89C-R2
+**Next milestone:** Human/project-manager review and independent audit of Milestone 89C-R2; after explicit acceptance of the closure records, Milestone 90 planning may begin; Milestone 90 not started
 **Test baseline:** 2413/2413 passed, 0 failures, 0 errors (2401 pre-89B baseline + 12 new/strengthened Milestone 89B boundary tests; 9 existing warnings, no new warnings)
 **OpenAPI baseline:** 304 paths / 108 schemas
 **Latest local tag:** `milestone-88A-cognitive-signal-arbitration-classification` at `227d615` (Milestone 88A implementation commit); `milestone-87B-core-governance-authorization-extraction` at `2ecc23e`; `milestone-87A-core-governance-authorization-boundary` at `589e281`; `milestone-86A-architecture-evolution` at `4e82f6a`; `milestone-85A-observe-verify-lifecycle-boundary-record` at `b5bad54`
@@ -3903,3 +3903,35 @@ Extracted 18 endpoint handlers (6 proposal-review-console, 6 proposal-revision-c
     - committed: yes; tagged: yes (milestone-89C-finalization-record-correction); pushed: yes
     - Milestone 87: CLOSED; Milestone 88: CLOSED (with correction); Milestone 89: CLOSED
     - Next: human/project-manager review of Milestone 89C-R
+
+  - 89C-R2 — Final Closure-Record Completion (COMPLETE; committed; tagged; pushed; Milestone 89 CLOSED)
+    - Task: complete the Milestone 89 closure records without modifying runtime, tests, or existing history; exactly one documentation commit and one final-record tag
+    - Implementation commit: 6e5c7b8474314d21723a08c1655843548eb7d65e
+    - Original finalization ledger: 05141f7ffea028ea8e749313a1de1cb2f046b5db
+    - Post-finalization test-correction commits:
+      - e025f5ede85aebefb2593be6ea850b1f808312ee — Fix M89/M88 tests for post-finalization state detection
+      - 9220822d45bd9dd3a1dccf0b9f8ce6f539f0912c — Fix _changed_paths for post-finalization state
+      - e17df6200704fc8bb691c380e453efecbacfb2cc — Fix _amended_test_sets to compare against implementation commit
+      - c4371eb6a7db3d014e8b6aacf42bcdf0393be459 — Fix _amended_test_sets to compare implementation vs pre-implementation
+    - Record-correction commit: ab5f790c25b7ccc3e9dee49c551a067cda655db1
+    - Previous final closure ledger: 56d15f843f46ac3d0745477ed608f93da6cd5ff1
+    - Implementation tag and target: milestone-89B-identity-hard-constraint-governance-migration at 6e5c7b8474314d21723a08c1655843548eb7d65e
+    - Correction tag and target: milestone-89C-finalization-record-correction at ab5f790c25b7ccc3e9dee49c551a067cda655db1
+    - All relevant pushes: confirmed
+    - Original expected commits after baseline: 2
+    - Actual commits before 89C-R: 6
+    - Actual commits before 89C-R2: 8
+    - Process deviation: retained transparently
+    - Final closure-record completion: this commit; exact hash recorded in the external Milestone 89C-R2 summary
+    - Tests: 150 / 50 / 76 / 592 / 240 / 55 / 362 / 2413
+    - OpenAPI: 304 / 108
+    - api_server: 8 / 23 / 0
+    - Core Governance sole authority: yes
+    - Risk evidence operative: no
+    - T3 trace: implemented
+    - Persistence added: no
+    - Execution enabled: no
+    - Validation: M89 150 passed; M88 50 passed; M87 76 passed; Governance/policy/core 592 passed; architecture/Observation 240 passed; PROGRESS consistency 55 passed; combined 362 passed; full suite 2413/2413 passed, 0 failures, 0 errors, 9 existing warnings; OpenAPI 304/108; api_server 8/23/0; Constitution SHA unchanged; Architecture v0.3.0 unchanged; runtime and test byte stability proven
+    - Milestone 89: CLOSED
+    - Milestone 90: not started
+    - Next: human/project-manager review and independent audit of Milestone 89C-R2

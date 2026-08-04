@@ -1488,9 +1488,45 @@ gates remain valid.
 
 ### 24.3 Milestone 89C-R Record Correction
 
-Milestone 89C-R transparently corrects the closure records to reflect the
-actual immutable six-commit history. No history is rewritten. Runtime and
-test files remain byte-identical.
+Milestone 89C-R transparently corrected the closure records to reflect the
+actual immutable six-commit history. No history was rewritten. Runtime and
+test files remained byte-identical.
 
-Milestone 89: CLOSED
+Finalization record-correction commit: `ab5f790c25b7ccc3e9dee49c551a067cda655db1`
+Finalization record-correction tag: `milestone-89C-finalization-record-correction`
+Correction tag target: `ab5f790c25b7ccc3e9dee49c551a067cda655db1`
+Correction push: confirmed on origin/main
+
+The independent 89C-R audit confirmed 47 passing checks. Three closure-record
+defects remained and are completed by Milestone 89C-R2 (Section 24.4).
+
+### 24.4 Milestone 89C-R2 Final Closure-Record Completion
+
+Previous final closure ledger: `56d15f843f46ac3d0745477ed608f93da6cd5ff1`
+
+Complete actual finalization and correction history (all confirmed, all
+preserved exactly):
+
+- implementation commit `6e5c7b8474314d21723a08c1655843548eb7d65e`;
+- original finalization ledger `05141f7ffea028ea8e749313a1de1cb2f046b5db`;
+- post-finalization test-correction chain `e025f5ede85aebefb2593be6ea850b1f808312ee`,
+  `9220822d45bd9dd3a1dccf0b9f8ce6f539f0912c`,
+  `e17df6200704fc8bb691c380e453efecbacfb2cc`,
+  `c4371eb6a7db3d014e8b6aacf42bcdf0393be459`;
+- record-correction commit `ab5f790c25b7ccc3e9dee49c551a067cda655db1`;
+- previous final closure ledger `56d15f843f46ac3d0745477ed608f93da6cd5ff1`.
+
+All relevant pushes confirmed on origin/main.
+
+Historical process deviation (retained transparently):
+
+- the planned two-commit structure was not met;
+- the actual history contained six commits before 89C-R;
+- reset and aborted rebase attempts occurred;
+- existing pushed history was preserved and not rewritten.
+
+Final closure-record completion: this commit; exact hash recorded in the
+external Milestone 89C-R2 summary
+
+Milestone 89: closed
 Milestone 90: not started
