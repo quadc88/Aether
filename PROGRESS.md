@@ -1,15 +1,21 @@
 # Aether Project Progress Ledger
 
-**Last updated:** Milestone 89C-R2 — Final Closure-Record Completion (COMPLETE; committed; tagged; pushed; Milestone 89 CLOSED)
+**Last updated:** Milestone 90B — Progress Ledger Canonicalization Finalization (COMPLETE; finalized by this commit; closure tag and push verified in the external finalization summary; Milestone 90 CLOSED)
 **Aether version:** 0.2.0  
-**Current completed local milestone:** Milestone 89C-R2 — Final Closure-Record Completion (COMPLETE; committed; tagged; pushed; Milestone 89 CLOSED)
-**Current active milestone/module:** None; Milestone 89 CLOSED (final closure records completed by 89C-R2); Milestone 90 not started
-**Current status:** Milestone 89B-R Supersession-Matrix Reconciliation and Build-Record Correction COMPLETE locally; runtime implementation unchanged during reconciliation; production files remain exactly three and byte-identical (aether/core/governance.py, aether/core/loop.py, aether/thinking/policy.py); repository changed paths exactly nine; corrected authoritative supersession matrix: M87 2 amendments (test_60, test_62), M88 7 amendments (test_07, test_10, test_11, test_12, test_29, test_30, test_45), Thinking 5 full + 1 partial (6 tests), total 15 existing tests touched; M88 Tests 07, 10, and 45 are necessary EXPLICIT_89B_SUPERSESSION_AMENDMENT_REQUIRED active-contract supersessions — the independent audit's sole failure was that the original four-test M88 matrix omitted them (an authorization-matrix/documentation defect, not a runtime semantic or test failure); both independent-audit warnings corrected (summary changed-path count 10 -> 9; M88 amendment count 4 -> 7); M88 Tests 08 and 09 remain unchanged historical locks; Milestone 88 remains historically valid as the classification boundary that first inventoried all nine rules; Milestone 89 active migration tests: 150; exact established Governance/policy/core gate: 592 passed; supplemental expanded Governance-related run: 597 passed (supplemental expanded run only); exact established Architecture/Observation gate: 240 passed; supplemental expanded Architecture/Observation run: 534 passed (supplemental expanded run only); PROGRESS consistency: 55 passed; exact combined suite: 362 passed; full suite: 2413/2413 passed, 0 failures, 0 errors, 9 existing warnings; OpenAPI 304 paths / 108 schemas; api_server 8 direct @app routes / 23 include_router / zero direct /action/*; Constitution SHA-256 unchanged at 0055748f683bf753b3471a0317b68677752c312d4030b12fbc71684fd3af3ee1; Architecture v0.3.0 unchanged; canonical drift 0; tracked private/runtime empty; docs/history clean; git diff --check clean; no persistence added; no execution enabled; Rules 1 and 2 remain migrated to Core Governance; Rules 3 through 9 remain preserved in Thinking; Identity evidence operative only in Governance; risk evidence non-operative; T3 trace remains implemented; committed; tagged; pushed; finalized by 89C and closure records completed by 89C-R and 89C-R2; Milestone 89: CLOSED (final closure records completed by 89C-R2); Milestone 90: not started; next step: human/project-manager review and independent audit of Milestone 89C-R2
-**Next milestone:** Human/project-manager review and independent audit of Milestone 89C-R2; after explicit acceptance of the closure records, Milestone 90 planning may begin; Milestone 90 not started
+**Current completed local milestone:** Milestone 90B — Progress Ledger Canonicalization Finalization (COMPLETE; Milestone 90 CLOSED)
+**Current active milestone/module:** None; Milestone 90 CLOSED; Milestone 91 not started
+**Current status:** Milestone 90 CLOSED. PROGRESS.md canonicalization is finalized by this commit; the exact commit hash is recorded in the external finalization summary and must be verified from Git. The repository change is documentation-only. Full suite remains 2413/2413 passed, 0 failures, 0 errors, 9 existing warnings. OpenAPI remains 304 paths / 108 schemas. api_server remains 8 direct @app routes / 23 include_router / zero direct /action/*. Constitution SHA-256 remains 0055748f683bf753b3471a0317b68677752c312d4030b12fbc71684fd3af3ee1. Architecture remains v0.3.0. Core Governance owns authorization and cognitive-signal arbitration authority. Rules 1 and 2 remain physically evaluated in Core Governance. Rules 3 through 9 remain physically evaluated in Thinking. Risk evidence remains non-operative in Governance. T3 trace remains implemented. No persistence was added. No execution was enabled.
+**Next milestone:** Human/project-manager review and explicit acceptance of Milestone 90B finalization. After acceptance, Milestone 91 Plan may begin. Milestone 91 has not started and is not defined.
 **Test baseline:** 2413/2413 passed, 0 failures, 0 errors (2401 pre-89B baseline + 12 new/strengthened Milestone 89B boundary tests; 9 existing warnings, no new warnings)
 **OpenAPI baseline:** 304 paths / 108 schemas
-**Latest local tag:** `milestone-88A-cognitive-signal-arbitration-classification` at `227d615` (Milestone 88A implementation commit); `milestone-87B-core-governance-authorization-extraction` at `2ecc23e`; `milestone-87A-core-governance-authorization-boundary` at `589e281`; `milestone-86A-architecture-evolution` at `4e82f6a`; `milestone-85A-observe-verify-lifecycle-boundary-record` at `b5bad54`
-**Latest pushed GitHub/origin status:** `origin/main` == HEAD == `ed36ba9` (Milestone 88A-R correction commit); remote tag `milestone-88A-R-signal-classification-correction` at `ed36ba9` (verified via ls-remote); remote tag `milestone-88A-cognitive-signal-arbitration-classification` at `227d615` (verified via ls-remote); remote tag `milestone-87B-core-governance-authorization-extraction` at `2ecc23e` (verified via ls-remote); remote tag `milestone-87A-core-governance-authorization-boundary` at `589e281` (verified via ls-remote); remote tag `milestone-86A-architecture-evolution` at `4e82f6a` (verified via ls-remote); Milestones 83-88 are CLOSED (88 corrected by 88A-R); Milestone 89 not started
+**Git verification rule:** Current branch, HEAD, origin/main, and working-tree state must be verified directly from Git before every Plan, Build, Finalization, and independent audit. PROGRESS.md does not claim a self-referential current commit SHA. The accepted pre-Milestone-90 baseline is `e771498b771ddd8c4b3272d34dc1e6f3b3c04872`.
+**Current closure ledger:** this commit; exact hash recorded in `/home/aether/summaries/milestone_90B_finalization_summary.txt` and verified from Git.
+**Current closure tag:** `milestone-90B-progress-ledger-canonicalization-finalization`; target is this commit; exact target recorded in the external finalization summary and verified locally and remotely.
+**Previous accepted closure tag:** `milestone-89C-R2-final-closure-record-completion` at `e771498b771ddd8c4b3272d34dc1e6f3b3c04872`.
+**Test baseline:** 2413/2413 passed, 0 failures, 0 errors (2401 pre-89B baseline + 12 new/strengthened Milestone 89B boundary tests; 9 existing warnings, no new warnings)
+**OpenAPI baseline:** 304 paths / 108 schemas
+**Git verification rule:** Current branch, HEAD, origin/main, and working-tree state must be verified directly from Git before every Plan, Build, Finalization, and independent audit. PROGRESS.md does not claim a self-referential current commit SHA. The accepted pre-Milestone-90 baseline is `e771498b771ddd8c4b3272d34dc1e6f3b3c04872`.
+**Last accepted closure tag:** `milestone-89C-R2-final-closure-record-completion` at `e771498b771ddd8c4b3272d34dc1e6f3b3c04872`
 **Runtime-state reset authorization:** Yes; human authority retroactively authorized the 82AD identity-guard runtime-state reset on 2026-07-30, with audit retained at `/home/aether/summaries/milestone_82AD_runtime_state_review.txt`.
 **Pipeline maturity:** Full declarative safety chain (approval through evidence contract record stores) with thin interface refactor (80B-80M) and cognitive runtime observability (81A-81E) complete. Observation contract builder added (82B). Interface API model extraction complete (82C). File and self-inspection service extraction complete (82D). Patch lifecycle service extraction complete (82E). Mutation log service extraction complete (82F). Proposal console service extraction complete (82G). Code review and review bridge service extraction complete (82H). Code review router extraction complete (82J). Mutation log router extraction complete (82K). Proposal console router extraction complete (82L). File router extraction complete (82N). Patch router extraction complete (82O). Approval router extraction complete (82P). Dry run and sandbox contract router extraction complete (82Q). Simulation plan and simulation result router extraction complete (82R). Verification verdict and apply gate router extraction complete (82S). Human authorization and apply execution gate router extraction complete (82T). Executor contract and executor plan router extraction complete (82U). Evidence contract and collection plan router extraction complete (82V). Verification plan router extraction complete (82W). Tool registry and tool plan router extraction complete (82X). Memory state fixture isolation complete (82Z). Memory router extraction complete (82AA). Tool execution safety boundary planning and API-level safety tests complete (82AC-82AD). Tool execution router extraction finalized (82AE). Post-chain C1 state-boundary coverage and full-suite tests-only private/runtime persistence isolation finalized (82AH/82AH-R). Post-chain C1 service extraction finalized (82AI). C2 final real-apply executor safety boundary tests finalized, committed, tagged, and pushed (82AJ). C2 final real-apply executor service extraction finalized, committed, tagged, and pushed (82AK). Repair Family state-boundary tests finalized, committed, tagged, and pushed (82AL Part 1). Repair Family low-risk service extraction finalized, committed, tagged, and pushed (82AL Part 2: repair_planner + repair_workflow_tracker at `f233ba0`). Repair Family medium-risk service extraction finalized, committed, tagged, and pushed (82AL Part 3: repair_workflow_exporter + repair_cycle_completion + repair_learning + repair_guidance at `ff1d728`). Repair Family highest-risk service extraction finalized, committed, tagged, and pushed (82AL Part 4: repair_bridge_selector, the last Repair Family, at `13b84a6`). All 43 Repair Family endpoints are service-backed. Repair Family router extraction finalized, committed, tagged, and pushed (82AM Build: all 43 Repair Family routes moved into `aether/interface/routers/repair_routes.py` at `dfe9949`; `api_server.py` imports and includes `repair_router`; authorized C1 include_router snapshot refresh 16 -> 17; OpenAPI exact match 300/103; full pytest 1572/1572). C1 post-chain router extraction finalized, committed, tagged, and pushed (82AN Build: all 24 C1 post-chain routes moved into `aether/interface/routers/post_chain_c1_routes.py` at `d860616`; `api_server.py` imports and includes `post_chain_c1_router`; authorized C1 include_router snapshot refresh 17 -> 18; OpenAPI exact match 300/103; full pytest 1572/1572). C2 final-real-apply executor router extraction finalized, committed, tagged, and pushed (82AO Build: all 6 C2 routes moved into `aether/interface/routers/final_real_apply_executor_routes.py` at `2a8de72`; `api_server.py` imports and includes `final_real_apply_executor_router`; authorized include_router snapshot refresh 18 -> 19; OpenAPI exact match 300/103; full pytest 1572/1572). No real apply, evidence collection, rollback, or observation exists yet. Guided launcher family tests-only boundary coverage finalized, committed, tagged, and pushed (82AQ Build: all 29 Guided routes across 5 direct-action families locked via AST/OpenAPI-only tests in `tests/test_guided_launcher_boundary.py` at `f25cc2f`; OpenAPI exact match 300/103; full pytest 1581/1581). Guided Launcher router extraction finalized, committed, tagged, and pushed (82AR Build: all 29 Guided routes moved into `aether/interface/routers/guided_launcher_routes.py` as `guided_launcher_router`; `api_server.py` imports and includes `guided_launcher_router` exactly once; authorized include_router snapshot refresh 20 -> 21; guided action import snapshot emptied in Repair Family boundary test; OpenAPI exact match 300/103; full pytest 1581/1581). Self-Modification boundary tests finalized, committed, tagged, and pushed (82AS Build: 20 AST/OpenAPI-only boundary tests added in `tests/test_self_modification_boundary.py`; locked 9 Self-Modification routes in `api_server.py` as app.* direct-action pass-throughs; locked exact operation IDs and request-body model $refs; locked exact import boundary; locked static risk profile of `aether/action/self_modification_cycle.py`; expected high-risk terms present and locked: apply_patch_proposal, rollback_patch_apply, write_text, Path(; forbidden terms absent: collect_evidence, execute_tool, subprocess, os.system, requests., httpx., shutil, git; no endpoint invocation; no self_modification action function invocation; OpenAPI exact match 300/103; full pytest 1601/1601). Self-Modification router extraction finalized, committed, tagged, and pushed (82AT Build: all 9 Self-Modification routes moved into `aether/interface/routers/self_modification_routes.py` as `self_modification_router`; `api_server.py` imports and includes `self_modification_router` exactly once; `api_server.py` no longer imports `aether.action.self_modification_cycle`; authorized include_router snapshot refresh 21 -> 22; OpenAPI exact match 300/103; full pytest 1605/1605). Protected/Core route boundary tests finalized, committed, tagged, and pushed (82AU Build: 23 AST/OpenAPI-only boundary tests added in `tests/test_protected_core_routes_boundary.py`; locked 8 protected/core routes in `api_server.py` with exact operation IDs, signatures, call profiles, and control-flow profiles; locked no protected/core router files; locked import/dependency profile; locked high-risk terms absent from protected/core route bodies; no endpoint invocation; no TestClient; OpenAPI exact match 300/103; full pytest 1628/1628).
 
@@ -23,9 +29,9 @@ This file is the compact project memory ledger for Aether. Every future OpenCode
 
 ## 2. Mandatory Workflow
 
-- Before starting any milestone, read `PROGRESS.md`.
-- Before starting any milestone, also read `docs/CONSTITUTION.md` and `docs/ARCHITECTURE.md`.
-- Before editing code, check current git status.
+- Before defining any milestone, read all four core files: `PROGRESS.md`, `README.md`, `docs/CONSTITUTION.md`, and `docs/ARCHITECTURE.md`.
+- Before planning any milestone, read all four core files: `PROGRESS.md`, `README.md`, `docs/CONSTITUTION.md`, and `docs/ARCHITECTURE.md`.
+- Before editing any code, read all four core files: `PROGRESS.md`, `README.md`, `docs/CONSTITUTION.md`, and `docs/ARCHITECTURE.md`; then check current git status.
 - After completing any milestone, update `PROGRESS.md`.
 - After completing any milestone, write a summary to `/home/aether/summaries/milestone_<number><letter>_summary.txt`.
 - Do not commit unless explicitly instructed.
@@ -211,36 +217,18 @@ New in 76A:
 
 ## 7. Current Test Baseline
 
-As of Milestone 82AH-R:
-- **Pytest:** 1505/1505 passed, 0 failures, 0 errors
-- **Post-chain C1 state boundary tests:** 30/30 passed; all 24 C1 endpoints covered
-- **Full-suite persistence isolation tests:** 20/20 passed; full-suite real-root fingerprint unchanged
-- **Tool execution API boundary tests:** 46/46 passed; all five endpoints and twelve required safety scenarios covered
-- **Memory boundary tests:** 8/8 passed; protected AST locks cover eight api_server functions and five tool-executor router functions
-- **OpenAPI contract:** Unchanged at 300 paths and 103 schemas
-- **Model count:** 121 BaseModel classes extracted from api_server.py to api_models.py
-- **File size:** api_server.py reduced to 583 lines (43303 bytes); tool_executor_routes.py is 46 lines (1568 bytes)
-- **Git safety:** `git diff --check` clean; production source unchanged
-- **Trailing whitespace:** Clean
-- **Private/runtime paths:** Not tracked by git
-- **Test modules:**
-  - `tests/test_cognitive_loop_contract.py` — 11 end-to-end contract tests (Milestone 81B)
-  - `tests/test_cognitive_loop_observability.py` — 10 loop_trace observability tests (Milestone 81C)
-  - `tests/test_cognitive_loop_trace_hardening.py` — 7 loop_trace hardening tests (Milestone 81D)
-  - `tests/test_apply_executor_evidence_contract.py` — 60 unit tests (Milestone 75A)
-  - `tests/test_apply_executor_evidence_contract_queue.py` — ~50 unit tests (Milestone 76A)
-  - `tests/test_apply_executor_plan.py` — 56 unit tests
-  - `tests/test_apply_executor_contract_queue.py` — 48 unit tests
-  - `tests/test_apply_executor_contract.py` — 44 unit tests
-  - `tests/test_apply_execution_gate_queue.py` — 41 unit tests
-  - `tests/test_apply_execution_gate_request.py` — 35 unit tests
-  - `tests/test_apply_executor_plan_queue.py` — 48 unit tests (Milestone 74A)
-  - `tests/test_human_authorization_queue.py` — 42 unit tests
-  - `tests/test_human_apply_authorization_request.py` — existing
-  - `tests/test_observation_record.py` — 26 observation contract tests (Milestone 82B)
-  - `tests/test_chat_api.py` — ~325 API integration tests (+34 for 76A)
-  - `aether/interface/api_models.py` — 121 extracted Pydantic models (Milestone 82C)
-  - Plus all modules from milestones 48-66
+As revalidated during Milestone 90B finalization:
+
+- **Full suite:** 2413/2413 passed, 0 failures, 0 errors, 9 existing warnings
+- **Milestone 89:** 150 passed
+- **Milestone 88:** 50 passed
+- **Milestone 87:** 76 passed
+- **Governance/policy/core:** 592 passed
+- **Architecture/Observation:** 240 passed
+- **PROGRESS consistency:** 55 passed
+- **Combined suite:** 362 passed
+- **OpenAPI:** 304 paths / 108 schemas
+- **api_server:** 8 @app routes / 23 include_router / 0 direct /action/*
 
 ---
 
@@ -305,32 +293,34 @@ These invariants must hold at ALL times:
 
 ## 10. Next Recommended Milestone
 
-**Status after 82C:** Interface API model extraction complete — 121 BaseModel classes moved from api_server.py to api_models.py.
+**Status:** Milestone 90 is CLOSED. Progress Ledger Canonicalization was
+finalized by Milestone 90B.
 
-**Next:** 82I — Interface Router Extraction Plan (not started)
+**Next:** Human/project-manager review and explicit acceptance of Milestone 90B
+finalization.
 
-**Current guidance:**
-81A–81E cognitive runtime boundary and loop_trace work are stable.
-82A /chat interface boundary analysis complete (keep-as-is, plan-only closure).
-82B Observation Contract builder added — Observe stage schema defined, no real observation yet.
-82C Interface API model extraction complete — all Pydantic models moved to dedicated module.
-82D File and self-inspection service extraction complete. 82E Patch lifecycle service extraction complete. 82F Mutation log service extraction complete. 82G Proposal console service extraction complete. 82H Code review and review bridge service extraction complete. Observation Record Store remains deferred.
-No further trace-only milestones are planned unless explicitly requested.
+**After accepted finalization:** Milestone 91 Plan may begin.
+
+**Current guidance:** Milestone 91 has not started and is not defined. No
+functional direction is authorized until the four core files and current Git
+state are reviewed for Milestone 91 planning.
 
 ---
 
 ## 11. Prompt Rule for Future OpenCode Tasks
 
-> "Every future OpenCode prompt must begin by instructing OpenCode to read PROGRESS.md before editing. Every future milestone must update PROGRESS.md and write a milestone summary under /home/aether/summaries/."
+> "Every future OpenCode prompt must begin by instructing OpenCode to read all four core files — `PROGRESS.md`, `README.md`, `docs/CONSTITUTION.md`, and `docs/ARCHITECTURE.md` — before editing. Every future milestone must read all four core files before defining, planning, or editing. Every completed milestone must update `PROGRESS.md` and write a milestone summary under /home/aether/summaries/."
 
 Also:
-> "When asked to continue with 'next', use PROGRESS.md to determine the next safe milestone."
+> "When asked to continue with 'next', use the canonical current-state block in `PROGRESS.md` together with current Git verification to determine the next safe milestone. Do not use an old historical `next milestone` entry as current authority."
 
 ---
 
-## 12. Current Snapshot as of Milestone 81F
+## 12. Historical Milestone Archive
 
-**Current snapshot (82C — uncommitted):**
+This section is a historical archive. It does not override the canonical current-state block in the header. Entries containing historical statuses, recommendations, `not started`, `pending`, `uncommitted`, `current`, or `next` wording are preserved for project memory and do not represent current authority.
+
+**Historical snapshot (82C — committed as milestone-82C):**
 - README.md and docs/ARCHITECTURE.md — reconciled in 81F to reflect persistent approval queue
 - 80B–80M thin interface refactor phases — complete
 - 81A–81E cognitive runtime boundary / loop_trace phases — complete
@@ -513,7 +503,7 @@ Created a structured refactor plan to thin `aether/interface/api_server.py` acco
 - No runtime/private data modified
 - No commits made
 
-**Next milestone:** Human/project-manager review of Milestone 89C-R; after acceptance, Milestone 90 planning may begin; Milestone 90 not started
+[HISTORICAL SNAPSHOT] **Next milestone:** Human/project-manager review of Milestone 89C-R; after acceptance, Milestone 90 planning may begin; Milestone 90 not started
 
 **80B has NOT been started.**
 
@@ -3872,22 +3862,7 @@ Extracted 18 endpoint handlers (6 proposal-review-console, 6 proposal-revision-c
     - Next: human/project-manager review of 89C
 
   - 89C-R — Post-Finalization History Preservation and Closure-Record Correction (COMPLETE; committed; tagged; pushed; Milestone 89 CLOSED)
-    - Task: transparently reconcile closure records with actual immutable six-commit history; preserve all runtime and tests byte-for-byte
-    - Process deviation acknowledged: original finalization designed for two commits (implementation + ledger); actual history contains six commits (one implementation, one original ledger, four post-finalization test corrections)
-    - No history rewritten; all existing commits preserved exactly
-    - Implementation commit preserved: 6e5c7b8474314d21723a08c1655843548eb7d65e
-    - Original ledger commit preserved: 05141f7ffea028ea8e749313a1de1cb2f046b5db
-    - Decision record and PROGRESS.md updated with actual finalization facts and process deviation
-    - Correction commit created and pushed
-    - Final closure ledger commit created and pushed
-    - Validation: M89 150 passed; M88 50 passed; M87 76 passed; Governance/policy/core 592 passed; architecture/Observation 240 passed; PROGRESS consistency 55 passed; combined 362 passed; full suite 2413/2413 passed, 0 failures, 0 errors, 9 existing warnings; OpenAPI 304/108; api_server 8/23/0; Constitution SHA unchanged; Architecture v0.3.0 unchanged; canonical drift 0; tracked private/runtime empty; docs/history clean; git diff --check clean
-    - Runtime byte stability: proven (no changes)
-    - Test byte stability: proven (no changes)
-    - committed: yes; tagged: yes (milestone-89C-finalization-record-correction); pushed: yes
-    - Milestone 87: CLOSED; Milestone 88: CLOSED (with correction); Milestone 89: CLOSED
-    - Next: human/project-manager review of Milestone 89C-R
-
-  - 89C-R — Post-Finalization History Preservation and Closure-Record Correction (COMPLETE; committed; tagged; pushed; Milestone 89 CLOSED)
+    HISTORICAL SNAPSHOT — not current authority
     - Task: transparently reconcile closure records with actual immutable six-commit history; preserve all runtime and tests byte-for-byte
     - Process deviation acknowledged: original finalization designed for two commits (implementation + ledger); actual history contains six commits (one implementation, one original ledger, four post-finalization test corrections)
     - No history rewritten; all existing commits preserved exactly
@@ -3896,7 +3871,7 @@ Extracted 18 endpoint handlers (6 proposal-review-console, 6 proposal-revision-c
     - Decision record and PROGRESS.md updated with actual finalization facts and process deviation
     - Correction commit: ab5f790c25b7ccc3e9dee49c551a067cda655db1
     - Correction tag: milestone-89C-finalization-record-correction at ab5f790c25b7ccc3e9dee49c551a067cda655db1
-    - Final closure ledger commit: THIS_COMMIT (exact hash recorded in external summary)
+    - Final closure ledger commit: 56d15f843f46ac3d0745477ed608f93da6cd5ff1
     - Validation: M89 150 passed; M88 50 passed; M87 76 passed; Governance/policy/core 592 passed; architecture/Observation 240 passed; PROGRESS consistency 55 passed; combined 362 passed; full suite 2413/2413 passed, 0 failures, 0 errors, 9 existing warnings; OpenAPI 304/108; api_server 8/23/0; Constitution SHA unchanged; Architecture v0.3.0 unchanged; canonical drift 0; tracked private/runtime empty; docs/history clean; git diff --check clean
     - Runtime byte stability: proven (no changes during 89C-R)
     - Test byte stability: proven (no changes during 89C-R)
@@ -3935,3 +3910,23 @@ Extracted 18 endpoint handlers (6 proposal-review-console, 6 proposal-revision-c
     - Milestone 89: CLOSED
     - Milestone 90: not started
     - Next: human/project-manager review and independent audit of Milestone 89C-R2
+
+  - Milestone 90 — Progress Ledger Canonicalization
+    - Plan-R2 selected Option A — Minimal Header Correction.
+    - 90A performed a documentation-only PROGRESS.md canonicalization.
+    - 90A-R removed the residual duplicate 89C-R stub and added the missing
+      historical label.
+    - Independent audit result:
+      PASS_COUNT=33, FAIL_COUNT=0, WARN_COUNT=2, PASS_WITH_WARNINGS.
+    - Only PROGRESS.md changed.
+    - No runtime, test, README, Constitution, Architecture, API, persistence,
+      or execution change occurred.
+    - Full suite: 2413 passed with 9 existing warnings.
+    - OpenAPI/api_server: 304/108/8/23/0.
+    - Finalized by this commit.
+    - Closure tag:
+      `milestone-90B-progress-ledger-canonicalization-finalization`.
+    - Exact final commit and tag target are recorded in the external Milestone
+      90B finalization summary.
+    - Milestone 90: CLOSED.
+    - Milestone 91: not started.
