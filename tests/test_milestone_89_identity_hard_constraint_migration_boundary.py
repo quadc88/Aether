@@ -120,7 +120,8 @@ def _changed_paths() -> list[str]:
 
 def _amended_test_sets() -> dict[str, list[str]]:
     """Exact set of amended test functions per superseded test file,
-    computed as an AST diff between the implementation commit and HEAD."""
+    computed as an AST diff between the pre-implementation commit and
+    the implementation commit."""
     import subprocess
     files = (
         "tests/test_milestone_87_core_governance_authorization_boundary.py",
@@ -128,15 +129,18 @@ def _amended_test_sets() -> dict[str, list[str]]:
         "tests/test_thinking_policy.py",
     )
     result = {}
-    # Use the implementation commit as the baseline
+    # Use the parent of the implementation commit as baseline
     impl_commit = "6e5c7b8474314d21723a08c1655843548eb7d65e"
+    parent = subprocess.run(
+        ["git", "rev-parse", f"{impl_commit}^"], capture_output=True, text=True, cwd=str(ROOT),
+    ).stdout.strip()
     for rel in files:
-        head_src = subprocess.run(
-            ["git", "show", f"HEAD:{rel}"], capture_output=True, text=True,
-            cwd=str(ROOT), check=True,
-        ).stdout
         impl_src = subprocess.run(
             ["git", "show", f"{impl_commit}:{rel}"], capture_output=True, text=True,
+            cwd=str(ROOT), check=True,
+        ).stdout
+        parent_src = subprocess.run(
+            ["git", "show", f"{parent}:{rel}"], capture_output=True, text=True,
             cwd=str(ROOT), check=True,
         ).stdout
 
@@ -148,11 +152,11 @@ def _amended_test_sets() -> dict[str, list[str]]:
                 if isinstance(node, ast.FunctionDef) and node.name.startswith("test_")
             }
 
-        head_funcs = _func_src(head_src)
         impl_funcs = _func_src(impl_src)
+        parent_funcs = _func_src(parent_src)
         result[rel] = sorted(
-            name for name in head_funcs
-            if head_funcs.get(name) != impl_funcs.get(name)
+            name for name in impl_funcs
+            if impl_funcs.get(name) != parent_funcs.get(name)
         )
     return result
 
