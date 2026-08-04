@@ -3,8 +3,8 @@
 ## 1. Status and Scope
 
 Status: accepted Milestone 89A boundary decision record, corrected by 89A-R,
-89A-R2, 89A-R3, and 89B-R, complete locally but not finalized, committed,
-tagged, or pushed.
+89A-R2, 89A-R3, and 89B-R. Milestone 89B implemented, committed, tagged, and
+pushed. Milestone 89 is now CLOSED. See Section 1.2 for finalization facts.
 
 Milestone 89A-R2 is a DOCUMENTATION-AND-TESTS-ONLY SECOND RECONCILIATION PASS.
 It corrected three remaining contract defects found by project-manager review:
@@ -1453,3 +1453,44 @@ next authorized action. Only explicit acceptance may authorize Milestone
 89B — Identity Hard-Constraint Runtime Extraction. Milestone 89 closes
 only after its separately authorized extraction and finalization sequence.
 Milestone 90 does not start automatically.
+
+### 24.1 Milestone 89B Runtime Implementation
+
+Milestone 89B executed the runtime extraction: Identity Rules 1 and 2 moved
+from Thinking to Core Governance. T3 Truthful Raw Thinking Proposal Trace
+implemented. External decision, approval, response shape, and execution flags
+preserved.
+
+Implementation commit: `6e5c7b8474314d21723a08c1655843548eb7d65e`
+Implementation tag: `milestone-89B-identity-hard-constraint-governance-migration`
+Implementation tag target: `6e5c7b8474314d21723a08c1655843548eb7d65e`
+Implementation push: confirmed on origin/main
+
+### 24.2 Milestone 89C Finalization and Process Deviation Record
+
+Milestone 89C attempted the authorized two-commit finalization structure
+(one implementation commit + one ledger commit). The implementation commit
+and tag are valid. However, the actual pushed history contains one original
+ledger commit followed by four post-finalization test-correction commits,
+for a total of six commits after the pre-Milestone-89 baseline instead of
+the originally planned two.
+
+Original finalization ledger commit: `05141f7ffea028ea8e749313a1de1cb2f046b5db`
+Post-finalization test-correction commits:
+- `e025f5ede85aebefb2593be6ea850b1f808312ee` — Fix M89/M88 tests for post-finalization state detection
+- `9220822d45bd9dd3a1dccf0b9f8ce6f539f0912c` — Fix _changed_paths for post-finalization state
+- `e17df6200704fc8bb691c380e453efecbacfb2cc` — Fix _amended_test_sets to compare against implementation commit
+- `c4371eb6a7db3d014e8b6aacf42bcdf0393be459` — Fix _amended_test_sets to compare implementation vs pre-implementation
+
+The rebase attempts and resets that occurred during execution were aborted;
+no pushed commit was rewritten. Current runtime semantics and all regression
+gates remain valid.
+
+### 24.3 Milestone 89C-R Record Correction
+
+Milestone 89C-R transparently corrects the closure records to reflect the
+actual immutable six-commit history. No history is rewritten. Runtime and
+test files remain byte-identical.
+
+Milestone 89: CLOSED
+Milestone 90: not started
