@@ -120,7 +120,7 @@ def _changed_paths() -> list[str]:
 
 def _amended_test_sets() -> dict[str, list[str]]:
     """Exact set of amended test functions per superseded test file,
-    computed as an AST diff between HEAD and the working tree."""
+    computed as an AST diff between the implementation commit and HEAD."""
     import subprocess
     files = (
         "tests/test_milestone_87_core_governance_authorization_boundary.py",
@@ -128,9 +128,15 @@ def _amended_test_sets() -> dict[str, list[str]]:
         "tests/test_thinking_policy.py",
     )
     result = {}
+    # Use the implementation commit as the baseline
+    impl_commit = "6e5c7b8474314d21723a08c1655843548eb7d65e"
     for rel in files:
         head_src = subprocess.run(
             ["git", "show", f"HEAD:{rel}"], capture_output=True, text=True,
+            cwd=str(ROOT), check=True,
+        ).stdout
+        impl_src = subprocess.run(
+            ["git", "show", f"{impl_commit}:{rel}"], capture_output=True, text=True,
             cwd=str(ROOT), check=True,
         ).stdout
 
@@ -143,10 +149,10 @@ def _amended_test_sets() -> dict[str, list[str]]:
             }
 
         head_funcs = _func_src(head_src)
-        cur_funcs = _func_src(Path(ROOT, rel).read_text(encoding="utf-8"))
+        impl_funcs = _func_src(impl_src)
         result[rel] = sorted(
-            name for name in cur_funcs
-            if head_funcs.get(name) != cur_funcs.get(name)
+            name for name in head_funcs
+            if head_funcs.get(name) != impl_funcs.get(name)
         )
     return result
 
