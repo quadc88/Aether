@@ -99,8 +99,9 @@ def _make_policy(text: str = "hello there", risk_level: str = "low", risk_action
 
 
 def _changed_paths() -> list[str]:
-    """Exact repository changed-path set (modified + untracked, sorted)."""
+    """Exact repository changed-path set (committed changes since pre-89 baseline, sorted)."""
     import subprocess
+    pre_89 = "943b442b3b765904fa508cc617ce25fd279a8b91"
     modified = subprocess.run(
         ["git", "diff", "--name-only"], capture_output=True, text=True, cwd=str(ROOT),
     ).stdout.splitlines()
@@ -108,7 +109,13 @@ def _changed_paths() -> list[str]:
         ["git", "ls-files", "--others", "--exclude-standard"],
         capture_output=True, text=True, cwd=str(ROOT),
     ).stdout.splitlines()
-    return sorted(modified + untracked)
+    if modified or untracked:
+        return sorted(modified + untracked)
+    # Post-commit state: return committed changes since pre-89
+    return sorted(subprocess.run(
+        ["git", "diff", "--name-only", pre_89, "HEAD"],
+        capture_output=True, text=True, cwd=str(ROOT),
+    ).stdout.splitlines())
 
 
 def _amended_test_sets() -> dict[str, list[str]]:
