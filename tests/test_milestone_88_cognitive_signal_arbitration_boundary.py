@@ -22,6 +22,7 @@ RECORD = ROOT / "docs/architecture/MILESTONE_88_COGNITIVE_SIGNAL_ARBITRATION_BOU
 ARCHITECTURE = ROOT / "docs/ARCHITECTURE.md"
 CONSTITUTION = ROOT / "docs/CONSTITUTION.md"
 M87_RECORD = ROOT / "docs/architecture/MILESTONE_87_CORE_GOVERNANCE_AUTHORIZATION_BOUNDARY.md"
+M89_RECORD = ROOT / "docs/architecture/MILESTONE_89_IDENTITY_HARD_CONSTRAINT_MIGRATION_BOUNDARY.md"
 POLICY = ROOT / "aether/thinking/policy.py"
 GOVERNANCE = ROOT / "aether/core/governance.py"
 LOOP = ROOT / "aether/core/loop.py"
@@ -66,6 +67,10 @@ def _record() -> str:
 
 def _normalized() -> str:
     return " ".join(_record().split())
+
+
+def _m89_record() -> str:
+    return M89_RECORD.read_text(encoding="utf-8")
 
 
 def _tree(path: Path) -> ast.Module:
@@ -149,14 +154,16 @@ class TestDecisionRecordStructure:
         for cat in CATEGORIES:
             assert cat in text
 
-    def test_07_actual_current_rule_count_is_nine(self):
-        # Verify from actual source, not from plan assumptions
+    def test_07_actual_current_rule_count_is_seven(self):
+        # Verify from actual source, not from plan assumptions.
+        # Milestone 89B moved Rules 1/2 to Core Governance: Thinking now
+        # evaluates Rules 3-9 only (7 returns).
         fn = _function(POLICY, "decide_chat_policy")
         returns = []
         for node in ast.walk(fn):
             if isinstance(node, ast.Return):
                 returns.append(node)
-        assert len(returns) == 9
+        assert len(returns) == 7
 
     def test_08_every_source_rule_inventoried_once(self):
         text = _normalized()
@@ -191,35 +198,48 @@ class TestDecisionRecordStructure:
 class TestRuleInventoryAndOutputs:
     def test_10_exact_trigger_conditions_from_ast(self):
         fn = _function(POLICY, "decide_chat_policy")
-        # Verify exact line numbers of return statements
+        # Verify exact line numbers of return statements.
+        # Milestone 89B removed Rules 1/2: 7 returns at the following lines.
         returns = []
         for node in ast.walk(fn):
             if isinstance(node, ast.Return):
                 returns.append(node.lineno)
-        # 9 returns at specific lines
-        assert len(returns) == 9
-        assert 54 in returns   # Rule 1
-        assert 73 in returns  # Rule 2
-        assert 91 in returns  # Rule 3
-        assert 107 in returns # Rule 4
-        assert 128 in returns # Rule 5
-        assert 146 in returns # Rule 6
-        assert 164 in returns # Rule 7
-        assert 182 in returns # Rule 8
-        assert 199 in returns # Rule 9 (default)
+        assert len(returns) == 7
+        assert 58 in returns   # Rule 3
+        assert 74 in returns  # Rule 4
+        assert 95 in returns  # Rule 5
+        assert 113 in returns # Rule 6
+        assert 131 in returns # Rule 7
+        assert 149 in returns # Rule 8
+        assert 166 in returns # Rule 9 (default)
 
     def test_11_exact_current_decision_outputs(self):
-        # Rule 1: identity changed -> block
-        p = _make_policy(identity={"status": "changed"})
-        assert p["decision_type"] == "block"
-        assert p["required_user_confirmation"] is True
-        assert p["tool_execution_allowed"] is False
+        # Rules 1 and 2 are authoritatively evaluated by Core Governance
+        # (Milestone 89B). The exact legacy decision semantics are preserved
+        # through the authorization envelope projections.
+        import aether.core.governance as gov
 
-        # Rule 2: identity missing -> require_approval
-        p = _make_policy(identity={"status": "missing"})
-        assert p["decision_type"] == "require_approval"
-        assert p["required_user_confirmation"] is True
+        # Rule 1: identity changed -> block (via Governance)
+        envelope = gov.evaluate_authorization_envelope(
+            thinking_policy=_make_policy(),
+            identity_integrity_evidence={"status": "changed"},
+        )
+        assert envelope["decision"] == "block"
+        assert envelope["policy_snapshot"]["decision_type"] == "block"
+        assert envelope["policy_snapshot"]["required_user_confirmation"] is True
+        assert envelope["policy_snapshot"]["tool_execution_allowed"] is False
 
+        # Rule 2: identity missing/failed -> require_approval (via Governance)
+        for status in ("missing", "failed"):
+            envelope = gov.evaluate_authorization_envelope(
+                thinking_policy=_make_policy(),
+                identity_integrity_evidence={"status": status},
+            )
+            assert envelope["decision"] == "require_approval"
+            assert envelope["policy_snapshot"]["decision_type"] == "require_approval"
+            assert envelope["policy_snapshot"]["required_user_confirmation"] is True
+
+        # Rules 3-9 remain exact raw Thinking outputs
         # Rule 3: empty text -> ask_clarification
         p = _make_policy(text="")
         assert p["decision_type"] == "ask_clarification"
@@ -249,7 +269,20 @@ class TestRuleInventoryAndOutputs:
         assert p["decision_type"] == "respond_only"
 
     def test_12_exact_confirmation_and_execution_fields(self):
-        # All rules must have tool_execution_allowed == False
+        # Governance projections (Rules 1/2) preserve former fields exactly
+        import aether.core.governance as gov
+        for status in ("changed", "missing", "failed"):
+            envelope = gov.evaluate_authorization_envelope(
+                thinking_policy=_make_policy(),
+                identity_integrity_evidence={"status": status},
+            )
+            snap = envelope["policy_snapshot"]
+            assert snap["tool_execution_allowed"] is False
+            assert snap["required_user_confirmation"] is True
+            assert snap["tool_suggestion_allowed"] is False
+            assert snap["decision_type"] in ("block", "require_approval")
+
+        # All raw Thinking rules still force tool_execution_allowed == False
         for identity_status in (None, {"status": "changed"}, {"status": "missing"}, {"status": "failed"}):
             p = _make_policy(identity=identity_status)
             assert p["tool_execution_allowed"] is False
@@ -398,32 +431,46 @@ class TestOwnershipAndSeparation:
         assert "risk_evidence" in text
         assert "non-operative" in text or "provenance-only" in text
 
-    def test_29_identity_evidence_remains_non_operative(self):
-        text = _normalized()
-        assert "identity_integrity_evidence" in text
-        assert "non-operative" in text or "provenance-only" in text
+    def test_29_identity_evidence_operative_only_through_governance(self):
+        import aether.core.governance as gov
+        # Thinking never evaluates identity: raw output is identical for all
+        # identity statuses (Milestone 89B insensitivity contract)
+        neutral = _make_policy()
+        for status in ("changed", "missing", "failed", "verified", "unknown"):
+            assert _make_policy(identity={"status": status}) == neutral
+        # Core Governance evaluates Rules 1 and 2 authoritatively
+        for status, expected in (
+            ("changed", "block"),
+            ("missing", "require_approval"),
+            ("failed", "require_approval"),
+        ):
+            envelope = gov.evaluate_authorization_envelope(
+                thinking_policy=_make_policy(),
+                identity_integrity_evidence={"status": status},
+            )
+            assert envelope["decision"] == expected
+        # Risk evidence remains non-operative
+        base = gov.evaluate_authorization_envelope(thinking_policy=_make_policy())
+        with_risk = gov.evaluate_authorization_envelope(
+            thinking_policy=_make_policy(),
+            risk_evidence={"risk_level": "high"},
+        )
+        assert base == with_risk
+        # No duplicate authority: Thinking must not read identity status
+        policy_src = POLICY.read_text(encoding="utf-8")
+        assert 'identity_status == "changed"' not in policy_src
+        assert "identity_integrity_status.get" not in policy_src
 
 
 class TestNoBehaviorChange:
-    def test_30_no_runtime_behavior_change(self):
-        # Verify current behavior is unchanged by running all 9 rules
-        # and comparing outputs against expected values
-        rules = [
-            ({"identity": {"status": "changed"}}, "block", True, False),
-            ({"identity": {"status": "missing"}}, "require_approval", True, False),
-            ({"text": ""}, "ask_clarification", False, False),
-            ({"secrets": ["password"]}, "require_approval", True, False),
-            ({"risk_level": "high"}, "require_approval", True, False),
-            ({"risk_level": "medium", "tool": {"tool_id": "x"}}, "require_approval", True, False),
-            ({"risk_level": "low", "tool": {"tool_id": "x"}}, "suggest_tool", False, False),
-            ({"text": "hi"}, "ask_clarification", False, False),
-            ({"text": "write a story about cats"}, "respond_only", False, False),
-        ]
-        for kwargs, expected_dt, expected_confirm, expected_exec in rules:
-            p = _make_policy(**kwargs)
-            assert p["decision_type"] == expected_dt, f"Failed for {kwargs}: got {p['decision_type']}"
-            assert p["required_user_confirmation"] == expected_confirm, f"Confirm failed for {kwargs}"
-            assert p["tool_execution_allowed"] == expected_exec, f"Exec failed for {kwargs}"
+    def test_30_exact_new_classification_string(self):
+        # Milestone 89B carries the explicit classification string; the M89
+        # record must state it verbatim (normalized).
+        text = " ".join(_m89_record().split())
+        assert "EXTERNALLY DECISION-, APPROVAL-, RESPONSE-SHAPE-, AND EXECUTION-FLAG" in text
+        assert "PRESERVING" in text
+        assert "INTENTIONAL DIAGNOSTIC TRACE SEMANTIC CHANGE" in text
+        assert "INTERNAL PHYSICAL-OWNERSHIP CHANGE" in text
 
     def test_31_no_execution_enabled(self):
         text = _normalized()
@@ -517,16 +564,20 @@ class TestOpenAPIServerUnchanged:
 
 
 class TestNoProductionSourceChanges:
-    def test_45_no_production_module_changed(self):
-        # Verify protected files are unchanged
+    def test_45_only_authorized_production_modules_changed(self):
+        # Milestone 89B authorizes exactly three production files to change
+        # (policy.py, governance.py, loop.py). Every other production module
+        # must remain byte-identical.
         import subprocess
         result = subprocess.run(
-            ["git", "diff", "--", "aether/thinking/policy.py",
-             "aether/core/governance.py", "aether/core/loop.py",
-             "aether/action/policy_gate.py"],
+            ["git", "diff", "--name-only", "--", "aether/"],
             capture_output=True, text=True, cwd=str(ROOT)
         )
-        assert result.stdout == "", f"Production source changed: {result.stdout[:200]}"
+        assert result.stdout.splitlines() == [
+            "aether/core/governance.py",
+            "aether/core/loop.py",
+            "aether/thinking/policy.py",
+        ], f"Unauthorized production source changed: {result.stdout[:200]}"
 
     def test_46_no_new_persistence_or_execution_imports(self):
         # The new test file must not import TestClient, requests, httpx

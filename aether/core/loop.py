@@ -147,10 +147,11 @@ def run_core_chat_loop(
         summary=f"Tool suggested: {suggested_tool['tool_id']} ({suggested_tool.get('match_confidence', 'unknown')})" if suggested_tool else "No tool matched",
     ))
 
-    # --- Step 7b: Thinking policy decision ---
+    # --- Step 7b: Thinking policy decision (Rules 3-9 only; Identity Rules 1/2
+    # evaluated authoritatively in Governance — Strategy T3) ---
     from aether.thinking.policy import decide_chat_policy
 
-    thinking_policy = decide_chat_policy(
+    raw_thinking_policy = decide_chat_policy(
         perception=perception,
         risk=risk,
         suggested_tool=suggested_tool,
@@ -159,33 +160,34 @@ def run_core_chat_loop(
     )
     stages.append(build_stage(
         "thinking_policy",
-        summary=f"Decision: {thinking_policy.get('decision_type', 'unknown')}",
-        warnings_count=len(thinking_policy.get("warnings", [])),
+        summary=f"Decision: {raw_thinking_policy.get('decision_type', 'unknown')}",
+        warnings_count=len(raw_thinking_policy.get("warnings", [])),
     ))
 
     # --- Step 7c: Policy Enforcement Gate (Core Governance) ---
     from aether.core.governance import evaluate_authorization_envelope
-    policy_gate_result = evaluate_authorization_envelope(
-        thinking_policy=thinking_policy,
+    authorization_envelope = evaluate_authorization_envelope(
+        thinking_policy=raw_thinking_policy,
         requested_action=suggested_tool,
         context={"session_id": session_id},
         risk_evidence=risk,
         identity_integrity_evidence=identity_status,
     )
-    execution_allowed = policy_gate_result.get("allowed", False)
-    execution_decision = policy_gate_result.get("decision", "invalid_policy")
-    execution_reason = policy_gate_result.get("reason", "")
+    effective_thinking_policy = authorization_envelope["policy_snapshot"]
+    execution_allowed = authorization_envelope.get("allowed", False)
+    execution_decision = authorization_envelope.get("decision", "invalid_policy")
+    execution_reason = authorization_envelope.get("reason", "")
     stages.append(build_stage(
         "policy_gate",
         summary=f"Decision: {execution_decision}",
-        warnings_count=len(policy_gate_result.get("warnings", [])),
+        warnings_count=len(authorization_envelope.get("warnings", [])),
     ))
 
     # --- Step 7d: Approval Request Builder (Milestone 52A) ---
     from aether.action.approval_request import build_approval_request
     approval_request = build_approval_request(
-        policy_gate=policy_gate_result,
-        thinking_policy=thinking_policy,
+        policy_gate=authorization_envelope,
+        thinking_policy=effective_thinking_policy,
         risk=risk,
         requested_action=suggested_tool,
         perception=perception,
@@ -244,7 +246,7 @@ def run_core_chat_loop(
     ))
 
     # --- Step 10: Build response ---
-    response_text = _build_response(text, risk, perception, suggested_tool, thinking_policy)
+    response_text = _build_response(text, risk, perception, suggested_tool, effective_thinking_policy)
     stages.append(build_stage("response_generation", summary="Response generated"))
 
     # --- Build loop trace ---
@@ -299,13 +301,13 @@ def run_core_chat_loop(
         "timeline_recorded": timeline_recorded,
         "warnings": warnings,
         # --- Thinking Policy Layer ---
-        "thinking_policy": thinking_policy,
-        "decision_type": thinking_policy.get("decision_type"),
-        "required_user_confirmation": thinking_policy.get("required_user_confirmation", False),
-        "clarification_question": thinking_policy.get("clarification_question"),
-        "blocked_reason": thinking_policy.get("blocked_reason"),
+        "thinking_policy": effective_thinking_policy,
+        "decision_type": effective_thinking_policy.get("decision_type"),
+        "required_user_confirmation": effective_thinking_policy.get("required_user_confirmation", False),
+        "clarification_question": effective_thinking_policy.get("clarification_question"),
+        "blocked_reason": effective_thinking_policy.get("blocked_reason"),
         # --- Policy Enforcement Gate (Milestone 51A) ---
-        "policy_gate": policy_gate_result,
+        "policy_gate": authorization_envelope,
         "execution_allowed": execution_allowed,
         "execution_decision": execution_decision,
         "execution_reason": execution_reason,

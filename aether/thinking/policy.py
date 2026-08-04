@@ -23,14 +23,17 @@ def decide_chat_policy(
 ) -> dict:
     """Decide the safest handling policy for a chat input.
 
-    Decision rules are applied in order. Higher-priority rules
-    (identity integrity, secrets) override lower ones.
+    Decision rules are applied in order. Identity integrity is evaluated by
+    Core Governance (aether/core/governance.py), not by Thinking. Thinking
+    evaluates Rules 3 through 9 only.
 
     Args:
         perception: Output of perceive_text_input().
         risk: Output of classify_risk() from verification/risk.py.
         suggested_tool: Optional tool suggestion dict (may be None).
-        identity_integrity_status: Safe summary from identity guard.
+        identity_integrity_status: Compatibility parameter — accepted but
+            NOT evaluated by Thinking. Identity Rules 1 and 2 are evaluated
+            authoritatively in Core Governance.
         metadata: Arbitrary metadata passed through.
 
     Returns:
@@ -44,47 +47,11 @@ def decide_chat_policy(
     normalized_text = perception.get("normalized_text", "")
     risk_terms = perception.get("risk_terms_detected", [])
     risk_level = risk.get("risk_level", "low")
-    identity_status: str | None = None
 
-    if identity_integrity_status:
-        identity_status = identity_integrity_status.get("status", "")
-
-    # --- Rule 1: Identity changed -> block ---
-    if identity_status == "changed":
-        return {
-            "decision_type": "block",
-            "confidence": "high",
-            "reasons": ["Identity seed checksum changed — integrity compromised."],
-            "required_user_confirmation": True,
-            "tool_suggestion_allowed": False,
-            "tool_execution_allowed": False,
-            "blocked_reason": (
-                "Identity integrity changed. Human review is required before continuing."
-            ),
-            "clarification_question": None,
-            "next_step": "Verify identity seed integrity before continuing.",
-            "warnings": [
-                "Identity seed integrity mismatch detected.",
-            ],
-        }
-
-    # --- Rule 2: Identity missing/failed -> require_approval ---
-    if identity_status in ("missing", "failed"):
-        return {
-            "decision_type": "require_approval",
-            "confidence": "high",
-            "reasons": [
-                f"Identity integrity status is '{identity_status}'. "
-                "Human inspection is needed before proceeding."
-            ],
-            "required_user_confirmation": True,
-            "tool_suggestion_allowed": False,
-            "tool_execution_allowed": False,
-            "blocked_reason": None,
-            "clarification_question": None,
-            "next_step": "Human should inspect identity integrity status.",
-            "warnings": [f"Identity integrity status: {identity_status}."],
-        }
+    # Note: identity_integrity_status is accepted as a compatibility parameter
+    # but is NOT evaluated by Thinking. Rules 1 and 2 are authoritatively
+    # evaluated in Core Governance (aether/core/governance.py). Thinking
+    # evaluates only Rules 3 through 9.
 
     # --- Rule 3: Empty normalized text -> ask_clarification ---
     if not normalized_text or not normalized_text.strip():

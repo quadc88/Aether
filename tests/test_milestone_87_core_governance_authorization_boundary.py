@@ -620,18 +620,28 @@ class TestGovernanceModuleExtraction:
         gov_idx = calls.index("evaluate_authorization_envelope")
         assert classify_idx < gov_idx
 
-    def test_60_direct_evidence_does_not_alter_envelope(self):
+    def test_60_direct_identity_evidence_operative_only_for_identity_rules(self):
         import aether.core.governance as gov
         policy = {"decision_type": "block", "blocked_reason": "test"}
         risk = {"risk_level": "high", "action_type": "destructive"}
-        identity = {"status": "intact", "changed": False}
         base = gov.evaluate_authorization_envelope(thinking_policy=policy)
-        with_evidence = gov.evaluate_authorization_envelope(
-            thinking_policy=policy,
-            risk_evidence=risk,
-            identity_integrity_evidence=identity,
-        )
-        assert base == with_evidence
+        # Operative only for Rules 1/2 statuses (changed/missing/failed)
+        for status in ("changed", "missing", "failed"):
+            with_evidence = gov.evaluate_authorization_envelope(
+                thinking_policy=policy,
+                risk_evidence=risk,
+                identity_integrity_evidence={"status": status},
+            )
+            assert with_evidence != base, f"evidence must be operative for {status}"
+        # Neutral, unknown, missing-key, and malformed evidence falls through
+        for identity in ({"status": "verified"}, {"status": "intact"}, {"status": "unknown"},
+                         {"foo": "bar"}, "not-a-dict"):
+            with_evidence = gov.evaluate_authorization_envelope(
+                thinking_policy=policy,
+                risk_evidence=risk,
+                identity_integrity_evidence=identity,
+            )
+            assert with_evidence == base, f"evidence must fall through for {identity}"
 
     def test_61_direct_evidence_absent_from_policy_snapshot(self):
         import aether.core.governance as gov
@@ -644,18 +654,54 @@ class TestGovernanceModuleExtraction:
         assert "risk" not in result["policy_snapshot"]
         assert "risk_evidence" not in result
 
-    def test_62_direct_evidence_absent_from_warnings_and_reason(self):
+    def test_62_identity_evidence_raw_values_absent_from_reason_and_warnings(self):
         import aether.core.governance as gov
-        policy = {"decision_type": "block"}
+        policy = {"decision_type": "respond_only", "tool_execution_allowed": False}
+        raw_markers = ("HASH-RAW-SECRET-abc123", "RAW-SEED")
+
+        def _strings(obj):
+            if isinstance(obj, str):
+                return [obj]
+            if isinstance(obj, dict):
+                out = []
+                for k, v in obj.items():
+                    out.extend(_strings(k))
+                    out.extend(_strings(v))
+                return out
+            if isinstance(obj, list):
+                out = []
+                for v in obj:
+                    out.extend(_strings(v))
+                return out
+            return []
+
+        # Rule 1: only the fixed approved reason; raw values never leak
         result = gov.evaluate_authorization_envelope(
             thinking_policy=policy,
             risk_evidence={"risk_level": "high"},
-            identity_integrity_evidence={"status": "changed"},
+            identity_integrity_evidence={
+                "status": "changed",
+                "checksum": "HASH-RAW-SECRET-abc123",
+                "seed": "RAW-SEED",
+            },
         )
-        for val in result.values():
-            if isinstance(val, str):
-                assert "risk_level" not in val
-                assert "integrity" not in val.lower()
+        assert result["reason"] == (
+            "Identity integrity changed. Human review is required before continuing."
+        )
+        for marker in raw_markers:
+            assert marker not in _strings(result)
+
+        # Rule 2: only the fixed generic reason; raw values never leak
+        result = gov.evaluate_authorization_envelope(
+            thinking_policy=policy,
+            identity_integrity_evidence={
+                "status": "missing",
+                "detail": "HASH-RAW-SECRET-abc123",
+            },
+        )
+        assert result["reason"] == "Human approval is required before execution."
+        for marker in raw_markers:
+            assert marker not in _strings(result)
 
     def test_63_facade_governance_exact_equivalence_matrix(self):
         import aether.core.governance as gov

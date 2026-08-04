@@ -1,51 +1,88 @@
-"""Tests for thinking policy layer (Milestone 49A)."""
+"""Tests for thinking policy layer (Milestone 49A).
+
+Milestone 89B moved Identity Rules 1/2 to Core Governance. The identity
+status parameter is a compatibility argument: raw Thinking output must be
+identity-insensitive, and the legacy block/approval semantics are verified
+end-to-end through Core Governance.
+"""
 
 from __future__ import annotations
 
+from aether.core.governance import evaluate_authorization_envelope
 from aether.thinking.policy import decide_chat_policy
+
+
+def _base_args(identity=None, text="hello", tool=None, risk_level="low", risk_action="general_request"):
+    return dict(
+        perception={"normalized_text": text, "risk_terms_detected": []},
+        risk={"risk_level": risk_level, "action_type": risk_action},
+        suggested_tool=tool,
+        identity_integrity_status=identity,
+    )
 
 
 class TestIdentityChanged:
     def test_block_on_identity_changed(self):
-        result = decide_chat_policy(
-            perception={"normalized_text": "hello"},
-            risk={"risk_level": "low", "action_type": "general_request"},
-            identity_integrity_status={"status": "changed"},
+        # Raw Thinking is identity-insensitive (Rules 3-9 only)
+        raw = decide_chat_policy(**_base_args(identity={"status": "changed"}))
+        neutral = decide_chat_policy(**_base_args(identity=None))
+        assert raw == neutral
+        # Legacy Rule 1 semantics enforced authoritatively by Governance
+        envelope = evaluate_authorization_envelope(
+            thinking_policy=raw,
+            identity_integrity_evidence={"status": "changed"},
         )
-        assert result["decision_type"] == "block"
-        assert result["required_user_confirmation"] is True
-        assert result["tool_execution_allowed"] is False
-        assert result["blocked_reason"] is not None
-        assert result["tool_suggestion_allowed"] is False
+        assert envelope["decision"] == "block"
+        assert envelope["required_user_confirmation"] is True
+        assert envelope["tool_execution_allowed"] is False
+        assert envelope["policy_snapshot"]["blocked_reason"] is not None
+        assert envelope["policy_snapshot"]["tool_suggestion_allowed"] is False
 
     def test_block_even_with_tool_and_medium_risk(self):
-        """Rule 1 overrides all lower-priority rules."""
-        result = decide_chat_policy(
-            perception={"normalized_text": "edit file x.py"},
-            risk={"risk_level": "medium", "action_type": "file_edit"},
-            suggested_tool={"tool_id": "file.edit"},
-            identity_integrity_status={"status": "changed"},
+        """Rule 1 (Governance) overrides all lower-priority rules."""
+        raw = decide_chat_policy(**dict(
+            _base_args(identity={"status": "changed"}, text="edit file x.py",
+                       tool={"tool_id": "file.edit"}, risk_level="medium",
+                       risk_action="file_edit"),
+        ))
+        neutral = decide_chat_policy(**dict(
+            _base_args(identity=None, text="edit file x.py",
+                       tool={"tool_id": "file.edit"}, risk_level="medium",
+                       risk_action="file_edit"),
+        ))
+        assert raw == neutral
+        envelope = evaluate_authorization_envelope(
+            thinking_policy=raw,
+            identity_integrity_evidence={"status": "changed"},
         )
-        assert result["decision_type"] == "block"
+        assert envelope["decision"] == "block"
 
 
 class TestIdentityMissingOrFailed:
     def test_require_approval_when_missing(self):
-        result = decide_chat_policy(
-            perception={"normalized_text": "hello"},
-            risk={"risk_level": "low", "action_type": "general_request"},
-            identity_integrity_status={"status": "missing"},
+        # Raw Thinking is identity-insensitive (Rules 3-9 only)
+        raw = decide_chat_policy(**_base_args(identity={"status": "missing"}))
+        neutral = decide_chat_policy(**_base_args(identity=None))
+        assert raw == neutral
+        # Legacy Rule 2 semantics enforced authoritatively by Governance
+        envelope = evaluate_authorization_envelope(
+            thinking_policy=raw,
+            identity_integrity_evidence={"status": "missing"},
         )
-        assert result["decision_type"] == "require_approval"
-        assert result["required_user_confirmation"] is True
+        assert envelope["decision"] == "require_approval"
+        assert envelope["required_user_confirmation"] is True
 
     def test_require_approval_when_failed(self):
-        result = decide_chat_policy(
-            perception={"normalized_text": "hello"},
-            risk={"risk_level": "low", "action_type": "general_request"},
-            identity_integrity_status={"status": "failed"},
+        # Raw Thinking is identity-insensitive (Rules 3-9 only)
+        raw = decide_chat_policy(**_base_args(identity={"status": "failed"}))
+        neutral = decide_chat_policy(**_base_args(identity=None))
+        assert raw == neutral
+        # Legacy Rule 2 semantics enforced authoritatively by Governance
+        envelope = evaluate_authorization_envelope(
+            thinking_policy=raw,
+            identity_integrity_evidence={"status": "failed"},
         )
-        assert result["decision_type"] == "require_approval"
+        assert envelope["decision"] == "require_approval"
 
 
 class TestEmptyInput:
@@ -163,7 +200,10 @@ class TestDefaultRespondOnly:
 
 class TestHardRules:
     def test_tool_execution_always_false(self):
-        """tool_execution_allowed must ALWAYS be false in Milestone 49A."""
+        """tool_execution_allowed must ALWAYS be false in Milestone 49A.
+        Milestone 89B: raw Thinking is identity-insensitive, so for the
+        changed/missing/failed statuses the full raw dict must equal the
+        identity_integrity_status=None call."""
         for status in ("verified", "changed", "missing", "failed", None):
             for risk_level in ("low", "medium", "high"):
                 for has_tool in (True, False):
@@ -177,6 +217,17 @@ class TestHardRules:
                     assert result["tool_execution_allowed"] is False, (
                         f"Failed for status={status}, risk={risk_level}, tool={has_tool}"
                     )
+                    if status in ("changed", "missing", "failed"):
+                        neutral = decide_chat_policy(
+                            perception={"normalized_text": "test input", "risk_terms_detected": []},
+                            risk={"risk_level": risk_level, "action_type": "general_request"},
+                            suggested_tool=tool,
+                            identity_integrity_status=None,
+                        )
+                        assert result == neutral, (
+                            f"Raw Thinking must be identity-insensitive for "
+                            f"status={status}, risk={risk_level}, tool={has_tool}"
+                        )
 
     def test_decision_has_all_fields(self):
         result = decide_chat_policy(
@@ -194,13 +245,25 @@ class TestHardRules:
 
 class TestConfidenceLevels:
     def test_identity_issues_have_high_confidence(self):
+        # Raw Thinking is identity-insensitive: identical for all 7 variants
+        variants = [
+            None,
+            {"status": "verified"},
+            {"status": "changed"},
+            {"status": "missing"},
+            {"status": "failed"},
+            {"status": "unknown"},
+            {},
+        ]
+        results = [decide_chat_policy(**dict(_base_args(identity=v))) for v in variants]
+        assert all(r == results[0] for r in results)
+        # Governance projections (Rules 1/2) carry high confidence
         for status in ("changed", "missing", "failed"):
-            r = decide_chat_policy(
-                perception={"normalized_text": "x"},
-                risk={"risk_level": "low", "action_type": "general_request"},
-                identity_integrity_status={"status": status},
+            envelope = evaluate_authorization_envelope(
+                thinking_policy=results[0],
+                identity_integrity_evidence={"status": status},
             )
-            assert r["confidence"] == "high"
+            assert envelope["policy_snapshot"]["confidence"] == "high"
 
     def test_default_has_medium_confidence(self):
         r = decide_chat_policy(
