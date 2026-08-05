@@ -99,21 +99,18 @@ def _make_policy(text: str = "hello there", risk_level: str = "low", risk_action
 
 
 def _changed_paths() -> list[str]:
-    """Exact repository changed-path set (committed changes since pre-89 baseline, sorted)."""
+    """Exact repository changed-path set for the Milestone 89 Build.
+
+    This is a historical contract: it measures the committed changes between
+    the pre-89 baseline and the Milestone 89 implementation commit, not the
+    current working tree or HEAD. Future milestones may add new files without
+    affecting this historical assertion.
+    """
     import subprocess
     pre_89 = "943b442b3b765904fa508cc617ce25fd279a8b91"
-    modified = subprocess.run(
-        ["git", "diff", "--name-only"], capture_output=True, text=True, cwd=str(ROOT),
-    ).stdout.splitlines()
-    untracked = subprocess.run(
-        ["git", "ls-files", "--others", "--exclude-standard"],
-        capture_output=True, text=True, cwd=str(ROOT),
-    ).stdout.splitlines()
-    if modified or untracked:
-        return sorted(modified + untracked)
-    # Post-commit state: return committed changes since pre-89
+    impl_commit = "6e5c7b8474314d21723a08c1655843548eb7d65e"
     return sorted(subprocess.run(
-        ["git", "diff", "--name-only", pre_89, "HEAD"],
+        ["git", "diff", "--name-only", pre_89, impl_commit],
         capture_output=True, text=True, cwd=str(ROOT),
     ).stdout.splitlines())
 
