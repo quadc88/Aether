@@ -14,14 +14,14 @@ _SECRET_RISK_TERMS = {
 }
 
 
-def decide_chat_policy(
+def _evaluate_chat_policy_with_precedence(
     perception: dict,
     risk: dict,
     suggested_tool: dict | None = None,
     identity_integrity_status: dict | None = None,
     metadata: dict | None = None,
-) -> dict:
-    """Decide the safest handling policy for a chat input.
+) -> tuple[dict, str]:
+    """Decide the safest handling policy and Rule 3/4 provenance signal.
 
     Decision rules are applied in order. Identity integrity is evaluated by
     Core Governance (aether/core/governance.py), not by Thinking. Thinking
@@ -37,10 +37,8 @@ def decide_chat_policy(
         metadata: Arbitrary metadata passed through.
 
     Returns:
-        Dict with keys: decision_type, confidence, reasons,
-        required_user_confirmation, tool_suggestion_allowed,
-        tool_execution_allowed, blocked_reason, clarification_question,
-        next_step, warnings.
+        Tuple of the exact policy dictionary and one of ``rule_3``, ``rule_4``
+        or ``clear``. The signal is private provenance, not policy data.
     """
     reasons: list[str] = []
     warnings: list[str] = []
@@ -55,7 +53,7 @@ def decide_chat_policy(
 
     # --- Rule 3: Empty normalized text -> ask_clarification ---
     if not normalized_text or not normalized_text.strip():
-        return {
+        return ({
             "decision_type": "ask_clarification",
             "confidence": "high",
             "reasons": ["Input text is empty or whitespace-only."],
@@ -66,12 +64,12 @@ def decide_chat_policy(
             "clarification_question": "What would you like Aether to help with?",
             "next_step": "Wait for user to provide a valid input.",
             "warnings": [],
-        }
+        }, "rule_3")
 
     # --- Rule 4: Secret-like risk terms -> require_approval ---
     secret_found = any(t in _SECRET_RISK_TERMS for t in risk_terms)
     if secret_found:
-        return {
+        return ({
             "decision_type": "require_approval",
             "confidence": "high",
             "reasons": [
@@ -87,30 +85,11 @@ def decide_chat_policy(
             "warnings": [
                 "Potentially sensitive terms detected: " + ", ".join(risk_terms),
             ],
-        }
-
-    # --- Rule 5: High risk -> require_approval ---
-    if risk_level == "high":
-        action_type = risk.get("action_type", "unknown")
-        return {
-            "decision_type": "require_approval",
-            "confidence": "high",
-            "reasons": [
-                f"High-risk request ({action_type}). "
-                "Human approval required before any action."
-            ],
-            "required_user_confirmation": True,
-            "tool_suggestion_allowed": False,
-            "tool_execution_allowed": False,
-            "blocked_reason": None,
-            "clarification_question": None,
-            "next_step": "Human approval is required before any action.",
-            "warnings": [f"High-risk classification: {action_type}."],
-        }
+        }, "rule_4")
 
     # --- Rule 6: Medium risk with suggested tool -> require_approval ---
     if risk_level == "medium" and suggested_tool is not None:
-        return {
+        return ({
             "decision_type": "require_approval",
             "confidence": "medium",
             "reasons": [
@@ -124,11 +103,11 @@ def decide_chat_policy(
             "clarification_question": None,
             "next_step": "Review suggested tool and confirm before proceeding.",
             "warnings": ["Medium-risk tool usage requires human confirmation."],
-        }
+        }, "clear")
 
     # --- Rule 7: Low risk with suggested tool -> suggest_tool ---
     if risk_level == "low" and suggested_tool is not None:
-        return {
+        return ({
             "decision_type": "suggest_tool",
             "confidence": "medium",
             "reasons": [
@@ -142,11 +121,11 @@ def decide_chat_policy(
             "clarification_question": None,
             "next_step": "Present tool suggestion to user without executing.",
             "warnings": [],
-        }
+        }, "clear")
 
     # --- Rule 8: No tool, vague/short input -> ask_clarification ---
     if not suggested_tool and len(normalized_text) < 10:
-        return {
+        return ({
             "decision_type": "ask_clarification",
             "confidence": "low",
             "reasons": [
@@ -160,10 +139,10 @@ def decide_chat_policy(
             "clarification_question": "Can you provide more details?",
             "next_step": "Await user clarification before deeper processing.",
             "warnings": [],
-        }
+        }, "clear")
 
     # --- Rule 9: Default -> respond_only ---
-    return {
+    return ({
         "decision_type": "respond_only",
         "confidence": "medium",
         "reasons": [
@@ -177,4 +156,22 @@ def decide_chat_policy(
         "clarification_question": None,
         "next_step": "Generate a textual response to the user's input.",
         "warnings": warnings,
-    }
+    }, "clear")
+
+
+def decide_chat_policy(
+    perception: dict,
+    risk: dict,
+    suggested_tool: dict | None = None,
+    identity_integrity_status: dict | None = None,
+    metadata: dict | None = None,
+) -> dict:
+    """Compatibility wrapper returning only the public policy dictionary."""
+    policy, _ = _evaluate_chat_policy_with_precedence(
+        perception=perception,
+        risk=risk,
+        suggested_tool=suggested_tool,
+        identity_integrity_status=identity_integrity_status,
+        metadata=metadata,
+    )
+    return policy

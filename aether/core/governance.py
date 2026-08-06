@@ -17,6 +17,25 @@ after Milestone 89B. Thinking proposes only Rules 3 through 9.
 from __future__ import annotations
 
 
+def _format_rule_5_compatibility_policy(action_type: str) -> dict:
+    """Format the legacy Rule 5 policy after Governance selects Rule 5."""
+    return {
+        "decision_type": "require_approval",
+        "confidence": "high",
+        "reasons": [
+            f"High-risk request ({action_type}). "
+            "Human approval required before any action."
+        ],
+        "required_user_confirmation": True,
+        "tool_suggestion_allowed": False,
+        "tool_execution_allowed": False,
+        "blocked_reason": None,
+        "clarification_question": None,
+        "next_step": "Human approval is required before any action.",
+        "warnings": [f"High-risk classification: {action_type}."],
+    }
+
+
 def evaluate_authorization_envelope(
     thinking_policy: dict | None = None,
     requested_action: dict | None = None,
@@ -24,6 +43,7 @@ def evaluate_authorization_envelope(
     *,
     risk_evidence: dict | None = None,
     identity_integrity_evidence: dict | None = None,
+    rule_3_4_precedence: str | None = None,
 ) -> dict:
     """Evaluate the Core Governance authorization decision envelope.
 
@@ -32,10 +52,9 @@ def evaluate_authorization_envelope(
     evidence. Core Governance evaluates Identity Rules 1 and 2 and
     authorizes. Action executes only within authorization.
 
-    The keyword-only arguments risk_evidence and identity_integrity_evidence
-    are direct provenance inputs from the existing call-local risk classifier
-    and identity guard. Risk evidence remains non-operative. Identity
-    evidence is operative only for Rules 1 and 2.
+    The keyword-only arguments are direct call-local provenance inputs. The
+    Rule 3/4 signal is recognized only for its three exact private values and
+    is never copied into an output.
 
     Args:
         thinking_policy: Output of decide_chat_policy(). Non-authoritative
@@ -46,6 +65,8 @@ def evaluate_authorization_envelope(
             Provenance-only; remains non-operative.
         identity_integrity_evidence: Safe summary from identity guard.
             Operative only for Identity Rules 1 and 2.
+        rule_3_4_precedence: Private Thinking provenance signal. Only the
+            exact values ``rule_3``, ``rule_4`` and ``clear`` are recognized.
 
     Returns:
         Dict with keys: allowed, decision, reason,
@@ -132,13 +153,20 @@ def evaluate_authorization_envelope(
         # --- Status is "verified", unknown, empty, or missing key ---
         # Fall through to normal Thinking-proposal evaluation.
 
+    recognized_precedence = (
+        rule_3_4_precedence
+        if isinstance(rule_3_4_precedence, str)
+        and rule_3_4_precedence in {"rule_3", "rule_4", "clear"}
+        else None
+    )
+
     # --- Precedence 3: Normal Thinking-proposal evaluation ---
-    # Risk evidence remains non-operative (provenance only).
     decision_type = thinking_policy.get("decision_type", "")
     policy_snapshot = dict(thinking_policy)
     required_user_confirmation = thinking_policy.get("required_user_confirmation", False)
 
-    # --- Rule 3: decision_type == "block" ---
+    # An existing block is never weakened by a contradictory signal/evidence
+    # combination.
     if decision_type == "block":
         blocked_reason = thinking_policy.get("blocked_reason")
         return {
@@ -153,7 +181,27 @@ def evaluate_authorization_envelope(
             "warnings": warnings,
         }
 
-    # --- Rule 4: decision_type == "require_approval" ---
+    # --- Governance Rule 5: exact high evidence plus clear Thinking signal ---
+    risk_level = risk_evidence.get("risk_level") if isinstance(risk_evidence, dict) else None
+    if recognized_precedence == "clear":
+        if risk_level == "high":
+            action_type = risk_evidence.get("action_type", "unknown")
+            if not isinstance(action_type, str):
+                action_type = "unknown"
+            policy_snapshot = _format_rule_5_compatibility_policy(action_type)
+            return {
+                "allowed": False,
+                "decision": "require_approval",
+                "reason": "Human approval is required before execution.",
+                "required_user_confirmation": True,
+                "tool_execution_allowed": False,
+                "action_execution_allowed": False,
+                "requested_action": requested_action,
+                "policy_snapshot": policy_snapshot,
+                "warnings": warnings,
+            }
+
+    # --- Existing proposal approval behavior (including Rule 4) ---
     if decision_type == "require_approval":
         return {
             "allowed": False,

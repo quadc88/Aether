@@ -171,10 +171,10 @@ class TestProductionChainAndImporters:
     def test_11_current_production_call_site_exists(self):
         loop = _function(LOOP, "run_core_chat_loop")
         calls = _call_names(loop)
-        assert calls.count("decide_chat_policy") == 1
+        assert calls.count("_evaluate_chat_policy_with_precedence") == 1
         assert calls.count("evaluate_authorization_envelope") == 1
         assert calls.count("build_approval_request") == 1
-        assert calls.index("decide_chat_policy") < calls.index("evaluate_authorization_envelope")
+        assert calls.index("_evaluate_chat_policy_with_precedence") < calls.index("evaluate_authorization_envelope")
 
     def test_12_production_policy_gate_importers_are_exact(self):
         # enforce_policy_gate is now only in the Action compatibility facade
@@ -263,7 +263,7 @@ class TestAllowedAndApprovalSeparation:
         assert "`allowed=True` does not prove completed Human Authority approval" in text
 
     def test_20_current_production_thinking_never_allows_tool_execution(self):
-        fn = _function(POLICY, "decide_chat_policy")
+        fn = _function(POLICY, "_evaluate_chat_policy_with_precedence")
         values = []
         for node in ast.walk(fn):
             if isinstance(node, ast.Dict):
@@ -522,6 +522,7 @@ class TestGovernanceModuleExtraction:
         assert params == [
             "thinking_policy", "requested_action", "context",
             "risk_evidence", "identity_integrity_evidence",
+            "rule_3_4_precedence",
         ]
         defaults = [
             sig.parameters["thinking_policy"].default,
@@ -533,7 +534,9 @@ class TestGovernanceModuleExtraction:
             p for p, v in sig.parameters.items()
             if v.kind == inspect.Parameter.KEYWORD_ONLY
         ]
-        assert set(kwonly) == {"risk_evidence", "identity_integrity_evidence"}
+        assert set(kwonly) == {
+            "risk_evidence", "identity_integrity_evidence", "rule_3_4_precedence"
+        }
         assert sig.return_annotation in (dict, "dict")
 
     def test_50_governance_narrow_scope_docstring(self):

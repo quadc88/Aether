@@ -135,20 +135,33 @@ class TestSecretRiskTerms:
 
 class TestHighRisk:
     def test_high_risk_requires_approval(self):
-        result = decide_chat_policy(
+        raw = decide_chat_policy(
             perception={"normalized_text": "delete this file"},
             risk={"risk_level": "high", "action_type": "file_delete"},
         )
-        assert result["decision_type"] == "require_approval"
-        assert result["required_user_confirmation"] is True
+        envelope = evaluate_authorization_envelope(
+            thinking_policy=raw,
+            risk_evidence={"risk_level": "high", "action_type": "file_delete"},
+            rule_3_4_precedence="clear",
+        )
+        assert envelope["decision"] == "require_approval"
+        assert envelope["policy_snapshot"]["decision_type"] == "require_approval"
+        assert envelope["required_user_confirmation"] is True
 
     def test_high_risk_override_over_memoed_tool(self):
-        result = decide_chat_policy(
+        raw = decide_chat_policy(
             perception={"normalized_text": "edit config.yaml"},
             risk={"risk_level": "high", "action_type": "file_edit"},
             suggested_tool={"tool_id": "file.edit"},
         )
-        assert result["decision_type"] == "require_approval"
+        envelope = evaluate_authorization_envelope(
+            thinking_policy=raw,
+            requested_action={"tool_id": "file.edit"},
+            risk_evidence={"risk_level": "high", "action_type": "file_edit"},
+            rule_3_4_precedence="clear",
+        )
+        assert envelope["decision"] == "require_approval"
+        assert envelope["policy_snapshot"]["decision_type"] == "require_approval"
 
 
 class TestMediumRiskWithTool:

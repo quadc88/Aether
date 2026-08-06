@@ -125,12 +125,13 @@ def test_safe_risk_evidence_variants():
 
 
 def test_rule_5_remains_thinking_owned():
-    assert _has_executable_high_risk_branch(POLICY)
-    assert "Rule 5: High risk -> require_approval" in _text(POLICY)
+    assert not _has_executable_high_risk_branch(POLICY)
+    assert "Rule 6: Medium risk with suggested tool" in _text(POLICY)
 
 
 def test_no_current_duplicate_rule_5_evaluator():
-    assert not _has_governance_risk_branch()
+    assert _has_governance_risk_branch()
+    assert _text(GOVERNANCE).count('risk_level == "high"') == 1
     assert "risk_evidence" in _text(GOVERNANCE)
 
 
@@ -242,6 +243,11 @@ def test_milestone_91a_contains_no_runtime_migration():
     assert "performs no runtime migration" in text
     assert "No Rule 5 Governance branch may exist during 91A" in text
     assert "does not authorize Rule 5 migration" in text
-    assert not _has_governance_risk_branch()
+    # Historical 91A boundary meaning remains fixed, while the separately
+    # authorized 91B Build supersedes the current-source negative assertion.
+    assert "separately authorized Milestone 91B" in text
+    assert _has_governance_risk_branch()
+    assert "_format_rule_5_compatibility_policy" in _text(GOVERNANCE)
+    assert not _has_executable_high_risk_branch(POLICY)
     assert "aether/core/governance.py" in text
     assert "aether/thinking/policy.py" in text

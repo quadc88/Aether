@@ -391,7 +391,7 @@ class TestRuleContracts:
 
 class TestRulePrecedence:
     def test_23_current_source_order_preserved(self):
-        # Thinking: Rules 3-8 order preserved with exact line numbers
+        # Thinking: sidecar Rules 3/4 remain ordered before Rules 6-9.
         src = POLICY.read_text()
         lines = src.splitlines()
         rule_lines = {}
@@ -401,18 +401,20 @@ class TestRulePrecedence:
                 rule_lines[3] = lineno
             elif "secret_found = any" in line:
                 rule_lines[4] = lineno
-            elif 'risk_level == "high"' in line:
-                rule_lines[5] = lineno
             elif 'risk_level == "medium"' in line:
                 rule_lines[6] = lineno
             elif 'risk_level == "low"' in line:
                 rule_lines[7] = lineno
             elif "not suggested_tool and len" in line:
                 rule_lines[8] = lineno
-        for i in range(3, 8):
-            for j in range(i + 1, 9):
+        for i in (3, 4, 6, 7, 8):
+            for j in (3, 4, 6, 7, 8):
+                if i >= j:
+                    continue
                 assert rule_lines[i] < rule_lines[j], f"Rule {i} (line {rule_lines[i]}) must precede Rule {j} (line {rule_lines[j]})"
-        assert rule_lines == {3: 57, 4: 72, 5: 93, 6: 112, 7: 130, 8: 148}
+        assert 'risk_level == "high"' not in src
+        assert set(rule_lines) == {3, 4, 6, 7, 8}
+        assert "_evaluate_chat_policy_with_precedence" in src
         # Governance: the Identity Rules 1/2 branch precedes the normal
         # Thinking-proposal evaluation branch
         gov_src = GOVERNANCE.read_text()
@@ -771,6 +773,7 @@ class TestAppliedMigration:
         assert list(params) == [
             "thinking_policy", "requested_action", "context",
             "risk_evidence", "identity_integrity_evidence",
+            "rule_3_4_precedence",
         ]
         assert params["risk_evidence"].kind is inspect.Parameter.KEYWORD_ONLY
         assert params["identity_integrity_evidence"].kind is inspect.Parameter.KEYWORD_ONLY
@@ -960,7 +963,8 @@ class TestReconciliationAccounting:
     def test_63_core_loop_is_consumer(self):
         """Verify loop.py consumes raw/envelope/effective routing (T3)."""
         loop_src = Path("aether/core/loop.py").read_text()
-        assert "raw_thinking_policy = decide_chat_policy" in loop_src
+        assert "raw_thinking_policy, rule_3_4_precedence = _evaluate_chat_policy_with_precedence" in loop_src
+        assert "rule_3_4_precedence=rule_3_4_precedence" in loop_src
         assert "authorization_envelope = evaluate_authorization_envelope" in loop_src
         assert 'effective_thinking_policy = authorization_envelope["policy_snapshot"]' in loop_src
         assert "build_approval_request" in loop_src

@@ -149,9 +149,9 @@ def run_core_chat_loop(
 
     # --- Step 7b: Thinking policy decision (Rules 3-9 only; Identity Rules 1/2
     # evaluated authoritatively in Governance — Strategy T3) ---
-    from aether.thinking.policy import decide_chat_policy
+    from aether.thinking.policy import _evaluate_chat_policy_with_precedence
 
-    raw_thinking_policy = decide_chat_policy(
+    raw_thinking_policy, rule_3_4_precedence = _evaluate_chat_policy_with_precedence(
         perception=perception,
         risk=risk,
         suggested_tool=suggested_tool,
@@ -172,6 +172,7 @@ def run_core_chat_loop(
         context={"session_id": session_id},
         risk_evidence=risk,
         identity_integrity_evidence=identity_status,
+        rule_3_4_precedence=rule_3_4_precedence,
     )
     effective_thinking_policy = authorization_envelope["policy_snapshot"]
     execution_allowed = authorization_envelope.get("allowed", False)

@@ -147,17 +147,67 @@ class TestConfidenceLevels:
 
 class TestPolicyIntegration:
     def test_high_risk_triggers_require_approval(self, _risk):
-        from aether.thinking.policy import decide_chat_policy
+        from aether.core.governance import evaluate_authorization_envelope
+        from aether.thinking.policy import _evaluate_chat_policy_with_precedence
 
         text = "Delete all private memory and remove the identity seed."
         perception = {"normalized_text": text, "risk_terms_detected": [],
                       "type": "text", "original_length": len(text)}
         risk = _risk(text)
 
-        policy = decide_chat_policy(perception=perception, risk=risk)
-        assert policy["decision_type"] == "require_approval"
-        assert policy["required_user_confirmation"] is True
-        assert policy["tool_execution_allowed"] is False
+        raw_policy, rule_3_4_precedence = _evaluate_chat_policy_with_precedence(
+            perception=perception,
+            risk=risk,
+        )
+        assert rule_3_4_precedence == "clear"
+        assert raw_policy["decision_type"] == "respond_only"
+        assert raw_policy["tool_execution_allowed"] is False
+        assert raw_policy != {
+            "decision_type": "require_approval",
+            "confidence": "high",
+            "reasons": [
+                f"High-risk request ({risk.get('action_type', 'unknown')}). "
+                "Human approval required before any action."
+            ],
+            "required_user_confirmation": True,
+            "tool_suggestion_allowed": False,
+            "tool_execution_allowed": False,
+            "blocked_reason": None,
+            "clarification_question": None,
+            "next_step": "Human approval is required before any action.",
+            "warnings": [
+                f"High-risk classification: {risk.get('action_type', 'unknown')}."
+            ],
+        }
+
+        authorization_envelope = evaluate_authorization_envelope(
+            thinking_policy=raw_policy,
+            risk_evidence=risk,
+            rule_3_4_precedence=rule_3_4_precedence,
+        )
+        assert authorization_envelope["decision"] == "require_approval"
+        assert authorization_envelope["required_user_confirmation"] is True
+        assert authorization_envelope["tool_execution_allowed"] is False
+        assert authorization_envelope["action_execution_allowed"] is False
+        assert authorization_envelope["allowed"] is False
+        assert authorization_envelope["reason"] == (
+            "Human approval is required before execution."
+        )
+        action_type = risk.get("action_type", "unknown")
+        assert authorization_envelope["policy_snapshot"] == {
+            "decision_type": "require_approval",
+            "confidence": "high",
+            "reasons": [
+                f"High-risk request ({action_type}). Human approval required before any action."
+            ],
+            "required_user_confirmation": True,
+            "tool_suggestion_allowed": False,
+            "tool_execution_allowed": False,
+            "blocked_reason": None,
+            "clarification_question": None,
+            "next_step": "Human approval is required before any action.",
+            "warnings": [f"High-risk classification: {action_type}."],
+        }
 
 
 # ======================== LIVE /CHAT VALIDATION ======================== #

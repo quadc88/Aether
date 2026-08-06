@@ -158,12 +158,12 @@ class TestDecisionRecordStructure:
         # Verify from actual source, not from plan assumptions.
         # Milestone 89B moved Rules 1/2 to Core Governance: Thinking now
         # evaluates Rules 3-9 only (7 returns).
-        fn = _function(POLICY, "decide_chat_policy")
+        fn = _function(POLICY, "_evaluate_chat_policy_with_precedence")
         returns = []
         for node in ast.walk(fn):
             if isinstance(node, ast.Return):
                 returns.append(node)
-        assert len(returns) == 7
+        assert len(returns) == 6
 
     def test_08_every_source_rule_inventoried_once(self):
         text = _normalized()
@@ -197,21 +197,17 @@ class TestDecisionRecordStructure:
 
 class TestRuleInventoryAndOutputs:
     def test_10_exact_trigger_conditions_from_ast(self):
-        fn = _function(POLICY, "decide_chat_policy")
+        fn = _function(POLICY, "_evaluate_chat_policy_with_precedence")
         # Verify exact line numbers of return statements.
         # Milestone 89B removed Rules 1/2: 7 returns at the following lines.
         returns = []
         for node in ast.walk(fn):
             if isinstance(node, ast.Return):
                 returns.append(node.lineno)
-        assert len(returns) == 7
-        assert 58 in returns   # Rule 3
-        assert 74 in returns  # Rule 4
-        assert 95 in returns  # Rule 5
-        assert 113 in returns # Rule 6
-        assert 131 in returns # Rule 7
-        assert 149 in returns # Rule 8
-        assert 166 in returns # Rule 9 (default)
+        assert len(returns) == 6
+        assert any("rule_3" in ast.unparse(node) for node in ast.walk(fn) if isinstance(node, ast.Return))
+        assert any("rule_4" in ast.unparse(node) for node in ast.walk(fn) if isinstance(node, ast.Return))
+        assert 'risk_level == "high"' not in POLICY.read_text()
 
     def test_11_exact_current_decision_outputs(self):
         # Rules 1 and 2 are authoritatively evaluated by Core Governance
@@ -248,9 +244,14 @@ class TestRuleInventoryAndOutputs:
         p = _make_policy(secrets=["password"])
         assert p["decision_type"] == "require_approval"
 
-        # Rule 5: high risk -> require_approval
+        # Rule 5: high risk is selected by Governance from the sidecar.
         p = _make_policy(risk_level="high", risk_action="destructive_memory_action")
-        assert p["decision_type"] == "require_approval"
+        envelope = gov.evaluate_authorization_envelope(
+            thinking_policy=p,
+            risk_evidence={"risk_level": "high", "action_type": "destructive_memory_action"},
+            rule_3_4_precedence="clear",
+        )
+        assert envelope["decision"] == "require_approval"
 
         # Rule 6: medium risk + tool -> require_approval
         p = _make_policy(risk_level="medium", tool={"tool_id": "file.edit"})

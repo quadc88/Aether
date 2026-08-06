@@ -1,12 +1,12 @@
 # Aether Project Progress Ledger
 
-**Last updated:** Milestone 91A — Risk-Evidence Contract and Rule 5 Governance Boundary Proof (COMPLETE; finalized by this commit; closure tag and push verified in the external finalization summary)
+**Last updated:** Milestone 91B Build — Rule 5 High-Risk Governance Runtime Migration (COMPLETE LOCALLY; not committed, tagged, or pushed)
 **Aether version:** 0.2.0  
-**Current completed local milestone:** Milestone 91A — Risk-Evidence Contract and Rule 5 Governance Boundary Proof (COMPLETE; finalized by this commit)
-**Current active milestone/module:** None; Milestone 91A CLOSED; Milestone 91B not started
-**Current status:** Milestone 91A finalized the risk-evidence contract and Rule 5 Governance boundary proof. The boundary record and 18-test permanent contract are accepted. Candidate B remains the preferred future runtime candidate; Candidate D is the accepted boundary mechanism. Option A exact reason preservation is binding. Current operative Rule 5 Governance consumer does not exist. Rule 5 remains physically in Thinking. Risk evidence remains non-operative. Future Rule 5 migration precedence is specified but not implemented. No duplicate authoritative Rule 5 evaluator exists. No production code or existing test changed. No API change occurred. No persistence was added. No execution was enabled. Full suite remains 2443/2443 passed with 9 existing warnings. OpenAPI remains 304 paths / 108 schemas. api_server remains 8 direct @app routes / 23 include_router / zero direct /action/*. Constitution SHA-256 remains 0055748f683bf753b3471a0317b68677752c312d4030b12fbc71684fd3af3ee1. Architecture remains v0.3.0. Core Governance owns authorization and cognitive-signal arbitration authority. Rules 1 and 2 remain physically evaluated in Core Governance. Rules 3 through 9 remain physically evaluated in Thinking. Risk evidence remains non-operative in Governance. T3 trace remains implemented. README, Constitution, Architecture, runtime, API, and production behavior remain unchanged. Milestone 91A is CLOSED. Milestone 91B has not started. Milestone 92 has not started.
-**Next milestone:** Human/project-manager review and explicit acceptance of Milestone 91A finalization. After acceptance, a separate Milestone 91B Plan may begin. Milestone 91B has not started and is not defined by this finalization. Milestone 92 has not started.
-**Test baseline:** 2443/2443 passed, 0 failures, 0 errors (2425 accepted pre-91A tests plus 18 new Milestone 91A boundary tests; 9 existing warnings, no new warnings)
+**Current completed local milestone:** Milestone 91B Build — Rule 5 High-Risk Governance Runtime Migration (complete locally; not committed, tagged, or pushed)
+**Current active milestone/module:** Milestone 91 remains open pending independent audit/finalization; Milestone 91B Build complete locally; Milestone 92 not started
+**Current status:** Rule 5 is solely authoritative in Core Governance. Thinking owns Rules 3/4 classification and Rules 6–9 proposals. The private sidecar values are rule_3/rule_4/clear; risk evidence is operative only for valid clear plus exact high. Identity Rules 1/2 and Rules 3/4 precede Rule 5. Exact external response, decision, approval-request, execution-flag, and API shape compatibility is preserved, with an intentional T3 raw/effective trace-attribution change. Plan-R7 reviewed one stale out-of-scope risk-expansion assertion and authorized a test-only scope expansion; tests/test_risk_expansion.py is now in Build scope and exactly one existing test was fully amended. Production implementation was not changed by the repair. Accounting is 46 full amendments, 5 partial amendments, 0 deletions, 45 new collected tests, and expected full suite 2488. The repaired test and full suite pass 2488/2488 with 9 existing warnings. Execution remains disabled; no API or persistence expansion occurred. OpenAPI remains 304 paths / 108 schemas; api_server remains 8 direct @app routes / 23 include_router / zero direct /action/*. Constitution SHA-256 remains 0055748f683bf753b3471a0317b68677752c312d4030b12fbc71684fd3af3ee1. Architecture remains v0.3.0. Milestone 91B remains pending independent audit/finalization. Milestone 92 has not started.
+**Next milestone:** Independent audit and human/project-manager review of the Milestone 91B Build. Milestone 91 remains open pending audit/finalization. Milestone 92 has not started.
+**Test baseline:** Build gate results are recorded in `/home/aether/summaries/milestone_91B_summary.txt`; no commit, tag, push, closure, or finalization is claimed.
 **OpenAPI baseline:** 304 paths / 108 schemas
 **Git verification rule:** Current branch, HEAD, origin/main, and working-tree state must be verified directly from Git before every Plan, Build, Finalization, and independent audit. PROGRESS.md does not claim a self-referential current commit SHA. The accepted pre-Milestone-90B-R2 baseline is `9983014694a874555ba13d2017e37d153821b5df`.
 **Current closure ledger:** this commit; exact hash recorded in `/home/aether/summaries/milestone_91A_finalization_summary.txt` and verified from Git.
@@ -293,27 +293,18 @@ These invariants must hold at ALL times:
 
 ## 10. Next Recommended Milestone
 
-**Status:** Milestone 91A is finalized and closed. The risk-evidence contract
-and Rule 5 Governance boundary proof are complete. The boundary record and
-18-test permanent contract are accepted.
+**Status:** Milestone 91B Build is complete locally and remains uncommitted,
+untagged, and unpushed. Rule 5 is solely authoritative in Governance;
+Thinking owns Rules 3/4 and Rules 6–9 proposals. The sidecar values are
+`rule_3`, `rule_4`, and `clear`; valid `clear` plus exact high risk evidence is
+operative. Identity Rules 1/2 and Rules 3/4 precede Rule 5. External
+compatibility is preserved with the intentional T3 raw/effective attribution
+change. Execution remains disabled and no API or persistence expansion exists.
 
-Milestone 91A is finalized and closed.
-
-**Next:** Human/project-manager review and explicit acceptance of Milestone 91A
-finalization.
-
-**After accepted finalization:** A separate Milestone 91B Plan may begin.
-
-Milestone 91B has not started.
+**Next:** Independent audit and human/project-manager review of the Milestone
+91B Build. Milestone 91 remains open pending audit/finalization.
 
 Milestone 92 has not started.
-
-The next action is human/project-manager acceptance of Milestone 91A finalization.
-
-After accepted finalization, Milestone 91B Plan may be separately authorized.
-
-**Current guidance:** Milestone 91A is closed. Milestone 91B has not started
-and is not defined by this finalization. Milestone 92 has not started.
 
 ---
 
