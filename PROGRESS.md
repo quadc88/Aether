@@ -1,11 +1,11 @@
 # Aether Project Progress Ledger
 
-**Last updated:** Milestone 91B Build — Rule 5 High-Risk Governance Runtime Migration (COMPLETE LOCALLY; not committed, tagged, or pushed)
-**Aether version:** 0.2.0  
-**Current completed local milestone:** Milestone 91B Build — Rule 5 High-Risk Governance Runtime Migration (complete locally; not committed, tagged, or pushed)
-**Current active milestone/module:** Milestone 91 remains open pending independent audit/finalization; Milestone 91B Build complete locally; Milestone 92 not started
-**Current status:** Rule 5 is solely authoritative in Core Governance. Thinking owns Rules 3/4 classification and Rules 6–9 proposals. The private sidecar values are rule_3/rule_4/clear; risk evidence is operative only for valid clear plus exact high. Identity Rules 1/2 and Rules 3/4 precede Rule 5. Exact external response, decision, approval-request, execution-flag, and API shape compatibility is preserved, with an intentional T3 raw/effective trace-attribution change. Plan-R7 reviewed one stale out-of-scope risk-expansion assertion and authorized a test-only scope expansion; tests/test_risk_expansion.py is now in Build scope and exactly one existing test was fully amended. Production implementation was not changed by the repair. Accounting is 46 full amendments, 5 partial amendments, 0 deletions, 45 new collected tests, and expected full suite 2488. The repaired test and full suite pass 2488/2488 with 9 existing warnings. Execution remains disabled; no API or persistence expansion occurred. OpenAPI remains 304 paths / 108 schemas; api_server remains 8 direct @app routes / 23 include_router / zero direct /action/*. Constitution SHA-256 remains 0055748f683bf753b3471a0317b68677752c312d4030b12fbc71684fd3af3ee1. Architecture remains v0.3.0. Milestone 91B remains pending independent audit/finalization. Milestone 92 has not started.
-**Next milestone:** Independent audit and human/project-manager review of the Milestone 91B Build. Milestone 91 remains open pending audit/finalization. Milestone 92 has not started.
+**Last updated:** Milestone 91B Finalization — Rule 5 Governance Migration Closure (COMPLETE; committed, tagged, pushed)
+**Aether version:** 0.2.0
+**Current completed local milestone:** Milestone 91B — Rule 5 Governance Migration (finalized, committed, tagged, pushed)
+**Current active milestone/module:** Milestone 91 CLOSED; Milestone 92 not started
+**Current status:** Rule 5 is solely authoritative in Core Governance. Thinking owns Rules 3/4 classification and Rules 6–9 proposals. The private sidecar values are rule_3/rule_4/clear; risk evidence is operative only for valid clear plus exact high. Identity Rules 1/2 and Rules 3/4 precede Rule 5. Exact external response, decision, approval-request, execution-flag, and API shape compatibility is preserved, with an intentional T3 raw/effective trace-attribution change. Independent audit: PASS_WITH_WARNINGS (2 non-blocking process warnings: historical standalone 55-test PROGRESS gate consolidated; historical Architecture/Observation 240-test gate expanded to 341). Full suite: 2488 passed, 0 failures, 0 errors, 9 existing PytestRemovedIn10Warning, 0 new warnings. M91 focused: 63 passed. Boundary combined: 339 passed. Regression-only: 437 passed. Impact/regression: 847 passed. Risk expansion: 27 passed. Canonical header: 12 passed. Architecture/Observation: 341 passed. OpenAPI: 304 paths / 108 schemas. api_server: 8 direct @app routes / 23 include_router / zero direct /action/*. Execution remains disabled; no API or persistence expansion. Constitution SHA-256 remains 0055748f683bf753b3471a0317b68677752c312d4030b12fbc71684fd3af3ee1. Architecture remains v0.3.0. Milestone 91B finalized, committed, tagged, pushed. Milestone 91 CLOSED. Milestone 92 has not started.
+**Next milestone:** Project-manager four-core-file read and Git verification before selecting Milestone 92.
 **Test baseline:** Build gate results are recorded in `/home/aether/summaries/milestone_91B_summary.txt`; no commit, tag, push, closure, or finalization is claimed.
 **OpenAPI baseline:** 304 paths / 108 schemas
 **Git verification rule:** Current branch, HEAD, origin/main, and working-tree state must be verified directly from Git before every Plan, Build, Finalization, and independent audit. PROGRESS.md does not claim a self-referential current commit SHA. The accepted pre-Milestone-90B-R2 baseline is `9983014694a874555ba13d2017e37d153821b5df`.
@@ -3981,3 +3981,37 @@ Extracted 18 endpoint handlers (6 proposal-review-console, 6 proposal-revision-c
     - Future Rule 5 consumer feasibility is strongly proven; future migration precedence is not yet implemented.
     - Option A exact reason preservation was selected by human/project-manager.
     - Milestone 91A is boundary-only; Milestone 91B requires separate authorization; Milestone 92 has not started.
+
+  - Milestone 91B — Rule 5 High-Risk Governance Runtime Migration (FINALIZED; committed; tagged; pushed; Milestone 91 CLOSED)
+    - Implementation commit: bd3449b75b0103e4af3c30a457eec5f3d8dc4ba0 (message "Migrate Rule 5 authority to Core Governance")
+    - Implementation tag: milestone-91B-rule5-governance-migration at bd3449b75b0103e4af3c30a457eec5f3d8dc4ba0 (lightweight tag)
+    - Finalization ledger commit: next commit (PROGRESS.md only)
+    - Produced:
+      - aether/thinking/policy.py — _evaluate_chat_policy_with_precedence with exact signals rule_3/rule_4/clear; Rule 5 authoritative branch removed; decide_chat_policy() wrapper returns only the ten-key policy dict
+      - aether/core/governance.py — keyword-only rule_3_4_precedence input; exact ten-key _format_rule_5_compatibility_policy formatter; Rule 5 activates for clear + exact high risk_evidence; Identity Rules 1/2 and Rule 3/4 precede Rule 5
+      - aether/core/loop.py — single paired Thinking evaluation; signal transported unchanged; T3 raw/effective routing; sidecar does not leak
+      - tests/test_milestone_91b_rule5_governance_migration_boundary.py — 25-scenario matrix + 20 non-parameterized; exactly 45 collected tests
+      - tests/test_risk_expansion.py — exact one-test amendment (test_high_risk_triggers_require_approval) superseding stale raw-Thinking assertion
+      - 9 existing test files amended (46 full + 5 partial = 51 affected; 2392 unchanged)
+    - 11 repository paths in implementation commit; PROGRESS.md amended separately in finalization ledger commit
+    - Independent audit result: PASS_WITH_WARNINGS (2 non-blocking process warnings: historical standalone 55-test PROGRESS gate consolidated; historical 240-test Architecture/Observation gate expanded to 341)
+    - Pre-commit full suite: 2488 passed, 0 failures, 0 errors, 9 existing PytestRemovedIn10Warning, 0 new warnings
+    - M91 focused: 63 passed
+    - Boundary combined: 339 passed
+    - Regression-only: 437 passed
+    - Impact/regression: 847 passed
+    - Canonical header: 12 passed
+    - Architecture/Observation: 341 passed (expanded equivalent of historical 240-test gate)
+    - Risk expansion: 27 passed
+    - Target repaired test: 1 passed
+    - OpenAPI: 304 paths / 108 schemas
+    - api_server: 8 direct @app routes / 23 include_router / 0 direct /action/*
+    - Constitution SHA-256: 0055748f683bf753b3471a0317b68677752c312d4030b12fbc71684fd3af3ee1 (unchanged)
+    - Architecture version: 0.3.0 (unchanged)
+    - Rule 5 solely authoritative in Core Governance; Thinking owns Rules 3/4 and Rules 6–9
+    - Sidecar values: rule_3/rule_4/clear; trigger: clear + exact high
+    - Precedence: invalid → Identity 1 → Identity 2 → Rule 3 → Rule 4 → Rule 5 → Rules 6–9 fallback
+    - External compatibility preserved; intentional T3 attribution change recorded
+    - No execution, persistence, API, apply, rollback, or evidence-collection expansion
+    - Milestone 91: CLOSED (91B finalized)
+    - Milestone 92: not started
