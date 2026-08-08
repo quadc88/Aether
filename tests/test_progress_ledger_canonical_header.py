@@ -168,65 +168,41 @@ def test_current_92a_local_state_is_consistent_across_header():
     header = _header_block(text)
     fields = _get_all_current_work_fields(header)
 
-    # Identity consistency: all six fields identify Milestone 92A-R2
-    assert "Milestone 92A-R2" in fields["Last updated"]
-    assert "Milestone 92A-R2" in fields["Current completed local milestone"]
-    assert "Milestone 92A-R2" in fields["Current active milestone/module"]
-    assert "Milestone 92A-R2" in fields["Current status"]
-    assert "Milestone 92A-R2" in fields["Next milestone"]
-    assert "Milestone 92A-R2" in fields["Test baseline"]
+    # Six current-work identities are covered as one scalar contract.
+    identity_tokens = {
+        "Last updated": "Milestone 92A-R2",
+        "Current completed local milestone": "Milestone 92A-R2",
+        "Current active milestone/module": "R2 closure identity",
+        "Current status": "R2 implementation commit",
+        "Next milestone": "Milestone 92A-R2",
+        "Test baseline": "R2 implementation commit",
+    }
+    assert all(
+        token in fields[name] for name, token in identity_tokens.items()
+    )
 
-    # Per-field state assertions
-    # Last updated
-    assert "committed locally" in fields["Last updated"]
-    assert "tagged locally" in fields["Last updated"]
-    assert "remote push and verification pending" in fields["Last updated"]
-    assert "PM closure acceptance external" in fields["Last updated"]
-    assert "original 92A" in fields["Last updated"]
-
-    # Current completed local milestone
-    assert "committed locally" in fields["Current completed local milestone"]
-    assert "tagged locally" in fields["Current completed local milestone"]
-    assert "not pushed" in fields["Current completed local milestone"]
-    assert "not finalized" in fields["Current completed local milestone"]
-    assert "PM milestone closure acceptance external" in fields["Current completed local milestone"]
-
-    # Current active milestone/module
-    assert "Milestone 92A-R2 implementation/tag is the current local candidate" in fields["Current active milestone/module"]
-    assert "original 92A is the previous accepted closure" in fields["Current active milestone/module"]
-    assert "R2 independent audit PASS" in fields["Current active milestone/module"]
-    assert "remote push and implementation/tag verification pending" in fields["Current active milestone/module"]
-    assert "PM milestone closure acceptance is external" in fields["Current active milestone/module"]
-    assert "Milestone 92 functional capability not started" in fields["Current active milestone/module"]
-    assert "Milestone 92B not started" in fields["Current active milestone/module"]
-    assert "Rule 6 migration not started" in fields["Current active milestone/module"]
-
-    # Current status
-    assert "implementation committed locally" in fields["Current status"]
-    assert "correction tag created locally" in fields["Current status"]
-    assert "remote push and verification pending" in fields["Current status"]
-    assert "current closure remains original 92A" in fields["Current status"]
-    assert "previous accepted closure is 91B" in fields["Current status"]
+    assert "1c7dc6038a8ac0dd50f431d84983d3421fae5ff6" in _parse_header_field(header, "Current closure ledger")
+    assert "1c7dc6038a8ac0dd50f431d84983d3421fae5ff6" in _parse_header_field(header, "Current closure tag")
+    assert "milestone-92A-R2-baseline-lock-reconciliation" in _parse_header_field(header, "Current closure tag")
+    assert "Stage-3 implementation/tag remote verification complete" in fields["Current active milestone/module"]
+    assert "current closure is R2" in fields["Current status"]
+    assert "previous accepted closure is original 92A" in fields["Current status"]
+    assert "independent audit: PASS" in fields["Current status"]
     assert "Full suite: 2499 passed" in fields["Current status"]
     assert "Canonical header: 23 passed" in fields["Current status"]
     assert "Progress-referencing regression: 322 passed" in fields["Current status"]
     assert "Architecture/Observation: 363 passed" in fields["Current status"]
-
-    # Next milestone
+    assert "OpenAPI: 304 paths / 108 schemas" in fields["Current status"]
+    assert "api_server: 8 direct @app routes / 23 include_router / 0 direct /action/*" in fields["Current status"]
+    assert "no production/API/persistence/execution change" in fields["Current status"]
+    assert "PM closure acceptance is external and not represented by this repository closure record" in fields["Current status"]
+    assert "functional Milestone 92 not started" in fields["Current status"]
+    assert "Milestone 92B not started" in fields["Current status"]
+    assert "Rule 6 migration not started" in fields["Current status"]
+    assert "milestone_92A_R2_finalization_summary.txt" in fields["Test baseline"]
     assert "Publish and verify the Milestone 92A-R2 repository closure record" in fields["Next milestone"]
     assert "human/project-manager closure acceptance" in fields["Next milestone"]
-
-    # Test baseline
-    assert "1c7dc6038a8ac0dd50f431d84983d3421fae5ff6" in fields["Test baseline"]
-    assert "milestone-92A-R2-baseline-lock-reconciliation" in fields["Test baseline"]
-    assert "committed locally" in fields["Test baseline"]
-    assert "tagged locally" in fields["Test baseline"]
-    assert "remote push and verification pending" in fields["Test baseline"]
-    assert "milestone_92A_R2_finalization_summary.txt" in fields["Test baseline"]
-    assert "Full suite: 2499 passed" in fields["Test baseline"]
-    assert "Canonical header: 23 passed" in fields["Test baseline"]
-    assert "Progress-referencing regression: 322 passed" in fields["Test baseline"]
-    assert "Architecture/Observation: 363 passed" in fields["Test baseline"]
+    assert "mandatory four-core-file read and Git verification before any functional Milestone 92 selection" in fields["Next milestone"]
 
     # Commit-3 lifecycle phrases must not appear in any current-work field.
     prohibited_phrases = [
@@ -243,16 +219,9 @@ def test_current_92a_local_state_is_consistent_across_header():
 
     # Closure independence: unchanged 92A/91B values remain in closure fields
     closure_ledger = _parse_header_field(header, "Current closure ledger")
-    assert "milestone_92A_finalization_summary.txt" in closure_ledger
-
     closure_tag = _parse_header_field(header, "Current closure tag")
-    assert "milestone-92A-canonical-ledger-reconciliation" in closure_tag
 
     prev_tag = _parse_header_field(header, "Previous accepted closure tag")
-    assert "milestone-91B-rule5-governance-migration" in prev_tag
-
-    assert "1c7dc6038a8ac0dd50f431d84983d3421fae5ff6" in fields["Current status"]
-    assert "milestone-92A-R2-baseline-lock-reconciliation" in fields["Current status"]
 
     # Parser uniqueness contract: line-by-line matching with explicit failures
     # Case A: one-match success (normal value)
@@ -382,8 +351,8 @@ def test_current_closure_tag_name_and_resolves():
     match = re.search(r'`([^`]+)`', tag_value)
     assert match is not None, f"No tag name found in Current closure tag: {tag_value}"
     tag_name = match.group(1)
-    assert tag_name == "milestone-92A-canonical-ledger-reconciliation", (
-        f"Expected milestone-92A-canonical-ledger-reconciliation, got {tag_name}"
+    assert tag_name == "milestone-92A-R2-baseline-lock-reconciliation", (
+        f"Expected milestone-92A-R2-baseline-lock-reconciliation, got {tag_name}"
     )
 
     # Verify tag resolves locally
@@ -440,19 +409,19 @@ def test_implementation_commit_is_ancestor_of_closure_commit():
     )
 
 
-def test_previous_closure_tag_is_91b():
+def test_previous_closure_tag_is_92a():
     text = _read_progress()
     header = _header_block(text)
     prev_value = _parse_header_field(header, "Previous accepted closure tag")
 
-    assert "milestone-91B-rule5-governance-migration" in prev_value, (
-        f"Expected milestone-91B tag, got: {prev_value}"
+    assert "milestone-92A-canonical-ledger-reconciliation" in prev_value, (
+        f"Expected milestone-92A tag, got: {prev_value}"
     )
-    assert "bd3449b75b0103e4af3c30a457eec5f3d8dc4ba0" in prev_value, (
-        f"Expected 91B SHA, got: {prev_value}"
+    assert "19fc589ae07c2d3bedc659556621bf83274026b7" in prev_value, (
+        f"Expected 92A SHA, got: {prev_value}"
     )
-    assert "milestone-90B-R2-canonical-header-contract-finalization" not in prev_value, (
-        f"Should not contain 90B-R2 tag, got: {prev_value}"
+    assert "milestone-91B-rule5-governance-migration" not in prev_value, (
+        f"Should not contain older 91B tag, got: {prev_value}"
     )
 
 
@@ -557,8 +526,8 @@ def test_92a_vs_functional_92_terminology_contract():
     header = _header_block(text)
     active = _parse_header_field(header, "Current active milestone/module")
 
-    assert "Milestone 92A-R2 implementation/tag is the current local candidate" in active, (
-        f"Missing R2 local candidate, got: {active[:200]}"
+    assert "R2 closure identity is the current accepted implementation/tag" in active, (
+        f"Missing R2 closure identity, got: {active[:200]}"
     )
     assert "Milestone 92 functional capability not started" in active, (
         f"Missing functional 92 not started, got: {active[:200]}"
