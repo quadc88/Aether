@@ -475,12 +475,36 @@ def test_pipeline_maturity_records_current_state():
         "finalized",
         "Milestone 91",
         "CLOSED",
-        "Milestone 92A",
-        "Milestone 92 functional capability not started",
+        "original 92A",
+        "functional Milestone 92 not started",
         "Milestone 92B not started",
     ]
     for token in required_tokens:
         assert token in maturity, f"Pipeline maturity missing required token: {token}"
+
+    required_durable_suffix = (
+        "Milestone 91B finalized; Rule 5 Governance-only ownership; "
+        "Milestone 91 CLOSED; original 92A canonical-ledger "
+        "reconciliation/parser repair finalized; R2 implementation audit PASS; "
+        "Stage-3 implementation/tag remote verification complete; "
+        "closure identity advanced R2/92A; "
+        "PM milestone closure acceptance external and not represented here; "
+        "functional Milestone 92 not started; "
+        "Milestone 92B not started; Rule 6 migration not started."
+    )
+    stale_r2_suffix = (
+        "Milestone 91B finalized; Rule 5 Governance-only ownership; "
+        "Milestone 91 CLOSED; Milestone 92A canonical-ledger reconciliation "
+        "and parser repair finalized, committed, tagged, and pushed; "
+        "Milestone 92A-R2 post-finalization baseline-lock and ledger correction "
+        "COMPLETE locally; uncommitted; untagged; unpushed; not finalized; "
+        "pending independent audit/final closure; no known blockers; "
+        "Milestone 92 functional capability not started; "
+        "Milestone 92B not started; Rule 6 migration not started."
+    )
+
+    assert maturity.endswith(required_durable_suffix)
+    assert not maturity.endswith(stale_r2_suffix)
 
 
 def test_full_suite_and_canonical_counts_match_header():
