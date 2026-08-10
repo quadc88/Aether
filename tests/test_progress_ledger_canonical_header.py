@@ -170,29 +170,25 @@ def test_current_92a_local_state_is_consistent_across_header():
 
     # Six current-work identities are covered as one scalar contract.
     identity_tokens = {
-        "Last updated": "Milestone 92B independently audited Boundary candidate",
-        "Current completed local milestone": "Milestone 92B boundary artifacts and verification complete locally",
-        "Current active milestone/module": "Milestone 92B finalization active",
-        "Current status": "Boundary: 48 passed",
-        "Next milestone": "complete Milestone 92B repository finalization",
+        "Last updated": "Milestone 92B Rule 6 Governance Migration Boundary finalized",
+        "Current completed local milestone": "Milestone 92B Rule 6 Governance Migration Boundary finalized",
+        "Current active milestone/module": "Milestone 92B CLOSED",
+        "Current status": "92B implementation commit",
+        "Next milestone": "Milestone 92C may be considered",
         "Test baseline": "2547 current verified 92B candidate baseline",
     }
     assert all(
         token in fields[name] for name, token in identity_tokens.items()
     )
 
-    assert "1c7dc6038a8ac0dd50f431d84983d3421fae5ff6" in _parse_header_field(header, "Current closure ledger")
-    assert "1c7dc6038a8ac0dd50f431d84983d3421fae5ff6" in _parse_header_field(header, "Current closure tag")
-    assert "milestone-92A-R2-baseline-lock-reconciliation" in _parse_header_field(header, "Current closure tag")
-    assert "92A externally PM CLOSED" in fields["Current active milestone/module"]
-    assert "functional Milestone 92 started through boundary-only work" in fields["Current active milestone/module"]
-    assert "focused independent re-audit PASS" in fields["Current active milestone/module"]
-    assert "repository finalization authorized and pending" in fields["Current active milestone/module"]
+    assert "22d819b6bd3a305536c0beba57f670a5433fe21e" in _parse_header_field(header, "Current closure ledger")
+    assert "22d819b6bd3a305536c0beba57f670a5433fe21e" in _parse_header_field(header, "Current closure tag")
+    assert "milestone-92B-rule6-governance-migration-boundary" in _parse_header_field(header, "Current closure tag")
+    assert "Rule 6 runtime migration not started" in fields["Current active milestone/module"]
     assert "future 92C not authorized" in fields["Current active milestone/module"]
-    assert "current closure is R2" in fields["Current status"]
-    assert "previous accepted closure is original 92A" in fields["Current status"]
     assert "focused independent re-audit PASS" in fields["Current status"]
-    assert "implementation commit/tag/push pending" in fields["Current status"]
+    assert "remote implementation reachability verified" in fields["Current status"]
+    assert "remote tag exact target verified" in fields["Current status"]
     assert "Full suite: 2547 passed" in fields["Current status"]
     assert "Canonical header: 23 passed" in fields["Current status"]
     assert "Progress-referencing regression: 322 passed" in fields["Current status"]
@@ -200,20 +196,17 @@ def test_current_92a_local_state_is_consistent_across_header():
     assert "OpenAPI: 304 paths / 108 schemas" in fields["Current status"]
     assert "api_server: 8 direct @app routes / 23 include_router / 0 direct /action/*" in fields["Current status"]
     assert "no production/API/persistence/execution change" in fields["Current status"]
-    assert "PM closure acceptance is external and not represented by this repository closure record" in fields["Current status"]
-    assert "functional Milestone 92 started through boundary-only work" in fields["Current status"]
-    assert "92B boundary Build complete locally" in fields["Current status"]
     assert "focused independent re-audit PASS" in fields["Current status"]
+    assert "functional Milestone 92 boundary phase complete" in fields["Current status"]
     assert "future 92C not authorized" in fields["Current status"]
     assert "Candidate A-F deferred" in fields["Current status"]
-    assert "Rule 6 migration not started" in fields["Current status"]
     assert "Boundary: 48" in fields["Test baseline"]
     assert "Canonical header: 23 passed" in fields["Test baseline"]
     assert "Progress-referencing regression: 322 passed" in fields["Test baseline"]
     assert "Architecture/Observation: 363 passed" in fields["Test baseline"]
     assert "9 existing PytestRemovedIn10Warning, 0 new warnings" in fields["Test baseline"]
-    assert "future 92C remains separately gated" in fields["Next milestone"]
-    assert "complete Milestone 92B repository finalization" in fields["Next milestone"]
+    assert "fresh mandatory PM four-core read" in fields["Next milestone"]
+    assert "Milestone 92C may be considered" in fields["Next milestone"]
 
     # Commit-3 lifecycle phrases must not appear in any current-work field.
     prohibited_phrases = [
@@ -362,8 +355,8 @@ def test_current_closure_tag_name_and_resolves():
     match = re.search(r'`([^`]+)`', tag_value)
     assert match is not None, f"No tag name found in Current closure tag: {tag_value}"
     tag_name = match.group(1)
-    assert tag_name == "milestone-92A-R2-baseline-lock-reconciliation", (
-        f"Expected milestone-92A-R2-baseline-lock-reconciliation, got {tag_name}"
+    assert tag_name == "milestone-92B-rule6-governance-migration-boundary", (
+        f"Expected milestone-92B-rule6-governance-migration-boundary, got {tag_name}"
     )
 
     # Verify tag resolves locally
@@ -425,14 +418,11 @@ def test_previous_closure_tag_is_92a():
     header = _header_block(text)
     prev_value = _parse_header_field(header, "Previous accepted closure tag")
 
-    assert "milestone-92A-canonical-ledger-reconciliation" in prev_value, (
-        f"Expected milestone-92A tag, got: {prev_value}"
+    assert "milestone-92A-R2-baseline-lock-reconciliation" in prev_value, (
+        f"Expected milestone-92A-R2 tag, got: {prev_value}"
     )
-    assert "19fc589ae07c2d3bedc659556621bf83274026b7" in prev_value, (
-        f"Expected 92A SHA, got: {prev_value}"
-    )
-    assert "milestone-91B-rule5-governance-migration" not in prev_value, (
-        f"Should not contain older 91B tag, got: {prev_value}"
+    assert "1c7dc6038a8ac0dd50f431d84983d3421fae5ff6" in prev_value, (
+        f"Expected milestone-92A-R2 SHA, got: {prev_value}"
     )
 
 
@@ -486,11 +476,9 @@ def test_pipeline_maturity_records_current_state():
         "finalized",
         "Milestone 91",
         "CLOSED",
-        "92A externally PM CLOSED",
-        "92B Boundary candidate independently verified",
-        "focused independent re-audit PASS",
-        "repository finalization authorized and pending",
-        "functional Milestone 92 started through boundary-only work",
+        "Milestone 92B finalized",
+        "Rule 6 Governance migration boundary committed, tagged, pushed, and remotely verified",
+        "functional Milestone 92 boundary phase complete",
         "future 92C not authorized",
         "Candidate A-F deferred",
     ]
@@ -498,11 +486,10 @@ def test_pipeline_maturity_records_current_state():
         assert token in maturity, f"Pipeline maturity missing required token: {token}"
 
     required_durable_suffix = (
-        "92A externally PM CLOSED; 92B Boundary candidate independently verified; "
-        "focused independent re-audit PASS; repository finalization authorized "
-        "and pending; functional Milestone 92 started through boundary-only work; "
-        "Rule 6 runtime migration not started; future 92C not authorized; "
-        "Candidate A-F deferred."
+        "Milestone 92B finalized; Rule 6 Governance migration boundary committed, "
+        "tagged, pushed, and remotely verified; Rule 6 remains physically evaluated "
+        "in Thinking; Rule 6 runtime migration not started; functional Milestone 92 "
+        "boundary phase complete; future 92C not authorized; Candidate A-F deferred."
     )
     stale_r2_suffix = (
         "Milestone 91B finalized; Rule 5 Governance-only ownership; "
@@ -561,23 +548,43 @@ def test_92a_vs_functional_92_terminology_contract():
     text = _read_progress()
     header = _header_block(text)
     active = _parse_header_field(header, "Current active milestone/module")
+    section10 = text.split("## 10. Next Recommended Milestone\n", 1)[1].split(
+        "\n---\n", 1
+    )[0]
 
-    assert "Milestone 92B finalization active" in active, (
-        f"Missing 92B active finalization, got: {active[:200]}"
+    assert "Milestone 92B CLOSED" in active, (
+        f"Missing 92B closed state, got: {active[:200]}"
     )
-    assert "R2 closure identity remains unchanged" in active, (
-        f"Missing unchanged R2 closure identity, got: {active[:200]}"
-    )
-    assert "functional Milestone 92 started through boundary-only work" in active, (
-        f"Missing boundary-only functional start, got: {active[:200]}"
-    )
-    assert "92B not finalized" in active, (
-        f"Missing non-finalized 92B state, got: {active[:200]}"
-    )
-    assert "Rule 6 migration not started" in active, (
-        f"Missing Rule 6 migration not started, got: {active[:200]}"
+    assert "Rule 6 runtime migration not started" in active, (
+        f"Missing Rule 6 runtime migration not started, got: {active[:200]}"
     )
     # Prohibit standalone "Milestone 92 not started" without qualification
     assert "Milestone 92 not started" not in active, (
         f"Must not contain standalone 'Milestone 92 not started', got: {active[:200]}"
     )
+
+    for token in (
+        "Milestone 92B",
+        "implementation commit",
+        "implementation tag",
+        "Stage-2 closure-contract correction passed independent audit",
+        "verified Milestone 92B final closure state",
+        "Git verification determines whether that closure state is durable",
+        "Rule 6 runtime migration has not started",
+        "future 92C is not authorized",
+        "fresh mandatory PM four-core and Git review",
+    ):
+        assert token in section10, f"Section 10 missing current token: {token}"
+
+    for stale in (
+        "boundary candidate exists locally and is not finalized",
+        "independent audit pending",
+        "Independent audit/review of 92B Boundary candidate",
+        "before any commit, tag, push",
+        "final closure candidate is prepared locally",
+        "final durable closure commit has not yet been created",
+        "final durable closure commit is pending",
+        "CLOSED after the separately authorized final closure commit",
+        "awaiting final closure commit",
+    ):
+        assert stale not in section10, f"Stale Section 10 phrase found: {stale}"

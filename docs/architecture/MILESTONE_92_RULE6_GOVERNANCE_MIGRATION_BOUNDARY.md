@@ -313,9 +313,31 @@ The actual four-path Build scope is exactly:
 
 The three core boundary artifact paths are the first three conceptual
 artifacts: ledger, record, and new boundary test. The canonical test path is
-the only existing canonical supersession path. Exactly four canonical
-functions may change. Finalized M87/M88/M89/M91 records, all finalized/runtime
-tests, all Thinking-policy/runtime tests, all future 92C targets, production source, README, Constitution,
+the only existing canonical supersession path. The **Build-stage contract**
+states: Exactly four canonical functions may change, meaning exactly four
+canonical function supersessions are permitted relative to the
+pre-92B baseline:
+
+1. `test_current_92a_local_state_is_consistent_across_header`;
+2. `test_pipeline_maturity_records_current_state`;
+3. `test_full_suite_and_canonical_counts_match_header`;
+4. `test_92a_vs_functional_92_terminology_contract`.
+
+The **final closure contract** permits exactly five canonical function
+supersessions relative to the immutable
+`milestone-92B-rule6-governance-migration-boundary` implementation tag:
+
+1. `test_current_92a_local_state_is_consistent_across_header`;
+2. `test_pipeline_maturity_records_current_state`;
+3. `test_92a_vs_functional_92_terminology_contract`;
+4. `test_current_closure_tag_name_and_resolves`;
+5. `test_previous_closure_tag_is_92a`.
+
+The five-function closure delta is limited to truthful lifecycle and closure
+provenance reconciliation. It does not authorize production, runtime, Rule 6,
+Rule 4, API, persistence, execution, or future 92C changes. Finalized
+M87/M88/M89/M91 records, all finalized/runtime tests, all Thinking-policy/runtime
+tests, all future 92C targets, production source, README, Constitution,
 Architecture, API, routers, persistence, and runtime data are protected.
 
 ## 22. 92B Non-Capabilities
@@ -334,6 +356,13 @@ Current full baseline is 2499. The new boundary file has exactly 48 tests,
 with 15 `CURRENT_STATE_LOCK`, 23 `FUTURE_BOUNDARY_CONTRACT`, and 10
 `NON_CAPABILITY_LOCK`; no parametrization. Canonical collection remains 23
 after four function amendments. Expected 92B full total is 2547.
+
+Canonical accounting is dual-stage: the Build-stage contract is four
+supersessions from pre-92B to the implementation tag; the final closure
+contract is five supersessions from the immutable implementation tag to the
+final closure ledger. The closure-only additions reconcile the implementation
+tag provenance and previous accepted closure tag; they do not rewrite the
+audited Build-stage four-function contract.
 
 Expected focused labels are: M87 76, M88 50, M89 150, M91A+M91B 63,
 Governance/policy/core 592, Progress 322, Architecture/Observation 363,

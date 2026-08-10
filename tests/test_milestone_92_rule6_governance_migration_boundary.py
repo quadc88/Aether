@@ -58,6 +58,22 @@ CANONICAL_ALLOWED = {
     "test_full_suite_and_canonical_counts_match_header",
     "test_92a_vs_functional_92_terminology_contract",
 }
+PRE_92B_COMMIT = "a9c0b8cfe09251d688bbf0e97f799b8597d9dd87"
+IMPLEMENTATION_TAG = "milestone-92B-rule6-governance-migration-boundary"
+IMPLEMENTATION_COMMIT = "22d819b6bd3a305536c0beba57f670a5433fe21e"
+BUILD_STAGE_ALLOWED = {
+    "test_current_92a_local_state_is_consistent_across_header",
+    "test_pipeline_maturity_records_current_state",
+    "test_full_suite_and_canonical_counts_match_header",
+    "test_92a_vs_functional_92_terminology_contract",
+}
+CLOSURE_STAGE_ALLOWED = {
+    "test_current_92a_local_state_is_consistent_across_header",
+    "test_pipeline_maturity_records_current_state",
+    "test_92a_vs_functional_92_terminology_contract",
+    "test_current_closure_tag_name_and_resolves",
+    "test_previous_closure_tag_is_92a",
+}
 
 
 def _text(path: Path) -> str:
@@ -89,9 +105,13 @@ def _function_names(path: Path) -> set[str]:
 
 
 def _function_dumps(path: Path) -> dict[str, str]:
+    return _function_dumps_from_text(_text(path))
+
+
+def _function_dumps_from_text(text: str) -> dict[str, str]:
     return {
         node.name: ast.dump(node)
-        for node in ast.walk(_tree(path))
+        for node in ast.walk(ast.parse(text))
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
         and node.name.startswith("test_")
     }
@@ -137,26 +157,33 @@ class TestDecisionRecordScope:
         assert "Thinking-policy/runtime tests" in text
         assert "Exactly four canonical functions may change" in text
         assert "future 92C targets" in text
-        current, baseline = _function_dumps(CANONICAL), {}
-        baseline_text = subprocess.run(
-            ["git", "show", "HEAD:tests/test_progress_ledger_canonical_header.py"],
+        current = _function_dumps(CANONICAL)
+        tag_result = subprocess.run(
+            ["git", "rev-parse", IMPLEMENTATION_TAG],
+            check=True, capture_output=True, text=True, cwd=ROOT,
+        )
+        assert tag_result.stdout.strip() == IMPLEMENTATION_COMMIT
+        build_baseline_text = subprocess.run(
+            ["git", "show", f"{PRE_92B_COMMIT}:tests/test_progress_ledger_canonical_header.py"],
             check=True, capture_output=True, text=True, cwd=ROOT,
         ).stdout
+        implementation_baseline_text = subprocess.run(
+            ["git", "show", f"{IMPLEMENTATION_TAG}:tests/test_progress_ledger_canonical_header.py"],
+            check=True, capture_output=True, text=True, cwd=ROOT,
+        ).stdout
+        build_baseline = _function_dumps_from_text(build_baseline_text)
+        implementation_baseline = _function_dumps_from_text(implementation_baseline_text)
+        build_delta = {
+            name for name in implementation_baseline
+            if implementation_baseline[name] != build_baseline.get(name)
+        }
+        closure_delta = {
+            name for name in current
+            if current[name] != implementation_baseline.get(name)
+        }
+        assert build_delta == BUILD_STAGE_ALLOWED
+        assert closure_delta == CLOSURE_STAGE_ALLOWED
         baseline_path = ROOT / ".milestone_92b_canonical_baseline.tmp"
-        # Compare function ASTs without creating a repository file.
-        baseline_tree = ast.parse(baseline_text)
-        baseline = {
-            node.name: ast.dump(node)
-            for node in ast.walk(baseline_tree)
-            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
-            and node.name.startswith("test_")
-        }
-        assert {name for name in current if current[name] != baseline.get(name)} == {
-            "test_current_92a_local_state_is_consistent_across_header",
-            "test_pipeline_maturity_records_current_state",
-            "test_full_suite_and_canonical_counts_match_header",
-            "test_92a_vs_functional_92_terminology_contract",
-        }
         assert not baseline_path.exists()
 
 
