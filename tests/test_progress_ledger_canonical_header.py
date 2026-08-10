@@ -170,47 +170,42 @@ def test_current_92a_local_state_is_consistent_across_header():
 
     # Six current-work identities are covered as one scalar contract.
     identity_tokens = {
-        "Last updated": "Milestone 92C Rule 6 Governance Runtime Migration implementation Build complete locally",
-        "Current completed local milestone": "Milestone 92B Rule 6 Governance Migration Boundary finalized",
-        "Current active milestone/module": "Milestone 92B CLOSED",
-        "Current status": "92B remains durably closed",
-        "Next milestone": "Milestone 92C finalization may be considered",
-        "Test baseline": "2571 current verified 92C candidate baseline",
+        "Last updated": "Milestone 92C Rule 6 Governance Runtime Migration closure state complete",
+        "Current completed local milestone": "Milestone 92C Rule 6 Governance Runtime Migration closure state complete",
+        "Current active milestone/module": "Milestone 92C CLOSED",
+        "Current status": "Milestone 92C Rule 6 Governance Runtime Migration closure state is complete",
+        "Next milestone": "Future milestone definition requires a fresh PM four-core + Git read",
+        "Test baseline": "2571 current verified 92C closure baseline",
     }
     assert all(
         token in fields[name] for name, token in identity_tokens.items()
     )
 
-    assert "22d819b6bd3a305536c0beba57f670a5433fe21e" in _parse_header_field(header, "Current closure ledger")
-    assert "22d819b6bd3a305536c0beba57f670a5433fe21e" in _parse_header_field(header, "Current closure tag")
-    assert "milestone-92B-rule6-governance-migration-boundary" in _parse_header_field(header, "Current closure tag")
-    assert "Rule 6 operative authority migrated locally to Core Governance" in fields["Current active milestone/module"]
+    assert "3641c0c98fad993b1b4b5b8719dbf1cfd7117abc" in _parse_header_field(header, "Current closure ledger")
+    assert "3641c0c98fad993b1b4b5b8719dbf1cfd7117abc" in _parse_header_field(header, "Current closure tag")
+    assert "milestone-92C-rule6-governance-runtime-migration" in _parse_header_field(header, "Current closure tag")
+    assert "Rule 6 operative authority is Core Governance" in fields["Current active milestone/module"]
     assert "Rule 4 remains physically evaluated in Thinking" in fields["Current active milestone/module"]
-    assert "focused independent re-audit PASS" in fields["Current status"]
-    assert "remote implementation reachability verified" in fields["Current status"]
-    assert "remote tag exact target verified" in fields["Current status"]
+    assert "implementation commit 3641c0c98fad993b1b4b5b8719dbf1cfd7117abc" in fields["Current status"]
+    assert "immutable implementation tag milestone-92C-rule6-governance-runtime-migration" in fields["Current status"]
     assert "Full suite: 2571 passed" in fields["Current status"]
     assert "Canonical header: 23 passed" in fields["Current status"]
     assert "Progress-referencing regression: 322 passed" in fields["Current status"]
     assert "Architecture/Observation: 363 passed" in fields["Current status"]
     assert "OpenAPI: 304 paths / 108 schemas" in fields["Current status"]
     assert "api_server: 8 direct @app routes / 23 include_router / 0 direct /action/*" in fields["Current status"]
-    assert "no production/API/persistence/execution change" in fields["Current status"]
-    assert "focused independent re-audit PASS" in fields["Current status"]
-    assert "functional Milestone 92 boundary phase complete" in fields["Current status"]
-    assert "92C implementation candidate content is complete and verified" in fields["Current status"]
-    assert "current 92C implementation durability, implementation-tag state, and remote reachability must be verified directly from Git" in fields["Current status"]
-    assert "Milestone 92C is not durably finalized" in fields["Current status"]
-    assert "Stage-2 closure remains separately gated" in fields["Current status"]
+    assert "closure durability must be verified directly from Git" in fields["Current status"]
+    assert "no production/API/persistence/execution capability expansion" in fields["Current status"]
     assert "Candidate A-F deferred" in fields["Current status"]
     assert "Boundary: 48" in fields["Test baseline"]
     assert "Full suite: 2571 passed" in fields["Test baseline"]
     assert "Canonical header: 23 passed" in fields["Test baseline"]
     assert "Progress-referencing regression: 322 passed" in fields["Test baseline"]
     assert "Architecture/Observation: 363 passed" in fields["Test baseline"]
-    assert "9 existing PytestRemovedIn10Warning, 0 new warnings" in fields["Test baseline"]
-    assert "fresh mandatory PM four-core read" in fields["Next milestone"]
-    assert "Milestone 92C finalization may be considered" in fields["Next milestone"]
+    assert "9 existing PytestRemovedIn10Warning" in fields["Test baseline"]
+    assert "1 StarletteDeprecationWarning reproducible at the parent baseline" in fields["Test baseline"]
+    assert "0 warning delta caused by Milestone 92C" in fields["Test baseline"]
+    assert "no functional milestone is selected or started here" in fields["Next milestone"]
 
     # Commit-3 lifecycle phrases must not appear in any current-work field.
     prohibited_phrases = [
@@ -359,8 +354,8 @@ def test_current_closure_tag_name_and_resolves():
     match = re.search(r'`([^`]+)`', tag_value)
     assert match is not None, f"No tag name found in Current closure tag: {tag_value}"
     tag_name = match.group(1)
-    assert tag_name == "milestone-92B-rule6-governance-migration-boundary", (
-        f"Expected milestone-92B-rule6-governance-migration-boundary, got {tag_name}"
+    assert tag_name == "milestone-92C-rule6-governance-runtime-migration", (
+        f"Expected milestone-92C-rule6-governance-runtime-migration, got {tag_name}"
     )
 
     # Verify tag resolves locally
@@ -422,11 +417,11 @@ def test_previous_accepted_closure_tag_is_consistent():
     header = _header_block(text)
     prev_value = _parse_header_field(header, "Previous accepted closure tag")
 
-    assert "milestone-92A-R2-baseline-lock-reconciliation" in prev_value, (
-        f"Expected milestone-92A-R2 tag, got: {prev_value}"
+    assert "milestone-92B-rule6-governance-migration-boundary" in prev_value, (
+        f"Expected milestone-92B tag, got: {prev_value}"
     )
-    assert "1c7dc6038a8ac0dd50f431d84983d3421fae5ff6" in prev_value, (
-        f"Expected milestone-92A-R2 SHA, got: {prev_value}"
+    assert "22d819b6bd3a305536c0beba57f670a5433fe21e" in prev_value, (
+        f"Expected milestone-92B SHA, got: {prev_value}"
     )
 
 
@@ -482,8 +477,7 @@ def test_pipeline_maturity_records_current_state():
         "CLOSED",
         "Milestone 92B finalized",
         "Rule 6 Governance migration boundary committed, tagged, pushed, and remotely verified",
-        "functional Milestone 92 boundary phase complete",
-        "future 92C not authorized",
+        "Rule 6 Governance Runtime Migration closure state complete",
         "Candidate A-F deferred",
     ]
     for token in required_tokens:
@@ -492,8 +486,8 @@ def test_pipeline_maturity_records_current_state():
     required_durable_suffix = (
         "Milestone 92B finalized; Rule 6 Governance migration boundary committed, "
         "tagged, pushed, and remotely verified; Rule 6 remains physically evaluated "
-        "in Thinking; Rule 6 runtime migration not started; functional Milestone 92 "
-        "boundary phase complete; future 92C not authorized; Candidate A-F deferred."
+        "in Thinking; Rule 6 Governance Runtime Migration closure state complete; "
+        "implementation durable; Milestone 92C CLOSED; Candidate A-F deferred."
     )
     stale_r2_suffix = (
         "Milestone 91B finalized; Rule 5 Governance-only ownership; "
@@ -556,10 +550,10 @@ def test_92a_vs_functional_92_terminology_contract():
         "\n---\n", 1
     )[0]
 
-    assert "Milestone 92B CLOSED" in active, (
-        f"Missing 92B closed state, got: {active[:200]}"
+    assert "Milestone 92C CLOSED" in active, (
+        f"Missing 92C closed state, got: {active[:200]}"
     )
-    assert "Rule 6 operative authority migrated locally to Core Governance" in active, (
+    assert "Rule 6 operative authority is Core Governance" in active, (
         f"Missing local Rule 6 Governance authority, got: {active[:200]}"
     )
     # Prohibit standalone "Milestone 92 not started" without qualification
@@ -568,16 +562,15 @@ def test_92a_vs_functional_92_terminology_contract():
     )
 
     for token in (
-        "Milestone 92B",
+        "Milestone 92C",
         "implementation commit",
         "implementation tag",
-        "92C implementation candidate content is complete and verified",
-        "Rule 6 operative authority is migrated locally to Core Governance",
+        "closure state is complete",
+        "Rule 6 authority is Core Governance",
         "Rule 4 remains physically evaluated in Thinking",
-        "current 92C implementation durability, implementation-tag state, and remote reachability must be verified directly from Git",
-        "Milestone 92C is not durably finalized",
-        "finalization remains separately gated",
-        "fresh mandatory PM four-core and Git review",
+        "closure durability must be verified directly from Git",
+        "Candidate A-F remain deferred",
+        "Future milestone definition requires a fresh PM four-core + Git read",
     ):
         assert token in section10, f"Section 10 missing current token: {token}"
 
