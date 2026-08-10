@@ -36,6 +36,26 @@ def _format_rule_5_compatibility_policy(action_type: str) -> dict:
     }
 
 
+def _format_rule_6_compatibility_policy(requested_action) -> dict:
+    """Format the legacy Rule 6 policy after Governance selects Rule 6."""
+    tool_id = requested_action.get("tool_id", "")
+    return {
+        "decision_type": "require_approval",
+        "confidence": "medium",
+        "reasons": [
+            f"Medium-risk request with suggested tool '{tool_id}'. "
+            "Requires human approval before tool use."
+        ],
+        "required_user_confirmation": True,
+        "tool_suggestion_allowed": True,
+        "tool_execution_allowed": False,
+        "blocked_reason": None,
+        "clarification_question": None,
+        "next_step": "Review suggested tool and confirm before proceeding.",
+        "warnings": ["Medium-risk tool usage requires human confirmation."],
+    }
+
+
 def evaluate_authorization_envelope(
     thinking_policy: dict | None = None,
     requested_action: dict | None = None,
@@ -189,6 +209,21 @@ def evaluate_authorization_envelope(
             if not isinstance(action_type, str):
                 action_type = "unknown"
             policy_snapshot = _format_rule_5_compatibility_policy(action_type)
+            return {
+                "allowed": False,
+                "decision": "require_approval",
+                "reason": "Human approval is required before execution.",
+                "required_user_confirmation": True,
+                "tool_execution_allowed": False,
+                "action_execution_allowed": False,
+                "requested_action": requested_action,
+                "policy_snapshot": policy_snapshot,
+                "warnings": warnings,
+            }
+
+        # --- Governance Rule 6: exact medium evidence plus clear signal ---
+        if risk_level == "medium" and requested_action is not None:
+            policy_snapshot = _format_rule_6_compatibility_policy(requested_action)
             return {
                 "allowed": False,
                 "decision": "require_approval",

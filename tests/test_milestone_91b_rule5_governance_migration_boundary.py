@@ -51,7 +51,7 @@ SCENARIOS = [
     pytest.param({"perception": _perception("delete the archive"), "risk": _risk(), "tool": None, "identity": None, "signal": "clear", "raw": "respond_only", "effective": "require_approval", "envelope": "require_approval"}, id="s05_ordinary_high"),
     pytest.param({"perception": _perception("delete the archive"), "risk": _risk(), "tool": {"tool_id": "filesystem"}, "identity": None, "signal": "clear", "raw": "respond_only", "effective": "require_approval", "envelope": "require_approval"}, id="s06_ordinary_high_tool"),
     pytest.param({"perception": _perception("delete"), "risk": _risk(), "tool": None, "identity": None, "signal": "clear", "raw": "ask_clarification", "effective": "require_approval", "envelope": "require_approval"}, id="s07_short_high"),
-    pytest.param({"perception": _perception("review this document"), "risk": _risk("medium"), "tool": {"tool_id": "reviewer"}, "identity": None, "signal": "clear", "raw": "require_approval", "effective": "require_approval", "envelope": "require_approval"}, id="s08_medium_tool"),
+    pytest.param({"perception": _perception("review this document"), "risk": _risk("medium"), "tool": {"tool_id": "reviewer"}, "identity": None, "signal": "clear", "raw": "respond_only", "effective": "require_approval", "envelope": "require_approval"}, id="s08_medium_tool"),
     pytest.param({"perception": _perception("list files"), "risk": _risk("low"), "tool": {"tool_id": "filesystem"}, "identity": None, "signal": "clear", "raw": "suggest_tool", "effective": "suggest_tool", "envelope": "deny"}, id="s09_low_tool"),
     pytest.param({"perception": _perception("help me"), "risk": _risk("low"), "tool": None, "identity": None, "signal": "clear", "raw": "ask_clarification", "effective": "ask_clarification", "envelope": "deny"}, id="s10_short_low"),
     pytest.param({"perception": _perception("provide a general explanation"), "risk": _risk("low"), "tool": None, "identity": None, "signal": "clear", "raw": "respond_only", "effective": "respond_only", "envelope": "deny"}, id="s11_default_low"),
@@ -78,7 +78,8 @@ def test_25_scenario_field_exact_matrix(case):
     assert signal == case["signal"]
     assert raw["decision_type"] == case["raw"]
     policy = case.get("synthetic", raw)
-    envelope = evaluate_authorization_envelope(policy, requested_action=None, risk_evidence=case.get("evidence", case["risk"]), rule_3_4_precedence=signal, identity_integrity_evidence=case["identity"])
+    requested_action = case["tool"] if case["risk"].get("risk_level") == "medium" else None
+    envelope = evaluate_authorization_envelope(policy, requested_action=requested_action, risk_evidence=case.get("evidence", case["risk"]), rule_3_4_precedence=signal, identity_integrity_evidence=case["identity"])
     assert envelope["decision"] == case["envelope"]
     if envelope["policy_snapshot"]:
         assert envelope["policy_snapshot"]["decision_type"] == case["effective"]

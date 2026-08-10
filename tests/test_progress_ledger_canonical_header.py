@@ -170,12 +170,12 @@ def test_current_92a_local_state_is_consistent_across_header():
 
     # Six current-work identities are covered as one scalar contract.
     identity_tokens = {
-        "Last updated": "Milestone 92B Rule 6 Governance Migration Boundary finalized",
+        "Last updated": "Milestone 92C Rule 6 Governance Runtime Migration implementation Build complete locally",
         "Current completed local milestone": "Milestone 92B Rule 6 Governance Migration Boundary finalized",
         "Current active milestone/module": "Milestone 92B CLOSED",
-        "Current status": "92B implementation commit",
-        "Next milestone": "Milestone 92C may be considered",
-        "Test baseline": "2547 current verified 92B candidate baseline",
+        "Current status": "92B remains durably closed",
+        "Next milestone": "Milestone 92C finalization may be considered",
+        "Test baseline": "2571 current verified 92C candidate baseline",
     }
     assert all(
         token in fields[name] for name, token in identity_tokens.items()
@@ -184,12 +184,12 @@ def test_current_92a_local_state_is_consistent_across_header():
     assert "22d819b6bd3a305536c0beba57f670a5433fe21e" in _parse_header_field(header, "Current closure ledger")
     assert "22d819b6bd3a305536c0beba57f670a5433fe21e" in _parse_header_field(header, "Current closure tag")
     assert "milestone-92B-rule6-governance-migration-boundary" in _parse_header_field(header, "Current closure tag")
-    assert "Rule 6 runtime migration not started" in fields["Current active milestone/module"]
-    assert "future 92C not authorized" in fields["Current active milestone/module"]
+    assert "Rule 6 operative authority migrated locally to Core Governance" in fields["Current active milestone/module"]
+    assert "Rule 4 remains physically evaluated in Thinking" in fields["Current active milestone/module"]
     assert "focused independent re-audit PASS" in fields["Current status"]
     assert "remote implementation reachability verified" in fields["Current status"]
     assert "remote tag exact target verified" in fields["Current status"]
-    assert "Full suite: 2547 passed" in fields["Current status"]
+    assert "Full suite: 2571 passed" in fields["Current status"]
     assert "Canonical header: 23 passed" in fields["Current status"]
     assert "Progress-referencing regression: 322 passed" in fields["Current status"]
     assert "Architecture/Observation: 363 passed" in fields["Current status"]
@@ -198,15 +198,19 @@ def test_current_92a_local_state_is_consistent_across_header():
     assert "no production/API/persistence/execution change" in fields["Current status"]
     assert "focused independent re-audit PASS" in fields["Current status"]
     assert "functional Milestone 92 boundary phase complete" in fields["Current status"]
-    assert "future 92C not authorized" in fields["Current status"]
+    assert "92C implementation candidate content is complete and verified" in fields["Current status"]
+    assert "current 92C implementation durability, implementation-tag state, and remote reachability must be verified directly from Git" in fields["Current status"]
+    assert "Milestone 92C is not durably finalized" in fields["Current status"]
+    assert "Stage-2 closure remains separately gated" in fields["Current status"]
     assert "Candidate A-F deferred" in fields["Current status"]
     assert "Boundary: 48" in fields["Test baseline"]
+    assert "Full suite: 2571 passed" in fields["Test baseline"]
     assert "Canonical header: 23 passed" in fields["Test baseline"]
     assert "Progress-referencing regression: 322 passed" in fields["Test baseline"]
     assert "Architecture/Observation: 363 passed" in fields["Test baseline"]
     assert "9 existing PytestRemovedIn10Warning, 0 new warnings" in fields["Test baseline"]
     assert "fresh mandatory PM four-core read" in fields["Next milestone"]
-    assert "Milestone 92C may be considered" in fields["Next milestone"]
+    assert "Milestone 92C finalization may be considered" in fields["Next milestone"]
 
     # Commit-3 lifecycle phrases must not appear in any current-work field.
     prohibited_phrases = [
@@ -413,7 +417,7 @@ def test_implementation_commit_is_ancestor_of_closure_commit():
     )
 
 
-def test_previous_closure_tag_is_92a():
+def test_previous_accepted_closure_tag_is_consistent():
     text = _read_progress()
     header = _header_block(text)
     prev_value = _parse_header_field(header, "Previous accepted closure tag")
@@ -514,16 +518,16 @@ def test_full_suite_and_canonical_counts_match_header():
     baseline = _parse_header_field(header, "Test baseline")
 
     # Current status must contain post-Build counts
-    assert "Full suite: 2547 passed" in status, (
-        f"Current status missing 'Full suite: 2547 passed': {status[:200]}"
+    assert "Full suite: 2571 passed" in status, (
+        f"Current status missing 'Full suite: 2571 passed': {status[:200]}"
     )
     assert "Canonical header: 23 passed" in status, (
         f"Current status missing 'Canonical header: 23 passed': {status[:200]}"
     )
 
     # Test baseline must contain post-Build counts
-    assert "Full suite: 2547 passed" in baseline, (
-        f"Test baseline missing 'Full suite: 2547 passed': {baseline[:200]}"
+    assert "Full suite: 2571 passed" in baseline, (
+        f"Test baseline missing 'Full suite: 2571 passed': {baseline[:200]}"
     )
     assert "Canonical header: 23 passed" in baseline, (
         f"Test baseline missing 'Canonical header: 23 passed': {baseline[:200]}"
@@ -555,8 +559,8 @@ def test_92a_vs_functional_92_terminology_contract():
     assert "Milestone 92B CLOSED" in active, (
         f"Missing 92B closed state, got: {active[:200]}"
     )
-    assert "Rule 6 runtime migration not started" in active, (
-        f"Missing Rule 6 runtime migration not started, got: {active[:200]}"
+    assert "Rule 6 operative authority migrated locally to Core Governance" in active, (
+        f"Missing local Rule 6 Governance authority, got: {active[:200]}"
     )
     # Prohibit standalone "Milestone 92 not started" without qualification
     assert "Milestone 92 not started" not in active, (
@@ -567,11 +571,12 @@ def test_92a_vs_functional_92_terminology_contract():
         "Milestone 92B",
         "implementation commit",
         "implementation tag",
-        "Stage-2 closure-contract correction passed independent audit",
-        "verified Milestone 92B final closure state",
-        "Git verification determines whether that closure state is durable",
-        "Rule 6 runtime migration has not started",
-        "future 92C is not authorized",
+        "92C implementation candidate content is complete and verified",
+        "Rule 6 operative authority is migrated locally to Core Governance",
+        "Rule 4 remains physically evaluated in Thinking",
+        "current 92C implementation durability, implementation-tag state, and remote reachability must be verified directly from Git",
+        "Milestone 92C is not durably finalized",
+        "finalization remains separately gated",
         "fresh mandatory PM four-core and Git review",
     ):
         assert token in section10, f"Section 10 missing current token: {token}"
@@ -586,5 +591,6 @@ def test_92a_vs_functional_92_terminology_contract():
         "final durable closure commit is pending",
         "CLOSED after the separately authorized final closure commit",
         "awaiting final closure commit",
+        "future 92C is not authorized",
     ):
         assert stale not in section10, f"Stale Section 10 phrase found: {stale}"

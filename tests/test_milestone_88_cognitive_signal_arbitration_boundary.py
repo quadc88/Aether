@@ -156,14 +156,14 @@ class TestDecisionRecordStructure:
 
     def test_07_actual_current_rule_count_is_seven(self):
         # Verify from actual source, not from plan assumptions.
-        # Milestone 89B moved Rules 1/2 to Core Governance: Thinking now
-        # evaluates Rules 3-9 only (7 returns).
+        # Rule 6 is now selected by Governance; Thinking retains Rules 3, 4,
+        # 7, 8, and 9.
         fn = _function(POLICY, "_evaluate_chat_policy_with_precedence")
         returns = []
         for node in ast.walk(fn):
             if isinstance(node, ast.Return):
                 returns.append(node)
-        assert len(returns) == 6
+        assert len(returns) == 5
 
     def test_08_every_source_rule_inventoried_once(self):
         text = _normalized()
@@ -189,25 +189,27 @@ class TestDecisionRecordStructure:
         idx1 = text.index('identity_status == "changed"')
         idx2 = text.index('identity_status in ("missing", "failed")')
         assert idx1 < idx2
-        # Rule 5 (high risk) before Rule 6 (medium risk)
-        idx5 = text.index('risk_level == "high"')
-        idx6 = text.index('risk_level == "medium"')
-        assert idx5 < idx6
+        # Rule 4 remains before Thinking Rules 7-9; Rule 5/6 are Governance.
+        idx4 = text.index("secret_found")
+        idx7 = text.index('risk_level == "low"')
+        assert idx4 < idx7
+        assert 'risk_level == "medium"' not in POLICY.read_text()
 
 
 class TestRuleInventoryAndOutputs:
     def test_10_exact_trigger_conditions_from_ast(self):
         fn = _function(POLICY, "_evaluate_chat_policy_with_precedence")
         # Verify exact line numbers of return statements.
-        # Milestone 89B removed Rules 1/2: 7 returns at the following lines.
+        # Rule 6 is no longer a Thinking return.
         returns = []
         for node in ast.walk(fn):
             if isinstance(node, ast.Return):
                 returns.append(node.lineno)
-        assert len(returns) == 6
+        assert len(returns) == 5
         assert any("rule_3" in ast.unparse(node) for node in ast.walk(fn) if isinstance(node, ast.Return))
         assert any("rule_4" in ast.unparse(node) for node in ast.walk(fn) if isinstance(node, ast.Return))
-        assert 'risk_level == "high"' not in POLICY.read_text()
+        assert 'risk_level == "medium"' not in POLICY.read_text()
+        assert 'risk_level == "medium" and requested_action is not None' in GOVERNANCE.read_text()
 
     def test_11_exact_current_decision_outputs(self):
         # Rules 1 and 2 are authoritatively evaluated by Core Governance
@@ -253,9 +255,16 @@ class TestRuleInventoryAndOutputs:
         )
         assert envelope["decision"] == "require_approval"
 
-        # Rule 6: medium risk + tool -> require_approval
+        # Rule 6: medium risk + tool is selected by Governance.
         p = _make_policy(risk_level="medium", tool={"tool_id": "file.edit"})
-        assert p["decision_type"] == "require_approval"
+        assert p["decision_type"] == "respond_only"
+        envelope = gov.evaluate_authorization_envelope(
+            thinking_policy=p,
+            requested_action={"tool_id": "file.edit"},
+            risk_evidence={"risk_level": "medium", "action_type": "file_edit"},
+            rule_3_4_precedence="clear",
+        )
+        assert envelope["decision"] == "require_approval"
 
         # Rule 7: low risk + tool -> suggest_tool
         p = _make_policy(risk_level="low", tool={"tool_id": "file.search"})
@@ -295,6 +304,7 @@ class TestRuleInventoryAndOutputs:
         assert p["tool_execution_allowed"] is False
 
         p = _make_policy(risk_level="medium", tool={"tool_id": "x"})
+        assert p["decision_type"] == "respond_only"
         assert p["tool_execution_allowed"] is False
 
         p = _make_policy(risk_level="low", tool={"tool_id": "x"})

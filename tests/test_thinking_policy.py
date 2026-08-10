@@ -171,8 +171,8 @@ class TestMediumRiskWithTool:
             risk={"risk_level": "medium", "action_type": "file_edit"},
             suggested_tool={"tool_id": "file.edit"},
         )
-        assert result["decision_type"] == "require_approval"
-        assert result["tool_suggestion_allowed"] is True
+        assert result["decision_type"] == "respond_only"
+        assert result["tool_suggestion_allowed"] is False
         assert result["tool_execution_allowed"] is False
 
 

@@ -87,24 +87,7 @@ def _evaluate_chat_policy_with_precedence(
             ],
         }, "rule_4")
 
-    # --- Rule 6: Medium risk with suggested tool -> require_approval ---
-    if risk_level == "medium" and suggested_tool is not None:
-        return ({
-            "decision_type": "require_approval",
-            "confidence": "medium",
-            "reasons": [
-                f"Medium-risk request with suggested tool '{suggested_tool.get('tool_id', '')}'. "
-                "Requires human approval before tool use."
-            ],
-            "required_user_confirmation": True,
-            "tool_suggestion_allowed": True,
-            "tool_execution_allowed": False,
-            "blocked_reason": None,
-            "clarification_question": None,
-            "next_step": "Review suggested tool and confirm before proceeding.",
-            "warnings": ["Medium-risk tool usage requires human confirmation."],
-        }, "clear")
-
+    # Rule 6: Medium risk with suggested tool is now Governance-owned.
     # --- Rule 7: Low risk with suggested tool -> suggest_tool ---
     if risk_level == "low" and suggested_tool is not None:
         return ({

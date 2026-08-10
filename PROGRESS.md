@@ -1,15 +1,15 @@
 # Aether Project Progress Ledger
 
-**Last updated:** Milestone 92B Rule 6 Governance Migration Boundary finalized, committed, tagged, pushed, and remotely verified.
+**Last updated:** Milestone 92C Rule 6 Governance Runtime Migration implementation Build complete locally; Milestone 92B remains durably closed.
 **Aether version:** 0.2.0
-**Current completed local milestone:** Milestone 92B Rule 6 Governance Migration Boundary finalized.
-**Current active milestone/module:** Milestone 92B CLOSED; Rule 6 runtime migration not started; future 92C not authorized; Candidate A-F deferred.
-**Current status:** 92B implementation commit: 22d819b6bd3a305536c0beba57f670a5433fe21e; implementation tag: milestone-92B-rule6-governance-migration-boundary; remote implementation reachability verified; remote tag exact target verified; focused independent re-audit PASS; Boundary: 48 passed; Canonical header: 23 passed; Progress-referencing regression: 322 passed; Architecture/Observation: 363 passed; Full suite: 2547 passed; 9 existing PytestRemovedIn10Warning, 0 new warnings; OpenAPI: 304 paths / 108 schemas; api_server: 8 direct @app routes / 23 include_router / 0 direct /action/*; no production/API/persistence/execution change; functional Milestone 92 boundary phase complete; Rule 6 runtime migration not started; future 92C not authorized; Candidate A-F deferred.
-**Next milestone:** Milestone 92C may be considered only after a fresh mandatory PM four-core read and Git verification.
-**Test baseline:** 2547 current verified 92B candidate baseline; Boundary: 48; Canonical header: 23 passed; Progress-referencing regression: 322 passed; Architecture/Observation: 363 passed; Full suite: 2547 passed; 9 existing PytestRemovedIn10Warning, 0 new warnings; no runtime migration.
+**Current completed local milestone:** Milestone 92B Rule 6 Governance Migration Boundary finalized; Milestone 92C Rule 6 Governance Runtime Migration implementation Build complete locally.
+**Current active milestone/module:** Milestone 92B CLOSED; Milestone 92C Rule 6 Governance Runtime Migration implementation candidate content complete and verified; not durably finalized; Rule 6 operative authority migrated locally to Core Governance; Rule 4 remains physically evaluated in Thinking; Candidate A-F deferred.
+**Current status:** 92B remains durably closed at implementation commit 22d819b6bd3a305536c0beba57f670a5433fe21e with immutable tag milestone-92B-rule6-governance-migration-boundary; remote implementation reachability verified; remote tag exact target verified; focused independent re-audit PASS; functional Milestone 92 boundary phase complete; 92C implementation candidate content is complete and verified under the authorized Build scope; current 92C implementation durability, implementation-tag state, and remote reachability must be verified directly from Git; Milestone 92C is not durably finalized; Stage-2 closure remains separately gated; Boundary: 48 passed; Canonical header: 23 passed; Progress-referencing regression: 322 passed; Architecture/Observation: 363 passed; Full suite: 2571 passed; 9 existing PytestRemovedIn10Warning, 0 new warnings; OpenAPI: 304 paths / 108 schemas; api_server: 8 direct @app routes / 23 include_router / 0 direct /action/*; no production/API/persistence/execution change; Rule 6 runtime migration is present in the implementation candidate; Rule 4 migration not started; Candidate A-F deferred.
+**Next milestone:** Milestone 92C finalization may be considered only after a fresh mandatory PM four-core read and Git verification.
+**Test baseline:** 2571 current verified 92C candidate baseline; Boundary: 48; Canonical header: 23 passed; Progress-referencing regression: 322 passed; Architecture/Observation: 363 passed; Full suite: 2571 passed; 9 existing PytestRemovedIn10Warning, 0 new warnings; Rule 6 runtime migration implemented locally but not durably finalized.
 **OpenAPI baseline:** 304 paths / 108 schemas
 **Git verification rule:** Current branch, HEAD, origin/main, and working-tree state must be verified directly from Git before every Plan, Build, Finalization, and independent audit. PROGRESS.md does not claim a self-referential current commit SHA. The accepted pre-Milestone-90B-R2 baseline is `9983014694a874555ba13d2017e37d153821b5df`.
-**Current closure ledger:** 22d819b6bd3a305536c0beba57f670a5433fe21e; exact implementation commit recorded and verified from Git.
+**Current closure ledger:** 22d819b6bd3a305536c0beba57f670a5433fe21e; 92B durable closure provenance remains exact and verified from Git.
 **Current closure tag:** `milestone-92B-rule6-governance-migration-boundary`; target is 22d819b6bd3a305536c0beba57f670a5433fe21e (implementation commit); exact target verified locally and remotely.
 **Previous accepted closure tag:** `milestone-92A-R2-baseline-lock-reconciliation` at `1c7dc6038a8ac0dd50f431d84983d3421fae5ff6`.
 **Runtime-state reset authorization:** Yes; human authority retroactively authorized the 82AD identity-guard runtime-state reset on 2026-07-30, with audit retained at `/home/aether/summaries/milestone_82AD_runtime_state_review.txt`.
@@ -287,23 +287,18 @@ These invariants must hold at ALL times:
 
 ## 10. Next Recommended Milestone
 
-**Status:** Milestone 92A / R2 remains historical previous closure provenance; Milestone 92B Rule 6 Governance Migration Boundary implementation commit 22d819b6bd3a305536c0beba57f670a5433fe21e exists and is remotely verified; implementation tag milestone-92B-rule6-governance-migration-boundary exists and is remotely verified; Stage-2 closure-contract correction passed independent audit; the current ledger encodes the verified Milestone 92B final closure state; Milestone 92B final intended/durable state is CLOSED; current Git HEAD/origin/working-tree durability must be verified directly from Git; Rule 6 remains physically evaluated in Thinking; Rule 6 runtime migration has not started; future 92C is not authorized; Candidate A-F remain deferred; no production/API/persistence/execution change occurred.
+**Status:** Milestone 92A / R2 remains historical previous closure provenance; Milestone 92B remains durably closed at implementation commit 22d819b6bd3a305536c0beba57f670a5433fe21e with immutable implementation tag milestone-92B-rule6-governance-migration-boundary; Stage-2 closure-contract and temporal corrections passed independent audit; the current ledger encodes the verified Milestone 92B final closure state; Milestone 92C Rule 6 Governance Migration implementation candidate content is complete and verified; Rule 6 operative authority is migrated locally to Core Governance; Rule 4 remains physically evaluated in Thinking; current 92C implementation durability, implementation-tag state, and remote reachability must be verified directly from Git; Milestone 92C is not durably finalized; finalization remains separately gated; Candidate A-F remain deferred; no production/API/persistence/execution change occurred.
 
-**Next:** After direct Git durability verification, perform a fresh mandatory PM four-core and Git review before any Milestone 92C definition; future 92C remains separately gated and not authorized.
+**Next:** After direct Git durability verification, perform a fresh mandatory PM four-core and Git review before Milestone 92C finalization; finalization remains separately gated.
 
-### Milestone 92B Final Closure State
+### Milestone 92C Implementation Candidate State
 
-- Boundary Build, focused independent audit, and closure-contract correction are complete; the current ledger encodes the verified Milestone 92B final closure state, and Git verification determines whether that closure state is durable at the current HEAD/origin.
-- Scope is limited to the lifecycle ledger reconciliation, Rule 6 Governance
-  boundary record, 48-test boundary contract, and four canonical ledger test
-  function supersessions.
-- Functional Milestone 92 started through boundary-only work; Rule 6 runtime
-  migration has not started; future 92C is not authorized.
-- Boundary: 48; Canonical: 23; Progress: 322;
-  Architecture/Observation: 363; Full: 2547.
-- No production/API/persistence/execution change; Candidate A-F deferred.
-- Final intended/durable state: Milestone 92B CLOSED; Rule 6 runtime migration
-  remains not started.
+- Milestone 92B is durably closed; the current ledger records that 92C implementation candidate content is complete and verified but Milestone 92C is not durably finalized, and Git verification determines durability of the separate 92C implementation state.
+- Scope is limited to Rule 6 authority migration, the complete migration record, the 24-test migration contract, authorized existing-test supersessions, the historical 92B Test #6 harness correction, and lifecycle ledger reconciliation.
+- Rule 6 runtime migration is implemented locally but not durably finalized; Rule 4 remains in Thinking and Candidate A-F remain deferred.
+- Boundary: 48; Canonical: 23; Progress: 322; Architecture/Observation: 363; Full: 2571.
+- No production/API/persistence/execution capability expansion occurred.
+- Intended final state: Milestone 92C CLOSED after separately authorized implementation/tag/closure lifecycle.
 
 ---
 

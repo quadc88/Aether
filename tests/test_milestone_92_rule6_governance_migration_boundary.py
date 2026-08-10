@@ -7,6 +7,8 @@ import re
 import subprocess
 from pathlib import Path
 
+from aether.core.governance import evaluate_authorization_envelope
+
 
 ROOT = Path(__file__).resolve().parents[1]
 RECORD = ROOT / "docs/architecture/MILESTONE_92_RULE6_GOVERNANCE_MIGRATION_BOUNDARY.md"
@@ -61,6 +63,7 @@ CANONICAL_ALLOWED = {
 PRE_92B_COMMIT = "a9c0b8cfe09251d688bbf0e97f799b8597d9dd87"
 IMPLEMENTATION_TAG = "milestone-92B-rule6-governance-migration-boundary"
 IMPLEMENTATION_COMMIT = "22d819b6bd3a305536c0beba57f670a5433fe21e"
+FINAL_CLOSURE_COMMIT = "680878aeb9dc97e476d82751810899d41bddbe8b"
 BUILD_STAGE_ALLOWED = {
     "test_current_92a_local_state_is_consistent_across_header",
     "test_pipeline_maturity_records_current_state",
@@ -157,7 +160,6 @@ class TestDecisionRecordScope:
         assert "Thinking-policy/runtime tests" in text
         assert "Exactly four canonical functions may change" in text
         assert "future 92C targets" in text
-        current = _function_dumps(CANONICAL)
         tag_result = subprocess.run(
             ["git", "rev-parse", IMPLEMENTATION_TAG],
             check=True, capture_output=True, text=True, cwd=ROOT,
@@ -171,15 +173,20 @@ class TestDecisionRecordScope:
             ["git", "show", f"{IMPLEMENTATION_TAG}:tests/test_progress_ledger_canonical_header.py"],
             check=True, capture_output=True, text=True, cwd=ROOT,
         ).stdout
+        closure_baseline_text = subprocess.run(
+            ["git", "show", f"{FINAL_CLOSURE_COMMIT}:tests/test_progress_ledger_canonical_header.py"],
+            check=True, capture_output=True, text=True, cwd=ROOT,
+        ).stdout
         build_baseline = _function_dumps_from_text(build_baseline_text)
         implementation_baseline = _function_dumps_from_text(implementation_baseline_text)
+        closure_baseline = _function_dumps_from_text(closure_baseline_text)
         build_delta = {
             name for name in implementation_baseline
             if implementation_baseline[name] != build_baseline.get(name)
         }
         closure_delta = {
-            name for name in current
-            if current[name] != implementation_baseline.get(name)
+            name for name in closure_baseline
+            if closure_baseline[name] != implementation_baseline.get(name)
         }
         assert build_delta == BUILD_STAGE_ALLOWED
         assert closure_delta == CLOSURE_STAGE_ALLOWED
@@ -189,7 +196,8 @@ class TestDecisionRecordScope:
 
 class TestRule6CurrentAndTargetContract:
     def test_current_medium_comparison_is_exact(self):
-        assert 'risk_level == "medium" and suggested_tool is not None' in _text(POLICY)
+        assert 'risk_level == "medium" and suggested_tool is not None' not in _text(POLICY)
+        assert 'risk_level == "medium" and requested_action is not None' in _text(GOVERNANCE)
 
     def test_current_non_none_suggested_tool_condition_is_exact(self):
         assert "suggested_tool is not None" in _text(POLICY)
@@ -203,11 +211,17 @@ class TestRule6CurrentAndTargetContract:
     def test_current_empty_dict_triggers_rule6(self):
         policy, signal = _policy(risk={"risk_level": "medium"}, tool={})
         assert signal == "clear"
-        assert policy["decision_type"] == "require_approval"
+        assert policy["decision_type"] == "respond_only"
+        assert evaluate_authorization_envelope(
+            policy,
+            requested_action={},
+            risk_evidence={"risk_level": "medium"},
+            rule_3_4_precedence=signal,
+        )["decision"] == "require_approval"
 
     def test_current_missing_tool_id_triggers_rule6(self):
         policy, _ = _policy(risk={"risk_level": "medium"}, tool={"name": "unknown"})
-        assert policy["decision_type"] == "require_approval"
+        assert policy["decision_type"] == "respond_only"
 
     def test_current_non_dict_malformed_shape_is_documented(self):
         assert ".get('tool_id', '')" in _text(POLICY)
@@ -244,7 +258,8 @@ class TestRule6GovernanceOwnership:
         assert "current physical evaluator" in _record().lower()
 
     def test_current_governance_has_generic_not_rule6_branch(self):
-        assert 'risk_level == "medium"' not in _text(GOVERNANCE)
+        assert 'risk_level == "medium" and requested_action is not None' in _text(GOVERNANCE)
+        assert "_format_rule_6_compatibility_policy" in _text(GOVERNANCE)
         assert "current envelope authority" in _record()
 
     def test_future_governance_is_single_authoritative_evaluator(self):
@@ -290,7 +305,8 @@ class TestPrecedenceAndTransport:
 
     def test_rule4_precedes_rule6_in_current_thinking(self):
         source = _text(POLICY)
-        assert source.index("Rule 4: Secret") < source.index("Rule 6: Medium")
+        assert "Rule 4: Secret" in source
+        assert 'risk_level == "medium"' not in source
 
     def test_future_rule5_clear_high_precedes_rule6(self):
         text = _record()

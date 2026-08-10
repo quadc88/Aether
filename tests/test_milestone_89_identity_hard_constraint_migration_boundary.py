@@ -391,7 +391,8 @@ class TestRuleContracts:
 
 class TestRulePrecedence:
     def test_23_current_source_order_preserved(self):
-        # Thinking: sidecar Rules 3/4 remain ordered before Rules 6-9.
+        # Thinking: sidecar Rules 3/4 remain ordered before Rules 7-9;
+        # Governance owns Rule 6.
         src = POLICY.read_text()
         lines = src.splitlines()
         rule_lines = {}
@@ -401,19 +402,19 @@ class TestRulePrecedence:
                 rule_lines[3] = lineno
             elif "secret_found = any" in line:
                 rule_lines[4] = lineno
-            elif 'risk_level == "medium"' in line:
-                rule_lines[6] = lineno
             elif 'risk_level == "low"' in line:
                 rule_lines[7] = lineno
             elif "not suggested_tool and len" in line:
                 rule_lines[8] = lineno
-        for i in (3, 4, 6, 7, 8):
-            for j in (3, 4, 6, 7, 8):
+        for i in (3, 4, 7, 8):
+            for j in (3, 4, 7, 8):
                 if i >= j:
                     continue
                 assert rule_lines[i] < rule_lines[j], f"Rule {i} (line {rule_lines[i]}) must precede Rule {j} (line {rule_lines[j]})"
         assert 'risk_level == "high"' not in src
-        assert set(rule_lines) == {3, 4, 6, 7, 8}
+        assert set(rule_lines) == {3, 4, 7, 8}
+        assert 'risk_level == "medium"' not in src
+        assert 'risk_level == "medium" and requested_action is not None' in GOVERNANCE.read_text()
         assert "_evaluate_chat_policy_with_precedence" in src
         # Governance: the Identity Rules 1/2 branch precedes the normal
         # Thinking-proposal evaluation branch
