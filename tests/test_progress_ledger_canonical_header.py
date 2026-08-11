@@ -172,7 +172,7 @@ def test_current_92a_local_state_is_consistent_across_header():
     identity_tokens = {
         "Last updated": "Milestone 93B Rule 4 Governance Runtime Migration implementation content complete",
         "Current completed local milestone": "Milestone 93B Rule 4 Governance Runtime Migration implementation content complete",
-        "Current active milestone/module": "Milestone 93B OPEN",
+        "Current active milestone/module": "Milestone 93 remains OPEN; Milestone 93B runtime implementation content is complete and Git-durable",
         "Current status": "Milestone 92C CLOSED; Milestone 93 OPEN; Milestone 93A FINALIZED / DURABLE boundary",
         "Next milestone": "After Git durability of the Milestone 93B implementation is verified and accepted by PM",
         "Test baseline": "2571 pre-93A full-suite baseline",
@@ -579,12 +579,14 @@ def test_92a_vs_functional_92_terminology_contract():
         "\n---\n", 1
     )[0]
 
-    assert "Milestone 93B OPEN" in active, (
-        f"Missing 93B open state, got: {active[:200]}"
+    assert "Milestone 93 remains OPEN; Milestone 93B runtime implementation content is complete and Git-durable" in active, (
+        f"Missing durable 93B current state, got: {active[:200]}"
     )
-    assert "Rule 4 physical owner in implemented content is Core Governance" in active, (
+    assert "Milestone 93B OPEN" not in active
+    assert "Rule 4 physical owner is Core Governance" in active, (
         f"Missing local Rule 4 Governance owner, got: {active[:200]}"
     )
+    assert "PM acceptance is an external review decision and is not self-asserted by this ledger" in active
     # Prohibit standalone "Milestone 92 not started" without qualification
     assert "Milestone 92 not started" not in active, (
         f"Must not contain standalone 'Milestone 92 not started', got: {active[:200]}"
@@ -628,9 +630,13 @@ def test_92a_vs_functional_92_terminology_contract():
         "Observation: BLOCKED / deferred",
         "Candidate A-F: DEFERRED",
         "capability expansion none",
-        "After Git durability of the Milestone 93B implementation is verified and accepted by PM",
+        "The next Milestone 93 scope requires separate human/project-manager definition and authorization after post-93B durability review.",
     ):
         assert token in section10, f"Section 10 missing current token: {token}"
+
+    assert "Rule 4 remains in Thinking" not in section10
+    assert "At the Milestone 92C closure boundary" in section10
+    assert "current Rule 4 physical ownership is Core Governance" in section10
 
     for stale in (
         "no functional milestone is selected",
