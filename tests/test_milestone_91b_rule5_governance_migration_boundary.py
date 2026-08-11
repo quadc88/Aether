@@ -46,8 +46,8 @@ def _expected_projection(action="file_delete"):
 SCENARIOS = [
     pytest.param({"perception": _perception(""), "risk": _risk(), "tool": None, "identity": None, "signal": "rule_3", "raw": "ask_clarification", "effective": "ask_clarification", "envelope": "deny"}, id="s01_empty_high"),
     pytest.param({"perception": _perception("   "), "risk": _risk(), "tool": None, "identity": None, "signal": "rule_3", "raw": "ask_clarification", "effective": "ask_clarification", "envelope": "deny"}, id="s02_whitespace_high"),
-    pytest.param({"perception": _perception("send secret", ["secret"]), "risk": _risk(), "tool": None, "identity": None, "signal": "rule_4", "raw": "require_approval", "effective": "require_approval", "envelope": "require_approval"}, id="s03_secret_high"),
-    pytest.param({"perception": _perception("send secret", ["secret"]), "risk": _risk(), "tool": {"tool_id": "mailer"}, "identity": None, "signal": "rule_4", "raw": "require_approval", "effective": "require_approval", "envelope": "require_approval"}, id="s04_secret_high_tool"),
+    pytest.param({"perception": _perception("send secret", ["secret"]), "risk": _risk(), "tool": None, "identity": None, "signal": "clear", "raw": "respond_only", "effective": "require_approval", "envelope": "require_approval"}, id="s03_secret_high"),
+    pytest.param({"perception": _perception("send secret", ["secret"]), "risk": _risk(), "tool": {"tool_id": "mailer"}, "identity": None, "signal": "clear", "raw": "respond_only", "effective": "require_approval", "envelope": "require_approval"}, id="s04_secret_high_tool"),
     pytest.param({"perception": _perception("delete the archive"), "risk": _risk(), "tool": None, "identity": None, "signal": "clear", "raw": "respond_only", "effective": "require_approval", "envelope": "require_approval"}, id="s05_ordinary_high"),
     pytest.param({"perception": _perception("delete the archive"), "risk": _risk(), "tool": {"tool_id": "filesystem"}, "identity": None, "signal": "clear", "raw": "respond_only", "effective": "require_approval", "envelope": "require_approval"}, id="s06_ordinary_high_tool"),
     pytest.param({"perception": _perception("delete"), "risk": _risk(), "tool": None, "identity": None, "signal": "clear", "raw": "ask_clarification", "effective": "require_approval", "envelope": "require_approval"}, id="s07_short_high"),
@@ -57,7 +57,7 @@ SCENARIOS = [
     pytest.param({"perception": _perception("provide a general explanation"), "risk": _risk("low"), "tool": None, "identity": None, "signal": "clear", "raw": "respond_only", "effective": "respond_only", "envelope": "deny"}, id="s11_default_low"),
     pytest.param({"perception": _perception("delete archive"), "risk": _risk(), "tool": None, "identity": {"status": "changed"}, "signal": "clear", "raw": "respond_only", "effective": "block", "envelope": "block"}, id="s12_identity_changed"),
     pytest.param({"perception": _perception("delete archive"), "risk": _risk(), "tool": None, "identity": {"status": "missing"}, "signal": "clear", "raw": "respond_only", "effective": "require_approval", "envelope": "require_approval"}, id="s13_identity_missing"),
-    pytest.param({"perception": _perception("send secret", ["secret"]), "risk": _risk(), "tool": None, "identity": {"status": "failed"}, "signal": "rule_4", "raw": "require_approval", "effective": "require_approval", "envelope": "require_approval"}, id="s14_identity_failed_secret"),
+    pytest.param({"perception": _perception("send secret", ["secret"]), "risk": _risk(), "tool": None, "identity": {"status": "failed"}, "signal": "clear", "raw": "respond_only", "effective": "require_approval", "envelope": "require_approval"}, id="s14_identity_failed_secret"),
     pytest.param({"perception": _perception("delete archive"), "risk": _risk("low"), "evidence": None, "tool": None, "identity": None, "signal": "clear", "raw": "respond_only", "effective": "respond_only", "envelope": "deny"}, id="s15_risk_none"),
     pytest.param({"perception": _perception("delete archive"), "risk": _risk("low"), "evidence": "high", "tool": None, "identity": None, "signal": "clear", "raw": "respond_only", "effective": "respond_only", "envelope": "deny"}, id="s16_risk_non_dict"),
     pytest.param({"perception": _perception("delete archive"), "risk": {}, "tool": None, "identity": None, "signal": "clear", "raw": "respond_only", "effective": "respond_only", "envelope": "deny"}, id="s17_empty_risk"),
@@ -79,7 +79,14 @@ def test_25_scenario_field_exact_matrix(case):
     assert raw["decision_type"] == case["raw"]
     policy = case.get("synthetic", raw)
     requested_action = case["tool"] if case["risk"].get("risk_level") == "medium" else None
-    envelope = evaluate_authorization_envelope(policy, requested_action=requested_action, risk_evidence=case.get("evidence", case["risk"]), rule_3_4_precedence=signal, identity_integrity_evidence=case["identity"])
+    envelope = evaluate_authorization_envelope(
+        policy,
+        requested_action=requested_action,
+        risk_evidence=case.get("evidence", case["risk"]),
+        rule_3_4_precedence=signal,
+        identity_integrity_evidence=case["identity"],
+        rule4_risk_terms_detected=case["perception"].get("risk_terms_detected", []),
+    )
     assert envelope["decision"] == case["envelope"]
     if envelope["policy_snapshot"]:
         assert envelope["policy_snapshot"]["decision_type"] == case["effective"]
@@ -99,7 +106,17 @@ def test_rule3_signal_from_single_ordered_evaluation():
 
 
 def test_rule4_signal_from_single_ordered_evaluation():
-    assert _evaluate_chat_policy_with_precedence(_perception("secret", ["secret"]), _risk("high"))[1] == "rule_4"
+    raw, signal = _evaluate_chat_policy_with_precedence(
+        _perception("secret", ["secret"]), _risk("high")
+    )
+    assert signal == "clear"
+    effective = evaluate_authorization_envelope(
+        raw,
+        risk_evidence=_risk("high"),
+        rule_3_4_precedence=signal,
+        rule4_risk_terms_detected=["secret"],
+    )
+    assert effective["decision"] == "require_approval"
 
 
 def test_clear_signal_for_rules6_to9():
@@ -109,14 +126,22 @@ def test_clear_signal_for_rules6_to9():
 def test_one_evaluation_no_duplicate_predicates():
     tree = ast.parse(POLICY.read_text())
     fn = next(n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name == "_evaluate_chat_policy_with_precedence")
-    assert sum(isinstance(n, ast.Call) and getattr(n.func, "id", "") == "any" for n in ast.walk(fn)) == 1
-    assert POLICY.read_text().count("_SECRET_RISK_TERMS") == 2
+    assert sum(isinstance(n, ast.Call) and getattr(n.func, "id", "") == "any" for n in ast.walk(fn)) == 0
+    assert "_SECRET_RISK_TERMS" not in POLICY.read_text()
+    gov_tree = ast.parse(GOVERNANCE.read_text())
+    assert sum(
+        isinstance(n, ast.Call)
+        and getattr(n.func, "id", "") == "any"
+        and "_SECRET_RISK_TERMS" in ast.unparse(n)
+        for n in ast.walk(gov_tree)
+    ) == 1
 
 
 def test_loop_transports_sidecar_unchanged():
     src = LOOP.read_text()
     assert "raw_thinking_policy, rule_3_4_precedence = _evaluate_chat_policy_with_precedence" in src
     assert "rule_3_4_precedence=rule_3_4_precedence" in src
+    assert 'rule4_risk_terms_detected=perception["risk_terms_detected"]' in src
 
 
 def test_governance_signal_validation():

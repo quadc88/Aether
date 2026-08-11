@@ -17,6 +17,36 @@ after Milestone 89B. Thinking proposes only Rules 3 through 9.
 from __future__ import annotations
 
 
+_SECRET_RISK_TERMS = {
+    "password", "secret", "api key", "token", "private_key",
+    "credential", "secret_key", "access_key",
+}
+_MISSING_RULE4_RISK_TERMS = object()
+
+
+def _format_rule_4_compatibility_policy(risk_terms_detected) -> dict:
+    """Format the complete effective Rule 4 policy projection."""
+    return {
+        "decision_type": "require_approval",
+        "confidence": "high",
+        "reasons": [
+            "Text contains sensitive terms: "
+            + ", ".join(risk_terms_detected)
+            + ". User confirmation required before handling."
+        ],
+        "required_user_confirmation": True,
+        "tool_suggestion_allowed": False,
+        "tool_execution_allowed": False,
+        "blocked_reason": None,
+        "clarification_question": None,
+        "next_step": "Confirm whether sensitive information should be handled.",
+        "warnings": [
+            "Potentially sensitive terms detected: "
+            + ", ".join(risk_terms_detected)
+        ],
+    }
+
+
 def _format_rule_5_compatibility_policy(action_type: str) -> dict:
     """Format the legacy Rule 5 policy after Governance selects Rule 5."""
     return {
@@ -64,6 +94,7 @@ def evaluate_authorization_envelope(
     risk_evidence: dict | None = None,
     identity_integrity_evidence: dict | None = None,
     rule_3_4_precedence: str | None = None,
+    rule4_risk_terms_detected=_MISSING_RULE4_RISK_TERMS,
 ) -> dict:
     """Evaluate the Core Governance authorization decision envelope.
 
@@ -73,8 +104,8 @@ def evaluate_authorization_envelope(
     authorizes. Action executes only within authorization.
 
     The keyword-only arguments are direct call-local provenance inputs. The
-    Rule 3/4 signal is recognized only for its three exact private values and
-    is never copied into an output.
+    Rule 3 signal is recognized only for its exact private value, and the Rule
+    4 evidence sidecar is never copied into an output.
 
     Args:
         thinking_policy: Output of decide_chat_policy(). Non-authoritative
@@ -85,8 +116,10 @@ def evaluate_authorization_envelope(
             Provenance-only; remains non-operative.
         identity_integrity_evidence: Safe summary from identity guard.
             Operative only for Identity Rules 1 and 2.
-        rule_3_4_precedence: Private Thinking provenance signal. Only the
-            exact values ``rule_3``, ``rule_4`` and ``clear`` are recognized.
+        rule_3_4_precedence: Private Thinking precedence signal. Only the
+            exact values ``rule_3`` and ``clear`` are recognized.
+        rule4_risk_terms_detected: Private factual iterable transported from
+            Perception. Omitted input defaults to an empty list.
 
     Returns:
         Dict with keys: allowed, decision, reason,
@@ -176,8 +209,14 @@ def evaluate_authorization_envelope(
     recognized_precedence = (
         rule_3_4_precedence
         if isinstance(rule_3_4_precedence, str)
-        and rule_3_4_precedence in {"rule_3", "rule_4", "clear"}
+        and rule_3_4_precedence in {"rule_3", "clear"}
         else None
+    )
+
+    risk_terms_detected = (
+        []
+        if rule4_risk_terms_detected is _MISSING_RULE4_RISK_TERMS
+        else rule4_risk_terms_detected
     )
 
     # --- Precedence 3: Normal Thinking-proposal evaluation ---
@@ -201,9 +240,28 @@ def evaluate_authorization_envelope(
             "warnings": warnings,
         }
 
-    # --- Governance Rule 5: exact high evidence plus clear Thinking signal ---
+    # --- Governance Rule 4: exact sensitive-term evidence plus clear signal ---
     risk_level = risk_evidence.get("risk_level") if isinstance(risk_evidence, dict) else None
     if recognized_precedence == "clear":
+        secret_found = any(
+            t in _SECRET_RISK_TERMS
+            for t in risk_terms_detected
+        )
+        if secret_found:
+            policy_snapshot = _format_rule_4_compatibility_policy(risk_terms_detected)
+            return {
+                "allowed": False,
+                "decision": "require_approval",
+                "reason": "Human approval is required before execution.",
+                "required_user_confirmation": True,
+                "tool_execution_allowed": False,
+                "action_execution_allowed": False,
+                "requested_action": requested_action,
+                "policy_snapshot": policy_snapshot,
+                "warnings": warnings,
+            }
+
+        # --- Governance Rule 5: exact high evidence plus clear Thinking signal ---
         if risk_level == "high":
             action_type = risk_evidence.get("action_type", "unknown")
             if not isinstance(action_type, str):

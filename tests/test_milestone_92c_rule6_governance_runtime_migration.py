@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import ast
-import hashlib
 from pathlib import Path
 
 import pytest
@@ -68,7 +67,8 @@ def test_current_rule6_trigger_exact():
     assert 'risk_level == "medium"' not in source
     gov = GOVERNANCE.read_text()
     assert 'risk_level == "medium" and requested_action is not None' in gov
-    assert 'rule_3_4_precedence in {"rule_3", "rule_4", "clear"}' in gov
+    assert 'rule_3_4_precedence in {"rule_3", "clear"}' in gov
+    assert "rule4_risk_terms_detected" in gov
     assert "isinstance(risk_evidence, dict)" in gov
 
 
@@ -155,7 +155,16 @@ def test_thinking_medium_tool_returns_neutral_proposal():
 
 def test_thinking_rule3_rule4_provenance_retained():
     assert _raw(None, text="")[1] == "rule_3"
-    assert _raw({"tool_id": "x"}, text="secret", terms=["secret"])[1] == "rule_4"
+    raw, signal = _raw({"tool_id": "x"}, text="secret", terms=["secret"])
+    assert signal == "clear"
+    effective = evaluate_authorization_envelope(
+        raw,
+        requested_action={"tool_id": "x"},
+        risk_evidence=_risk(),
+        rule_3_4_precedence=signal,
+        rule4_risk_terms_detected=["secret"],
+    )
+    assert effective["decision"] == "require_approval"
 
 
 def test_thinking_rules7_8_9_unchanged():
@@ -178,8 +187,16 @@ def test_rule3_provenance_blocks_rule6():
 
 def test_rule4_provenance_blocks_rule6():
     raw, signal = _raw({"tool_id": "x"}, text="secret", terms=["secret"])
-    assert signal == "rule_4"
-    assert _envelope(raw, {"tool_id": "x"}, signal=signal)["decision"] == "require_approval"
+    assert signal == "clear"
+    result = evaluate_authorization_envelope(
+        raw,
+        requested_action={"tool_id": "x"},
+        risk_evidence=_risk(),
+        rule_3_4_precedence=signal,
+        rule4_risk_terms_detected=["secret"],
+    )
+    assert result["decision"] == "require_approval"
+    assert result["policy_snapshot"]["confidence"] == "high"
 
 
 def test_rule6_precedes_rule7():
@@ -225,14 +242,72 @@ def test_rule6_response_shape_and_openapi_unchanged():
 
 
 def test_no_rule4_migration_or_duplicate_evaluator():
-    assert "secret_found = any" in POLICY.read_text()
+    assert "secret_found = any" not in POLICY.read_text()
+    assert "_SECRET_RISK_TERMS" not in POLICY.read_text()
     assert 'risk_level == "medium"' not in POLICY.read_text()
     assert GOVERNANCE.read_text().count('if risk_level == "medium" and requested_action is not None') == 1
     assert "_format_rule_6_compatibility_policy" in GOVERNANCE.read_text()
+    assert "rule4_risk_terms_detected" in GOVERNANCE.read_text()
 
 
 def test_no_capability_expansion_or_loop_mutation():
-    assert hashlib.sha256(LOOP.read_bytes()).hexdigest() == "742e1ce2001649215838cfe5f42119b1f43a296c2d1d59bbaafa3c0cb2142f23"
+    loop_source = LOOP.read_text()
+    loop_tree = ast.parse(loop_source)
+    governance_calls = [
+        node
+        for node in ast.walk(loop_tree)
+        if isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Name)
+        and node.func.id == "evaluate_authorization_envelope"
+    ]
+    assert len(governance_calls) == 1
+    governance_call = governance_calls[0]
+    assert [keyword.arg for keyword in governance_call.keywords] == [
+        "thinking_policy",
+        "requested_action",
+        "context",
+        "risk_evidence",
+        "identity_integrity_evidence",
+        "rule_3_4_precedence",
+        "rule4_risk_terms_detected",
+    ]
+    sidecar_keyword = governance_call.keywords[-1]
+    assert isinstance(sidecar_keyword.value, ast.Subscript)
+    assert isinstance(sidecar_keyword.value.value, ast.Name)
+    assert sidecar_keyword.value.value.id == "perception"
+    assert isinstance(sidecar_keyword.value.slice, ast.Constant)
+    assert sidecar_keyword.value.slice.value == "risk_terms_detected"
+
+    # The loop transports the factual iterable and leaves Rule 4 semantics to
+    # Governance. Existing public perception projection is unrelated to the
+    # private sidecar name and remains part of the historical response shape.
+    assert "_SECRET_RISK_TERMS" not in loop_source
+    assert "secret_found" not in loop_source
+    assert loop_source.count("rule4_risk_terms_detected") == 1
+    assert not any(
+        isinstance(node, ast.Constant)
+        and node.value == "rule4_risk_terms_detected"
+        for node in ast.walk(loop_tree)
+    )
+    term_calls = [
+        node
+        for node in ast.walk(loop_tree)
+        if isinstance(node, ast.Call)
+        and "risk_terms_detected" in ast.unparse(node)
+    ]
+    assert term_calls == [governance_call]
+    assert not any(
+        isinstance(node, (ast.For, ast.AsyncFor, ast.comprehension))
+        and "risk_terms_detected" in ast.unparse(node)
+        for node in ast.walk(loop_tree)
+    )
+    assert not any(
+        isinstance(node, ast.Compare)
+        and "risk_terms_detected" in ast.unparse(node)
+        and any(isinstance(op, ast.In) for op in node.ops)
+        for node in ast.walk(loop_tree)
+    )
+
     record = RECORD.read_text()
     scope = record.split("## 19. Exact Eleven-Path Build Scope\n", 1)[1].split(
         "\n## 20. Build Completion Gates", 1

@@ -8,12 +8,6 @@ Does NOT execute tools or call external APIs.
 from __future__ import annotations
 
 
-_SECRET_RISK_TERMS = {
-    "password", "secret", "api key", "token", "private_key",
-    "credential", "secret_key", "access_key",
-}
-
-
 def _evaluate_chat_policy_with_precedence(
     perception: dict,
     risk: dict,
@@ -21,7 +15,7 @@ def _evaluate_chat_policy_with_precedence(
     identity_integrity_status: dict | None = None,
     metadata: dict | None = None,
 ) -> tuple[dict, str]:
-    """Decide the safest handling policy and Rule 3/4 provenance signal.
+    """Decide the safest handling policy and Rule 3 precedence signal.
 
     Decision rules are applied in order. Identity integrity is evaluated by
     Core Governance (aether/core/governance.py), not by Thinking. Thinking
@@ -37,13 +31,12 @@ def _evaluate_chat_policy_with_precedence(
         metadata: Arbitrary metadata passed through.
 
     Returns:
-        Tuple of the exact policy dictionary and one of ``rule_3``, ``rule_4``
-        or ``clear``. The signal is private provenance, not policy data.
+        Tuple of the exact policy dictionary and one of ``rule_3`` or
+        ``clear``. The signal is private precedence, not policy data.
     """
     reasons: list[str] = []
     warnings: list[str] = []
     normalized_text = perception.get("normalized_text", "")
-    risk_terms = perception.get("risk_terms_detected", [])
     risk_level = risk.get("risk_level", "low")
 
     # Note: identity_integrity_status is accepted as a compatibility parameter
@@ -65,27 +58,6 @@ def _evaluate_chat_policy_with_precedence(
             "next_step": "Wait for user to provide a valid input.",
             "warnings": [],
         }, "rule_3")
-
-    # --- Rule 4: Secret-like risk terms -> require_approval ---
-    secret_found = any(t in _SECRET_RISK_TERMS for t in risk_terms)
-    if secret_found:
-        return ({
-            "decision_type": "require_approval",
-            "confidence": "high",
-            "reasons": [
-                f"Text contains sensitive terms: {', '.join(risk_terms)}. "
-                "User confirmation required before handling."
-            ],
-            "required_user_confirmation": True,
-            "tool_suggestion_allowed": False,
-            "tool_execution_allowed": False,
-            "blocked_reason": None,
-            "clarification_question": None,
-            "next_step": "Confirm whether sensitive information should be handled.",
-            "warnings": [
-                "Potentially sensitive terms detected: " + ", ".join(risk_terms),
-            ],
-        }, "rule_4")
 
     # Rule 6: Medium risk with suggested tool is now Governance-owned.
     # --- Rule 7: Low risk with suggested tool -> suggest_tool ---

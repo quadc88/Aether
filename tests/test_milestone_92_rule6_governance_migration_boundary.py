@@ -305,8 +305,12 @@ class TestPrecedenceAndTransport:
 
     def test_rule4_precedes_rule6_in_current_thinking(self):
         source = _text(POLICY)
-        assert "Rule 4: Secret" in source
+        assert "secret_found" not in source
+        assert "_SECRET_RISK_TERMS" not in source
         assert 'risk_level == "medium"' not in source
+        governance = _text(GOVERNANCE)
+        assert governance.index("# --- Governance Rule 4") < governance.index("# --- Governance Rule 6")
+        assert 'rule4_risk_terms_detected' in governance
 
     def test_future_rule5_clear_high_precedes_rule6(self):
         text = _record()

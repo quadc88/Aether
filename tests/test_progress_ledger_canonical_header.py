@@ -170,11 +170,11 @@ def test_current_92a_local_state_is_consistent_across_header():
 
     # Six current-work identities are covered as one scalar contract.
     identity_tokens = {
-        "Last updated": "Milestone 93A Rule 4 Governance Migration Boundary Build complete locally",
-        "Current completed local milestone": "Milestone 92C Rule 6 Governance Runtime Migration closure state complete",
-        "Current active milestone/module": "Milestone 93A OPEN",
-        "Current status": "Milestone 92C CLOSED; Milestone 93 OPEN; Milestone 93A boundary content complete",
-        "Next milestone": "Human/project-manager review of the Milestone 93A Boundary Build",
+        "Last updated": "Milestone 93B Rule 4 Governance Runtime Migration implementation content complete",
+        "Current completed local milestone": "Milestone 93B Rule 4 Governance Runtime Migration implementation content complete",
+        "Current active milestone/module": "Milestone 93B OPEN",
+        "Current status": "Milestone 92C CLOSED; Milestone 93 OPEN; Milestone 93A FINALIZED / DURABLE boundary",
+        "Next milestone": "After Git durability of the Milestone 93B implementation is verified and accepted by PM",
         "Test baseline": "2571 pre-93A full-suite baseline",
     }
     assert all(
@@ -184,28 +184,27 @@ def test_current_92a_local_state_is_consistent_across_header():
     assert "3641c0c98fad993b1b4b5b8719dbf1cfd7117abc" in _parse_header_field(header, "Current closure ledger")
     assert "3641c0c98fad993b1b4b5b8719dbf1cfd7117abc" in _parse_header_field(header, "Current closure tag")
     assert "milestone-92C-rule6-governance-runtime-migration" in _parse_header_field(header, "Current closure tag")
-    assert "Rule 4 current physical owner Thinking" in fields["Current status"]
-    assert "Rule 4 target owner Core Governance" in fields["Current status"]
-    assert "runtime migration not started" in fields["Current status"]
+    assert "Rule 4 physical owner in implemented content Core Governance" in fields["Current status"]
+    assert "current implementation provenance rule_3 / clear" in fields["Current status"]
+    assert "Direct supersession: 27" in fields["Current status"]
+    assert "Parameter cases: 3" in fields["Current status"]
+    assert "New 93B: 26" in fields["Current status"]
+    assert "Full candidate: 2631 passed" in fields["Current status"]
     assert "93A Boundary: 34 passed" in fields["Current status"]
+    assert "Observation BLOCKED / deferred" in fields["Current status"]
+    assert "Candidate A-F DEFERRED" in fields["Current status"]
+    assert "capability expansion none" in fields["Current status"]
     assert "Current Progress-equivalent five-file family: 362 passed" in fields["Current status"]
-    assert "Historical Progress accounting: 322 = M89A-R3 historical arithmetic only" in fields["Current status"]
-    assert "Historical Architecture/Observation: 363 = recorded M92A-R2 historical baseline" in fields["Current status"]
-    assert "Current Architecture/Observation successor count: not established" in fields["Current status"]
     assert "Progress-referencing regression: 322 passed" not in fields["Current status"]
     assert "Architecture/Observation: 363 passed" not in fields["Current status"]
-    assert "Full suite: 2605 passed (2571 baseline + 34 93A)" in fields["Current status"]
     assert "OpenAPI: 304 paths / 108 schemas" in fields["Current status"]
     assert "api_server: 8 direct @app routes / 23 include_router / 0 direct /action/*" in fields["Current status"]
-    assert "Candidate A-F deferred" in fields["Current status"]
     assert "2571 pre-93A full-suite baseline" in fields["Test baseline"]
+    assert "New 93B: 26 passed" in fields["Test baseline"]
+    assert "Full candidate: 2631 passed" in fields["Test baseline"]
     assert "9 existing PytestRemovedIn10Warning" in fields["Test baseline"]
     assert "Current Progress-equivalent five-file family: 362 passed" in fields["Test baseline"]
-    assert "Historical Progress accounting: 322 = M89A-R3 historical arithmetic only" in fields["Test baseline"]
-    assert "Historical Architecture/Observation: 363 = recorded M92A-R2 historical baseline" in fields["Test baseline"]
-    assert "Current Architecture/Observation successor count: not established" in fields["Test baseline"]
     assert "warning occurrence delta versus parent: 0" in fields["Test baseline"]
-    assert "new warning regression caused by 93A: none" in fields["Test baseline"]
 
     # Commit-3 lifecycle phrases must not appear in any current-work field.
     prohibited_phrases = [
@@ -518,20 +517,32 @@ def test_full_suite_and_canonical_counts_match_header():
     )
 
     assert "93A Boundary: 34 passed" in status
+    assert "New 93B: 26" in status
     assert "Current Progress-equivalent five-file family: 362 passed" in status
-    assert "Current Architecture/Observation successor count: not established" in status
-    assert "Full suite: 2605 passed (2571 baseline + 34 93A)" in status
+    assert "Full candidate: 2631 passed" in status
     assert "2571 pre-93A full-suite baseline" in baseline
     assert "93A Boundary: 34 passed" in baseline
+    assert "New 93B: 26 passed" in baseline
     assert "Current Progress-equivalent five-file family: 362 passed" in baseline
-    assert "Current Architecture/Observation successor count: not established" in baseline
-    assert "Full suite: 2605 passed" in baseline
+    assert "Full candidate: 2631 passed" in baseline
 
     assert "93A Boundary:** 34 passed" in current_section7
+    assert "Milestone 93:** OPEN" in current_section7
+    assert "93A:** FINALIZED / DURABLE boundary" in current_section7
+    assert "93B implementation content:** complete" in current_section7
+    assert "Rule 4 physical owner in implemented content:** Core Governance" in current_section7
+    assert "Implementation provenance:** rule_3 / clear" in current_section7
+    assert "Direct supersession:** 27" in current_section7
+    assert "Parameter cases:** 3" in current_section7
+    assert "Observation:** BLOCKED / deferred" in current_section7
+    assert "Candidate A-F:** DEFERRED" in current_section7
+    assert "Capability expansion:** none" in current_section7
+    assert "Git directly determines implementation durability, tagging, and publication" in current_section7
+    assert "93B Rule 4 runtime contract:** 26 passed" in current_section7
     assert "Progress ledger canonical-header contract:** 23 passed" in current_section7
     assert "Current Progress-equivalent five-file family:** 362 passed" in current_section7
-    assert "Current Architecture/Observation successor count:** not established" in current_section7
-    assert "Full suite:** 2605/2605 passed, 0 failures, 0 errors" in current_section7
+    assert "Full suite:** 2631/2631 passed, 0 failures, 0 errors" in current_section7
+    assert "2605" not in current_section7
     assert "Warnings:** 9 existing PytestRemovedIn10Warning" in current_section7
     assert "Warning occurrence delta versus parent:** 0" in current_section7
     assert "New warning regression caused by 93A:** none" in current_section7
@@ -568,11 +579,11 @@ def test_92a_vs_functional_92_terminology_contract():
         "\n---\n", 1
     )[0]
 
-    assert "Milestone 93A OPEN" in active, (
-        f"Missing 93A open state, got: {active[:200]}"
+    assert "Milestone 93B OPEN" in active, (
+        f"Missing 93B open state, got: {active[:200]}"
     )
-    assert "Rule 4 target owner is Core Governance" in active, (
-        f"Missing local Rule 4 Governance target, got: {active[:200]}"
+    assert "Rule 4 physical owner in implemented content is Core Governance" in active, (
+        f"Missing local Rule 4 Governance owner, got: {active[:200]}"
     )
     # Prohibit standalone "Milestone 92 not started" without qualification
     assert "Milestone 92 not started" not in active, (
@@ -582,39 +593,42 @@ def test_92a_vs_functional_92_terminology_contract():
     for token in (
         "Milestone 92C CLOSED",
         "Milestone 93 OPEN",
-        "Milestone 93A boundary content complete",
-        "Rule 4 current physical owner Thinking",
-        "Rule 4 target owner Core Governance",
-        "runtime migration not started",
-        "Observation deferred",
-        "Candidate A-F deferred",
+        "Milestone 93A FINALIZED / DURABLE boundary",
+        "Milestone 93B runtime implementation content complete",
+        "Rule 4 physical owner in implemented content Core Governance",
+        "current implementation provenance rule_3 / clear",
+        "Direct supersession: 27",
+        "Parameter cases: 3",
+        "New 93B: 26",
+        "Full candidate: 2631 passed",
+        "Observation BLOCKED / deferred",
+        "Candidate A-F DEFERRED",
     ):
         assert token in status, f"Current status missing token: {token}"
 
     for token in (
         "Milestone 92C is CLOSED and durable",
         "Milestone 93 is OPEN",
-        "Milestone 93A boundary content is complete",
-        "Git is authoritative for whether that content is committed, tagged, and published",
-        "Rule 4 current physical owner is Thinking",
-        "Rule 4 target owner is Core Governance",
-        "runtime Rule 4 migration is not started",
-        "current provenance is rule_3 / rule_4 / clear",
-        "future target provenance is rule_3 / clear",
-        "future rule_4 provenance is removed",
+        "Milestone 93A is FINALIZED / DURABLE boundary",
+        "Milestone 93B runtime implementation content is complete",
+        "Git directly determines implementation durability, tagging, and publication",
+        "Rule 4 physical owner in implemented content is Core Governance",
+        "current implementation provenance is rule_3 / clear",
+        "Direct supersession: 27",
+        "Parameter cases: 3",
+        "New 93B: 26",
+        "Full candidate: 2631 passed",
         "93A Boundary: 34 passed",
         "Canonical: 23 passed",
         "Current Progress-equivalent family: 362 passed",
-        "Historical Progress 322: historical M89A-R3 accounting only",
-        "Historical Architecture/Observation 363: historical M92A-R2 recorded baseline with selector provenance not preserved",
-        "Current Architecture/Observation successor: not established",
-        "Full: 2605 passed",
         "Warnings: 9 PytestRemovedIn10Warning",
         "warning occurrence delta: 0",
-        "Observation deferred",
-        "Candidate A-F deferred",
+        "OpenAPI: 304 paths / 108 schemas",
+        "api_server: 8 direct @app routes / 23 include_router / 0 direct /action/*",
+        "Observation: BLOCKED / deferred",
+        "Candidate A-F: DEFERRED",
         "capability expansion none",
-        "After boundary durability is verified from Git and accepted by PM, any Rule 4 runtime migration requires a separately authorized future milestone",
+        "After Git durability of the Milestone 93B implementation is verified and accepted by PM",
     ):
         assert token in section10, f"Section 10 missing current token: {token}"
 
@@ -626,5 +640,11 @@ def test_92a_vs_functional_92_terminology_contract():
         "Milestone 93A finalization is not yet committed",
         "commit/tag/push: none",
         "PM authorization is required before finalization",
+        "Git finalization is not authorized",
+        "Git finalization remains separately controlled and is not authorized",
+        "Rule 4 durable migration NOT YET ESTABLISHED",
+        "not committed",
+        "not tagged",
+        "not pushed",
     ):
         assert stale not in section10, f"Stale Section 10 phrase found: {stale}"

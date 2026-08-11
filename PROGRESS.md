@@ -1,12 +1,12 @@
 # Aether Project Progress Ledger
 
-**Last updated:** Milestone 93A Rule 4 Governance Migration Boundary Build complete locally; runtime migration not started.
+**Last updated:** Milestone 93B Rule 4 Governance Runtime Migration implementation content complete; Git directly determines whether this implementation content is durable, tagged, and published; this ledger does not self-assert its own commit SHA, tag existence, or remote publication state.
 **Aether version:** 0.2.0
-**Current completed local milestone:** Milestone 92C Rule 6 Governance Runtime Migration closure state complete; Milestone 93A Boundary Build complete locally.
-**Current active milestone/module:** Milestone 93A OPEN; boundary Build complete locally; Rule 4 current physical owner is Thinking; Rule 4 target owner is Core Governance; runtime migration not started; Observation deferred; Candidate A-F deferred.
-**Current status:** Milestone 92C CLOSED; Milestone 93 OPEN; Milestone 93A boundary content complete; runtime migration not started; Rule 4 current physical owner Thinking; Rule 4 target owner Core Governance; current provenance rule_3 / rule_4 / clear; future target provenance rule_3 / clear; future rule_4 provenance removed; ten-key projection locked; single Rule 4 future evaluator Core Governance; Observation deferred; Candidate A-F deferred; no capability expansion; 93A Boundary: 34 passed; Canonical header: 23 passed; Current Progress-equivalent five-file family: 362 passed; Historical Progress accounting: 322 = M89A-R3 historical arithmetic only; Historical Architecture/Observation: 363 = recorded M92A-R2 historical baseline; Current Architecture/Observation successor count: not established; Full suite: 2605 passed (2571 baseline + 34 93A); 9 existing PytestRemovedIn10Warning; warning occurrence delta versus parent: 0; new warning regression caused by 93A: none; OpenAPI: 304 paths / 108 schemas; api_server: 8 direct @app routes / 23 include_router / 0 direct /action/*; boundary durability and publication state are determined directly from Git; this ledger does not self-assert its own commit SHA, tag existence, or remote publication state.
-**Next milestone:** Human/project-manager review of the Milestone 93A Boundary Build; runtime migration requires separate authorization.
-**Test baseline:** 2571 pre-93A full-suite baseline; 93A Boundary: 34 passed; Canonical header: 23 passed; Current Progress-equivalent five-file family: 362 passed; Historical Progress accounting: 322 = M89A-R3 historical arithmetic only; Historical Architecture/Observation: 363 = recorded M92A-R2 historical baseline; Current Architecture/Observation successor count: not established; Full suite: 2605 passed; 9 existing PytestRemovedIn10Warning; warning occurrence delta versus parent: 0; new warning regression caused by 93A: none; OpenAPI: 304 paths / 108 schemas; api_server: 8 direct @app routes / 23 include_router / 0 direct /action/*.
+**Current completed local milestone:** Milestone 93B Rule 4 Governance Runtime Migration implementation content complete; Milestone 93A Boundary Build finalized/durable; Milestone 92C Rule 6 Governance Runtime Migration closure state complete.
+**Current active milestone/module:** Milestone 93B OPEN; runtime implementation content complete; Rule 4 physical owner in implemented content is Core Governance; current implementation provenance rule_3 / clear; Observation BLOCKED / deferred; Candidate A-F DEFERRED.
+**Current status:** Milestone 92C CLOSED; Milestone 93 OPEN; Milestone 93A FINALIZED / DURABLE boundary; Milestone 93B runtime implementation content complete; Rule 4 physical owner in implemented content Core Governance; current implementation provenance rule_3 / clear; Direct supersession: 27; Parameter cases: 3; New 93B: 26; Full candidate: 2631 passed; 93A Boundary: 34 passed; Canonical header: 23 passed; Current Progress-equivalent five-file family: 362 passed; 9 existing PytestRemovedIn10Warning; warning occurrence delta versus parent: 0; OpenAPI: 304 paths / 108 schemas; api_server: 8 direct @app routes / 23 include_router / 0 direct /action/*; Observation BLOCKED / deferred; Candidate A-F DEFERRED; capability expansion none; Git directly determines implementation durability, tagging, and publication; this ledger does not self-assert its own commit SHA, tag existence, or remote publication state.
+**Next milestone:** After Git durability of the Milestone 93B implementation is verified and accepted by PM, the next Milestone 93 scope requires separate PM definition and authorization.
+**Test baseline:** 2571 pre-93A full-suite baseline; 93A Boundary: 34 passed; New 93B: 26 passed; Canonical header: 23 passed; Current Progress-equivalent five-file family: 362 passed; Full candidate: 2631 passed; 9 existing PytestRemovedIn10Warning; warning occurrence delta versus parent: 0; OpenAPI: 304 paths / 108 schemas; api_server: 8 direct @app routes / 23 include_router / 0 direct /action/*; Observation BLOCKED / deferred; Candidate A-F DEFERRED; capability expansion none.
 **OpenAPI baseline:** 304 paths / 108 schemas
 **Git verification rule:** Current branch, HEAD, origin/main, and working-tree state must be verified directly from Git before every Plan, Build, Finalization, and independent audit. PROGRESS.md does not claim a self-referential current commit SHA. The accepted pre-Milestone-90B-R2 baseline is `9983014694a874555ba13d2017e37d153821b5df`.
 **Current closure ledger:** 3641c0c98fad993b1b4b5b8719dbf1cfd7117abc; implementation provenance is exact; closure state is encoded by the current ledger content and closure durability must be verified directly from Git.
@@ -215,11 +215,13 @@ New in 76A:
 
 CURRENT EXECUTABLE AUTHORITY
 
+- **Milestone 93:** OPEN; **93A:** FINALIZED / DURABLE boundary; **93B implementation content:** complete; **Rule 4 physical owner in implemented content:** Core Governance; **Implementation provenance:** rule_3 / clear; **Direct supersession:** 27; **Parameter cases:** 3; **Observation:** BLOCKED / deferred; **Candidate A-F:** DEFERRED; **Capability expansion:** none; Git directly determines implementation durability, tagging, and publication.
 - **93A Boundary:** 34 passed
+- **93B Rule 4 runtime contract:** 26 passed
 - **Progress ledger canonical-header contract:** 23 passed
 - **Current Progress-equivalent five-file family:** 362 passed
 - **Current Architecture/Observation successor count:** not established
-- **Full suite:** 2605/2605 passed, 0 failures, 0 errors
+- **Full suite:** 2631/2631 passed, 0 failures, 0 errors
 - **Warnings:** 9 existing PytestRemovedIn10Warning
 - **Warning occurrence delta versus parent:** 0
 - **New warning regression caused by 93A:** none
@@ -234,7 +236,8 @@ HISTORICAL BASELINE PROVENANCE
 - **Historical Architecture/Observation:** 363; classification `M92A-R2 HISTORICAL_RECORDED_BASELINE_WITH_SELECTOR_PROVENANCE_NOT_PRESERVED`
 
 The historical values above are provenance only and are not current executable
-results. Current required counts are 34, 23, 362, and 2605.
+results. Current required counts are: 93A 34; 93B 26; Canonical 23;
+Progress-equivalent 362; Full 2631.
 
 ---
 
@@ -299,9 +302,9 @@ These invariants must hold at ALL times:
 
 ## 10. Next Recommended Milestone
 
-**Status:** Milestone 92C is CLOSED and durable; Milestone 93 is OPEN; Milestone 93A boundary content is complete; Git is authoritative for whether that content is committed, tagged, and published; Rule 4 current physical owner is Thinking; Rule 4 target owner is Core Governance; runtime Rule 4 migration is not started; current provenance is rule_3 / rule_4 / clear; future target provenance is rule_3 / clear; future rule_4 provenance is removed; Observation deferred; Candidate A-F deferred; capability expansion none; 93A Boundary: 34 passed; Canonical: 23 passed; Current Progress-equivalent family: 362 passed; Historical Progress 322: historical M89A-R3 accounting only; Historical Architecture/Observation 363: historical M92A-R2 recorded baseline with selector provenance not preserved; Current Architecture/Observation successor: not established; Full: 2605 passed; Warnings: 9 PytestRemovedIn10Warning; warning occurrence delta: 0.
+**Status:** Milestone 92C is CLOSED and durable; Milestone 93 is OPEN; Milestone 93A is FINALIZED / DURABLE boundary; Milestone 93B runtime implementation content is complete; Rule 4 physical owner in implemented content is Core Governance; current implementation provenance is rule_3 / clear; Direct supersession: 27; Parameter cases: 3; New 93B: 26; Full candidate: 2631 passed; 93A Boundary: 34 passed; Canonical: 23 passed; Current Progress-equivalent family: 362 passed; Warnings: 9 PytestRemovedIn10Warning; warning occurrence delta: 0; OpenAPI: 304 paths / 108 schemas; api_server: 8 direct @app routes / 23 include_router / 0 direct /action/*; Observation: BLOCKED / deferred; Candidate A-F: DEFERRED; capability expansion none; Git directly determines implementation durability, tagging, and publication.
 
-**Next:** After boundary durability is verified from Git and accepted by PM, any Rule 4 runtime migration requires a separately authorized future milestone.
+**Next:** After Git durability of the Milestone 93B implementation is verified and accepted by PM, the next Milestone 93 scope requires separate PM definition and authorization.
 
 ### Milestone 92C Closure State
 
@@ -4021,3 +4024,16 @@ Extracted 18 endpoint handlers (6 proposal-review-console, 6 proposal-revision-c
     - No execution, persistence, API, apply, rollback, or evidence-collection expansion
     - Milestone 91: CLOSED (91B finalized)
     - Milestone 92: not started
+
+  - Milestone 93B — Rule 4 Governance Runtime Migration (implementation content complete; Git lifecycle state delegated to Git)
+    - Implementation content classification: Rule 4 runtime ownership migration; Git directly determines implementation durability, tagging, and publication.
+    - Production scope is exactly `aether/thinking/policy.py`, `aether/core/governance.py`, and `aether/core/loop.py`.
+    - Thinking no longer owns Rule 4; Core Governance is the sole operative Rule 4 evaluator, term-set owner, and formatter.
+    - The private keyword-only sidecar is `rule4_risk_terms_detected`; omitted input uses the private missing-sidecar sentinel and defaults to an empty list.
+    - Core Coordination transports `perception["risk_terms_detected"]` unchanged; no API, persistence, trace, approval, or capability expansion occurred.
+    - Contract A native iterable semantics, Contract B native malformed semantics, G1/G2 generator behavior, ten-key replacement projection, Rule 3/5/6 protection, Rule 7 collision safety, and T3 raw/effective truth are locally verified.
+    - Direct supersession accounting: original 17 + seven protected 93A additions + three newly authorized additions = 27 direct surfaces; parameter cases: 3; M89 wrapper remains unchanged and is not independently counted.
+    - New 93B runtime contract: 26 ordinary non-parameterized tests; 93A boundary: 34; supersession family: 446; Progress-equivalent family: 362; canonical: 23; full suite: 2631 passed, 0 failures, 0 errors.
+    - OpenAPI remains 304 paths / 108 schemas; api_server remains 8 direct @app routes / 23 include_router / 0 direct /action/*.
+    - Observation remains BLOCKED / deferred; Candidate A-F remain DEFERRED; capability expansion is none.
+    - Git remains authoritative for commit, tag, and publication state; this historical entry does not self-assert its own commit SHA, tag existence, or remote publication state.

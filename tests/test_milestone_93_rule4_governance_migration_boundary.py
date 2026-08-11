@@ -81,17 +81,26 @@ class TestCURRENT_STATE_LOCK:
 
     def test_current_source_trigger_and_owner(self):
         source = _text(POLICY)
-        assert "risk_terms = perception.get(\"risk_terms_detected\", [])" in source
-        assert "secret_found = any(t in _SECRET_RISK_TERMS for t in risk_terms)" in source
+        assert "risk_terms = perception.get(\"risk_terms_detected\", [])" not in source
+        assert "secret_found = any(t in _SECRET_RISK_TERMS for t in risk_terms)" not in source
+        assert "_SECRET_RISK_TERMS" not in source
         assert "aether/thinking/policy.py::_evaluate_chat_policy_with_precedence" in _text(RECORD)
         assert "NO operative Rule 4-specific evaluator" in _text(RECORD)
 
     def test_current_term_set_is_exact(self):
-        tree = _tree(POLICY)
-        assignment = next(node for node in tree.body if isinstance(node, ast.Assign) and any(
+        policy_tree = _tree(POLICY)
+        governance_tree = _tree(GOVERNANCE)
+        policy_assignments = [node for node in policy_tree.body if isinstance(node, ast.Assign) and any(
             isinstance(target, ast.Name) and target.id == "_SECRET_RISK_TERMS" for target in node.targets
-        ))
+        )]
+        governance_assignments = [node for node in governance_tree.body if isinstance(node, ast.Assign) and any(
+            isinstance(target, ast.Name) and target.id == "_SECRET_RISK_TERMS" for target in node.targets
+        )]
+        assert len(policy_assignments) == 0
+        assert len(governance_assignments) == 1
+        assignment = governance_assignments[0]
         assert set(ast.literal_eval(assignment.value)) == TERMS
+        assert all(term in _text(RECORD) for term in TERMS)
 
 
 class TestTEN_KEY_COMPATIBILITY_LOCK:
@@ -100,21 +109,41 @@ class TestTEN_KEY_COMPATIBILITY_LOCK:
             {"normalized_text": "hello", "risk_terms_detected": ["password", "ordinary"]},
             {"risk_level": "low", "action_type": "general_request"},
         )
-        assert signal == "rule_4"
+        assert signal == "clear"
         assert list(policy) == TEN_KEYS
         section = _text(RECORD).split("## 8. Exact Current Rule 4 Ten-Key Projection", 1)[1]
         key_block = section.split("```text", 1)[1].split("```", 1)[0]
         assert [line.strip() for line in key_block.splitlines() if line.strip()] == TEN_KEYS
         assert policy["tool_suggestion_allowed"] is False
         assert policy["tool_execution_allowed"] is False
+        effective = evaluate_authorization_envelope(
+            thinking_policy=policy,
+            rule_3_4_precedence=signal,
+            rule4_risk_terms_detected=["password", "ordinary"],
+        )
+        assert effective["decision"] == "require_approval"
+        assert list(effective["policy_snapshot"]) == TEN_KEYS
+        assert effective["policy_snapshot"]["tool_suggestion_allowed"] is False
+        assert effective["policy_snapshot"]["tool_execution_allowed"] is False
 
     def test_complete_detected_terms_are_joined(self):
         policy, _ = _evaluate_chat_policy_with_precedence(
             {"normalized_text": "hello", "risk_terms_detected": ["ordinary", "password"]},
             {"risk_level": "low", "action_type": "general_request"},
         )
-        assert "ordinary, password" in policy["reasons"][0]
-        assert policy["warnings"] == ["Potentially sensitive terms detected: ordinary, password"]
+        _, signal = _evaluate_chat_policy_with_precedence(
+            {"normalized_text": "hello", "risk_terms_detected": ["ordinary", "password"]},
+            {"risk_level": "low", "action_type": "general_request"},
+        )
+        effective = evaluate_authorization_envelope(
+            thinking_policy=policy,
+            rule_3_4_precedence=signal,
+            rule4_risk_terms_detected=["ordinary", "password"],
+        )
+        assert "ordinary, password" in effective["policy_snapshot"]["reasons"][0]
+        assert effective["policy_snapshot"]["warnings"] == [
+            "Potentially sensitive terms detected: ordinary, password"
+        ]
         assert "complete detected-term list" in _normalized_record()
 
 
@@ -131,13 +160,17 @@ class TestCURRENT_PROVENANCE_LOCK:
             {"risk_level": "low", "action_type": "general_request"},
         )
         result = evaluate_authorization_envelope(
-            thinking_policy=raw, rule_3_4_precedence=signal,
+            thinking_policy=raw,
+            rule_3_4_precedence=signal,
+            rule4_risk_terms_detected=["secret"],
         )
         assert result["decision"] == "require_approval"
         assert result["reason"] == "Human approval is required before execution."
         assert result["tool_execution_allowed"] is False
         assert result["action_execution_allowed"] is False
-        assert result["policy_snapshot"] == raw
+        assert result["policy_snapshot"] != raw
+        assert result["policy_snapshot"]["decision_type"] == "require_approval"
+        assert "generic `decision_type == \"require_approval\"`" in _text(RECORD)
 
 
 class TestFUTURE_PROVENANCE_CONTRACT:
@@ -167,8 +200,30 @@ class TestSINGLE_AUTHORITY_LOCK:
 
     def test_current_governance_has_no_rule4_specific_branch(self):
         source = _text(GOVERNANCE)
-        assert "_SECRET_RISK_TERMS" not in source
-        assert "risk_terms_detected" not in source
+        assert "_SECRET_RISK_TERMS" in source
+        assert "rule4_risk_terms_detected" in source
+        tree = _tree(GOVERNANCE)
+        predicates = [
+            node for node in ast.walk(tree)
+            if isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Name)
+            and node.func.id == "any"
+            and "_SECRET_RISK_TERMS" in ast.unparse(node)
+        ]
+        formatters = [
+            node for node in ast.walk(tree)
+            if isinstance(node, ast.FunctionDef)
+            and node.name == "_format_rule_4_compatibility_policy"
+        ]
+        formatter_calls = [
+            node for node in ast.walk(tree)
+            if isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Name)
+            and node.func.id == "_format_rule_4_compatibility_policy"
+        ]
+        assert len(predicates) == 1
+        assert len(formatters) == 1
+        assert len(formatter_calls) == 1
         assert "generic `decision_type == \"require_approval\"`" in _text(RECORD)
 
     def test_future_duplicate_locations_are_prohibited(self):
@@ -267,10 +322,16 @@ class TestMALFORMED_BOUNDARY_LOCK:
         assert "same malformed direct Governance calls match the target pipeline's native exception class" in text
 
     def test_current_none_really_raises_typeerror(self):
+        raw, signal = _evaluate_chat_policy_with_precedence(
+            {"normalized_text": "secret", "risk_terms_detected": None},
+            {"risk_level": "low", "action_type": "general_request"},
+        )
+        assert signal == "clear"
         with pytest.raises(TypeError):
-            _evaluate_chat_policy_with_precedence(
-                {"normalized_text": "secret", "risk_terms_detected": None},
-                {"risk_level": "low", "action_type": "general_request"},
+            evaluate_authorization_envelope(
+                thinking_policy=raw,
+                rule_3_4_precedence=signal,
+                rule4_risk_terms_detected=None,
             )
 
 

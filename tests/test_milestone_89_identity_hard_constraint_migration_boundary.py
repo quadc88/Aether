@@ -391,34 +391,23 @@ class TestRuleContracts:
 
 class TestRulePrecedence:
     def test_23_current_source_order_preserved(self):
-        # Thinking: sidecar Rules 3/4 remain ordered before Rules 7-9;
-        # Governance owns Rule 6.
+        # Thinking retains Rule 3 before Rules 7-9; Governance owns Rule 4
+        # before Rules 5/6.
         src = POLICY.read_text()
-        lines = src.splitlines()
-        rule_lines = {}
-        for i, line in enumerate(lines):
-            lineno = i + 1
-            if "not normalized_text" in line:
-                rule_lines[3] = lineno
-            elif "secret_found = any" in line:
-                rule_lines[4] = lineno
-            elif 'risk_level == "low"' in line:
-                rule_lines[7] = lineno
-            elif "not suggested_tool and len" in line:
-                rule_lines[8] = lineno
-        for i in (3, 4, 7, 8):
-            for j in (3, 4, 7, 8):
-                if i >= j:
-                    continue
-                assert rule_lines[i] < rule_lines[j], f"Rule {i} (line {rule_lines[i]}) must precede Rule {j} (line {rule_lines[j]})"
+        assert "secret_found" not in src
+        assert "_SECRET_RISK_TERMS" not in src
+        assert src.index("# --- Rule 3") < src.index('if risk_level == "low"')
+        assert src.index('if risk_level == "low"') < src.index("if not suggested_tool")
         assert 'risk_level == "high"' not in src
-        assert set(rule_lines) == {3, 4, 7, 8}
         assert 'risk_level == "medium"' not in src
-        assert 'risk_level == "medium" and requested_action is not None' in GOVERNANCE.read_text()
+        gov_src = GOVERNANCE.read_text()
+        assert "# --- Governance Rule 4" in gov_src
+        assert gov_src.index("# --- Governance Rule 4") < gov_src.index("# --- Governance Rule 5")
+        assert gov_src.index("# --- Governance Rule 5") < gov_src.index("# --- Governance Rule 6")
+        assert 'risk_level == "medium" and requested_action is not None' in gov_src
         assert "_evaluate_chat_policy_with_precedence" in src
         # Governance: the Identity Rules 1/2 branch precedes the normal
         # Thinking-proposal evaluation branch
-        gov_src = GOVERNANCE.read_text()
         r1_idx = gov_src.index('if status == "changed"')
         normal_idx = gov_src.index("Precedence 3")
         assert r1_idx < normal_idx
@@ -769,15 +758,19 @@ class TestAppliedMigration:
 
     def test_145_governance_signature_unchanged(self):
         import inspect
+        import aether.core.governance as governance
         sig = inspect.signature(_gov_fn())
         params = sig.parameters
         assert list(params) == [
             "thinking_policy", "requested_action", "context",
             "risk_evidence", "identity_integrity_evidence",
             "rule_3_4_precedence",
+            "rule4_risk_terms_detected",
         ]
         assert params["risk_evidence"].kind is inspect.Parameter.KEYWORD_ONLY
         assert params["identity_integrity_evidence"].kind is inspect.Parameter.KEYWORD_ONLY
+        assert params["rule4_risk_terms_detected"].kind is inspect.Parameter.KEYWORD_ONLY
+        assert params["rule4_risk_terms_detected"].default is governance._MISSING_RULE4_RISK_TERMS
 
     def test_146_no_raw_evidence_values_leak(self):
         def _strings(obj):

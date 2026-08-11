@@ -173,6 +173,7 @@ def run_core_chat_loop(
         risk_evidence=risk,
         identity_integrity_evidence=identity_status,
         rule_3_4_precedence=rule_3_4_precedence,
+        rule4_risk_terms_detected=perception["risk_terms_detected"],
     )
     effective_thinking_policy = authorization_envelope["policy_snapshot"]
     execution_allowed = authorization_envelope.get("allowed", False)

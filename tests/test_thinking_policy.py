@@ -104,25 +104,43 @@ class TestEmptyInput:
 
 class TestSecretRiskTerms:
     def test_require_approval_on_password_term(self):
-        result = decide_chat_policy(
+        raw = decide_chat_policy(
             perception={
                 "normalized_text": "reset my password please",
                 "risk_terms_detected": ["password"],
             },
             risk={"risk_level": "low", "action_type": "general_request"},
         )
-        assert result["decision_type"] == "require_approval"
-        assert result["tool_execution_allowed"] is False
+        assert raw["decision_type"] == "respond_only"
+        assert "password" not in " ".join(raw["reasons"] + raw["warnings"])
+        effective = evaluate_authorization_envelope(
+            thinking_policy=raw,
+            risk_evidence={"risk_level": "low", "action_type": "general_request"},
+            rule_3_4_precedence="clear",
+            rule4_risk_terms_detected=["password"],
+        )
+        assert effective["decision"] == "require_approval"
+        assert effective["policy_snapshot"]["decision_type"] == "require_approval"
+        assert effective["policy_snapshot"]["tool_execution_allowed"] is False
 
     def test_require_approval_on_token_term(self):
-        result = decide_chat_policy(
+        raw = decide_chat_policy(
             perception={
                 "normalized_text": "check my api token",
                 "risk_terms_detected": ["token"],
             },
             risk={"risk_level": "low", "action_type": "general_request"},
         )
-        assert result["decision_type"] == "require_approval"
+        assert raw["decision_type"] == "respond_only"
+        assert "token" not in " ".join(raw["reasons"] + raw["warnings"])
+        effective = evaluate_authorization_envelope(
+            thinking_policy=raw,
+            risk_evidence={"risk_level": "low", "action_type": "general_request"},
+            rule_3_4_precedence="clear",
+            rule4_risk_terms_detected=["token"],
+        )
+        assert effective["decision"] == "require_approval"
+        assert effective["policy_snapshot"]["decision_type"] == "require_approval"
 
     def test_no_secret_flags_without_risk_terms(self):
         result = decide_chat_policy(

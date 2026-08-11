@@ -523,6 +523,7 @@ class TestGovernanceModuleExtraction:
             "thinking_policy", "requested_action", "context",
             "risk_evidence", "identity_integrity_evidence",
             "rule_3_4_precedence",
+            "rule4_risk_terms_detected",
         ]
         defaults = [
             sig.parameters["thinking_policy"].default,
@@ -535,8 +536,10 @@ class TestGovernanceModuleExtraction:
             if v.kind == inspect.Parameter.KEYWORD_ONLY
         ]
         assert set(kwonly) == {
-            "risk_evidence", "identity_integrity_evidence", "rule_3_4_precedence"
+            "risk_evidence", "identity_integrity_evidence", "rule_3_4_precedence",
+            "rule4_risk_terms_detected",
         }
+        assert sig.parameters["rule4_risk_terms_detected"].default is gov._MISSING_RULE4_RISK_TERMS
         assert sig.return_annotation in (dict, "dict")
 
     def test_50_governance_narrow_scope_docstring(self):

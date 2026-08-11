@@ -156,14 +156,14 @@ class TestDecisionRecordStructure:
 
     def test_07_actual_current_rule_count_is_seven(self):
         # Verify from actual source, not from plan assumptions.
-        # Rule 6 is now selected by Governance; Thinking retains Rules 3, 4,
-        # 7, 8, and 9.
+        # Rule 4 and Rule 6 are selected by Governance; Thinking retains
+        # Rules 3, 7, 8, and 9.
         fn = _function(POLICY, "_evaluate_chat_policy_with_precedence")
         returns = []
         for node in ast.walk(fn):
             if isinstance(node, ast.Return):
                 returns.append(node)
-        assert len(returns) == 5
+        assert len(returns) == 4
 
     def test_08_every_source_rule_inventoried_once(self):
         text = _normalized()
@@ -189,25 +189,29 @@ class TestDecisionRecordStructure:
         idx1 = text.index('identity_status == "changed"')
         idx2 = text.index('identity_status in ("missing", "failed")')
         assert idx1 < idx2
-        # Rule 4 remains before Thinking Rules 7-9; Rule 5/6 are Governance.
-        idx4 = text.index("secret_found")
-        idx7 = text.index('risk_level == "low"')
-        assert idx4 < idx7
-        assert 'risk_level == "medium"' not in POLICY.read_text()
+        # Thinking retains Rule 3 before Rules 7-9; Governance owns Rule 4
+        # before Rules 5/6.
+        policy_source = POLICY.read_text()
+        governance_source = GOVERNANCE.read_text()
+        assert "secret_found" not in policy_source
+        assert "_SECRET_RISK_TERMS" not in policy_source
+        assert policy_source.index("# --- Rule 3") < policy_source.index('if risk_level == "low"')
+        assert governance_source.index("# --- Governance Rule 4") < governance_source.index("# --- Governance Rule 5")
+        assert governance_source.index("# --- Governance Rule 5") < governance_source.index("# --- Governance Rule 6")
 
 
 class TestRuleInventoryAndOutputs:
     def test_10_exact_trigger_conditions_from_ast(self):
         fn = _function(POLICY, "_evaluate_chat_policy_with_precedence")
         # Verify exact line numbers of return statements.
-        # Rule 6 is no longer a Thinking return.
+        # Rule 4 and Rule 6 are no longer Thinking returns.
         returns = []
         for node in ast.walk(fn):
             if isinstance(node, ast.Return):
                 returns.append(node.lineno)
-        assert len(returns) == 5
+        assert len(returns) == 4
         assert any("rule_3" in ast.unparse(node) for node in ast.walk(fn) if isinstance(node, ast.Return))
-        assert any("rule_4" in ast.unparse(node) for node in ast.walk(fn) if isinstance(node, ast.Return))
+        assert not any("rule_4" in ast.unparse(node) for node in ast.walk(fn) if isinstance(node, ast.Return))
         assert 'risk_level == "medium"' not in POLICY.read_text()
         assert 'risk_level == "medium" and requested_action is not None' in GOVERNANCE.read_text()
 
@@ -242,9 +246,20 @@ class TestRuleInventoryAndOutputs:
         p = _make_policy(text="")
         assert p["decision_type"] == "ask_clarification"
 
-        # Rule 4: secret terms -> require_approval
-        p = _make_policy(secrets=["password"])
-        assert p["decision_type"] == "require_approval"
+        # Rule 4: secret terms are effective Governance evidence, not raw
+        # Thinking authority.
+        raw, signal = importlib.import_module("aether.thinking.policy")._evaluate_chat_policy_with_precedence(
+            {"normalized_text": "hello", "risk_terms_detected": ["password"]},
+            {"risk_level": "low", "action_type": "general_request"},
+        )
+        assert signal == "clear"
+        assert raw["decision_type"] != "require_approval"
+        effective = gov.evaluate_authorization_envelope(
+            thinking_policy=raw,
+            rule_3_4_precedence=signal,
+            rule4_risk_terms_detected=["password"],
+        )
+        assert effective["decision"] == "require_approval"
 
         # Rule 5: high risk is selected by Governance from the sidecar.
         p = _make_policy(risk_level="high", risk_action="destructive_memory_action")
@@ -297,8 +312,17 @@ class TestRuleInventoryAndOutputs:
             p = _make_policy(identity=identity_status)
             assert p["tool_execution_allowed"] is False
 
-        p = _make_policy(secrets=["token"])
-        assert p["tool_execution_allowed"] is False
+        raw, signal = importlib.import_module("aether.thinking.policy")._evaluate_chat_policy_with_precedence(
+            {"normalized_text": "hello world", "risk_terms_detected": ["token"]},
+            {"risk_level": "low", "action_type": "general_request"},
+        )
+        assert raw["tool_execution_allowed"] is False
+        effective = gov.evaluate_authorization_envelope(
+            thinking_policy=raw,
+            rule_3_4_precedence=signal,
+            rule4_risk_terms_detected=["token"],
+        )
+        assert effective["policy_snapshot"]["tool_execution_allowed"] is False
 
         p = _make_policy(risk_level="high")
         assert p["tool_execution_allowed"] is False
