@@ -170,12 +170,12 @@ def test_current_92a_local_state_is_consistent_across_header():
 
     # Six current-work identities are covered as one scalar contract.
     identity_tokens = {
-        "Last updated": "Milestone 92C Rule 6 Governance Runtime Migration closure state complete",
+        "Last updated": "Milestone 93A Rule 4 Governance Migration Boundary Build complete locally",
         "Current completed local milestone": "Milestone 92C Rule 6 Governance Runtime Migration closure state complete",
-        "Current active milestone/module": "Milestone 92C CLOSED",
-        "Current status": "Milestone 92C Rule 6 Governance Runtime Migration closure state is complete",
-        "Next milestone": "Future milestone definition requires a fresh PM four-core + Git read",
-        "Test baseline": "2571 current verified 92C closure baseline",
+        "Current active milestone/module": "Milestone 93A OPEN",
+        "Current status": "Milestone 92C CLOSED; Milestone 93 OPEN; Milestone 93A boundary content complete",
+        "Next milestone": "Human/project-manager review of the Milestone 93A Boundary Build",
+        "Test baseline": "2571 pre-93A full-suite baseline",
     }
     assert all(
         token in fields[name] for name, token in identity_tokens.items()
@@ -184,28 +184,28 @@ def test_current_92a_local_state_is_consistent_across_header():
     assert "3641c0c98fad993b1b4b5b8719dbf1cfd7117abc" in _parse_header_field(header, "Current closure ledger")
     assert "3641c0c98fad993b1b4b5b8719dbf1cfd7117abc" in _parse_header_field(header, "Current closure tag")
     assert "milestone-92C-rule6-governance-runtime-migration" in _parse_header_field(header, "Current closure tag")
-    assert "Rule 6 operative authority is Core Governance" in fields["Current active milestone/module"]
-    assert "Rule 4 remains physically evaluated in Thinking" in fields["Current active milestone/module"]
-    assert "implementation commit 3641c0c98fad993b1b4b5b8719dbf1cfd7117abc" in fields["Current status"]
-    assert "immutable implementation tag milestone-92C-rule6-governance-runtime-migration" in fields["Current status"]
-    assert "Full suite: 2571 passed" in fields["Current status"]
-    assert "Canonical header: 23 passed" in fields["Current status"]
-    assert "Progress-referencing regression: 322 passed" in fields["Current status"]
-    assert "Architecture/Observation: 363 passed" in fields["Current status"]
+    assert "Rule 4 current physical owner Thinking" in fields["Current status"]
+    assert "Rule 4 target owner Core Governance" in fields["Current status"]
+    assert "runtime migration not started" in fields["Current status"]
+    assert "93A Boundary: 34 passed" in fields["Current status"]
+    assert "Current Progress-equivalent five-file family: 362 passed" in fields["Current status"]
+    assert "Historical Progress accounting: 322 = M89A-R3 historical arithmetic only" in fields["Current status"]
+    assert "Historical Architecture/Observation: 363 = recorded M92A-R2 historical baseline" in fields["Current status"]
+    assert "Current Architecture/Observation successor count: not established" in fields["Current status"]
+    assert "Progress-referencing regression: 322 passed" not in fields["Current status"]
+    assert "Architecture/Observation: 363 passed" not in fields["Current status"]
+    assert "Full suite: 2605 passed (2571 baseline + 34 93A)" in fields["Current status"]
     assert "OpenAPI: 304 paths / 108 schemas" in fields["Current status"]
     assert "api_server: 8 direct @app routes / 23 include_router / 0 direct /action/*" in fields["Current status"]
-    assert "closure durability must be verified directly from Git" in fields["Current status"]
-    assert "no production/API/persistence/execution capability expansion" in fields["Current status"]
     assert "Candidate A-F deferred" in fields["Current status"]
-    assert "Boundary: 48" in fields["Test baseline"]
-    assert "Full suite: 2571 passed" in fields["Test baseline"]
-    assert "Canonical header: 23 passed" in fields["Test baseline"]
-    assert "Progress-referencing regression: 322 passed" in fields["Test baseline"]
-    assert "Architecture/Observation: 363 passed" in fields["Test baseline"]
+    assert "2571 pre-93A full-suite baseline" in fields["Test baseline"]
     assert "9 existing PytestRemovedIn10Warning" in fields["Test baseline"]
-    assert "1 StarletteDeprecationWarning reproducible at the parent baseline" in fields["Test baseline"]
-    assert "0 warning delta caused by Milestone 92C" in fields["Test baseline"]
-    assert "no functional milestone is selected or started here" in fields["Next milestone"]
+    assert "Current Progress-equivalent five-file family: 362 passed" in fields["Test baseline"]
+    assert "Historical Progress accounting: 322 = M89A-R3 historical arithmetic only" in fields["Test baseline"]
+    assert "Historical Architecture/Observation: 363 = recorded M92A-R2 historical baseline" in fields["Test baseline"]
+    assert "Current Architecture/Observation successor count: not established" in fields["Test baseline"]
+    assert "warning occurrence delta versus parent: 0" in fields["Test baseline"]
+    assert "new warning regression caused by 93A: none" in fields["Test baseline"]
 
     # Commit-3 lifecycle phrases must not appear in any current-work field.
     prohibited_phrases = [
@@ -510,22 +510,39 @@ def test_full_suite_and_canonical_counts_match_header():
 
     status = _parse_header_field(header, "Current status")
     baseline = _parse_header_field(header, "Test baseline")
-
-    # Current status must contain post-Build counts
-    assert "Full suite: 2571 passed" in status, (
-        f"Current status missing 'Full suite: 2571 passed': {status[:200]}"
-    )
-    assert "Canonical header: 23 passed" in status, (
-        f"Current status missing 'Canonical header: 23 passed': {status[:200]}"
+    section7 = text.split("## 7. Current Test Baseline\n", 1)[1].split(
+        "\n---\n", 1
+    )[0]
+    current_section7, historical_section7 = section7.split(
+        "HISTORICAL BASELINE PROVENANCE", 1
     )
 
-    # Test baseline must contain post-Build counts
-    assert "Full suite: 2571 passed" in baseline, (
-        f"Test baseline missing 'Full suite: 2571 passed': {baseline[:200]}"
-    )
-    assert "Canonical header: 23 passed" in baseline, (
-        f"Test baseline missing 'Canonical header: 23 passed': {baseline[:200]}"
-    )
+    assert "93A Boundary: 34 passed" in status
+    assert "Current Progress-equivalent five-file family: 362 passed" in status
+    assert "Current Architecture/Observation successor count: not established" in status
+    assert "Full suite: 2605 passed (2571 baseline + 34 93A)" in status
+    assert "2571 pre-93A full-suite baseline" in baseline
+    assert "93A Boundary: 34 passed" in baseline
+    assert "Current Progress-equivalent five-file family: 362 passed" in baseline
+    assert "Current Architecture/Observation successor count: not established" in baseline
+    assert "Full suite: 2605 passed" in baseline
+
+    assert "93A Boundary:** 34 passed" in current_section7
+    assert "Progress ledger canonical-header contract:** 23 passed" in current_section7
+    assert "Current Progress-equivalent five-file family:** 362 passed" in current_section7
+    assert "Current Architecture/Observation successor count:** not established" in current_section7
+    assert "Full suite:** 2605/2605 passed, 0 failures, 0 errors" in current_section7
+    assert "Warnings:** 9 existing PytestRemovedIn10Warning" in current_section7
+    assert "Warning occurrence delta versus parent:** 0" in current_section7
+    assert "New warning regression caused by 93A:** none" in current_section7
+    assert "Historical full suite: 2499" not in current_section7
+    assert "Historical Progress accounting: 322" not in current_section7
+    assert "Historical Architecture/Observation: 363" not in current_section7
+    assert "Historical full suite:** 2499" in historical_section7
+    assert "Historical Progress accounting:** 322" in historical_section7
+    assert "M89A-R3 HISTORICAL_BASELINE_ACCOUNTING" in historical_section7
+    assert "110 + 50 + 76 + 31 + 55 = 322" in historical_section7
+    assert "M92A-R2 HISTORICAL_RECORDED_BASELINE_WITH_SELECTOR_PROVENANCE_NOT_PRESERVED" in historical_section7
 
     # Prohibit stale pre-Build counts
     assert "Full suite: 2488 passed" not in status, (
@@ -546,15 +563,16 @@ def test_92a_vs_functional_92_terminology_contract():
     text = _read_progress()
     header = _header_block(text)
     active = _parse_header_field(header, "Current active milestone/module")
+    status = _parse_header_field(header, "Current status")
     section10 = text.split("## 10. Next Recommended Milestone\n", 1)[1].split(
         "\n---\n", 1
     )[0]
 
-    assert "Milestone 92C CLOSED" in active, (
-        f"Missing 92C closed state, got: {active[:200]}"
+    assert "Milestone 93A OPEN" in active, (
+        f"Missing 93A open state, got: {active[:200]}"
     )
-    assert "Rule 6 operative authority is Core Governance" in active, (
-        f"Missing local Rule 6 Governance authority, got: {active[:200]}"
+    assert "Rule 4 target owner is Core Governance" in active, (
+        f"Missing local Rule 4 Governance target, got: {active[:200]}"
     )
     # Prohibit standalone "Milestone 92 not started" without qualification
     assert "Milestone 92 not started" not in active, (
@@ -562,28 +580,51 @@ def test_92a_vs_functional_92_terminology_contract():
     )
 
     for token in (
-        "Milestone 92C",
-        "implementation commit",
-        "implementation tag",
-        "closure state is complete",
-        "Rule 6 authority is Core Governance",
-        "Rule 4 remains physically evaluated in Thinking",
-        "closure durability must be verified directly from Git",
-        "Candidate A-F remain deferred",
-        "Future milestone definition requires a fresh PM four-core + Git read",
+        "Milestone 92C CLOSED",
+        "Milestone 93 OPEN",
+        "Milestone 93A boundary content complete",
+        "Rule 4 current physical owner Thinking",
+        "Rule 4 target owner Core Governance",
+        "runtime migration not started",
+        "Observation deferred",
+        "Candidate A-F deferred",
+    ):
+        assert token in status, f"Current status missing token: {token}"
+
+    for token in (
+        "Milestone 92C is CLOSED and durable",
+        "Milestone 93 is OPEN",
+        "Milestone 93A boundary content is complete",
+        "Git is authoritative for whether that content is committed, tagged, and published",
+        "Rule 4 current physical owner is Thinking",
+        "Rule 4 target owner is Core Governance",
+        "runtime Rule 4 migration is not started",
+        "current provenance is rule_3 / rule_4 / clear",
+        "future target provenance is rule_3 / clear",
+        "future rule_4 provenance is removed",
+        "93A Boundary: 34 passed",
+        "Canonical: 23 passed",
+        "Current Progress-equivalent family: 362 passed",
+        "Historical Progress 322: historical M89A-R3 accounting only",
+        "Historical Architecture/Observation 363: historical M92A-R2 recorded baseline with selector provenance not preserved",
+        "Current Architecture/Observation successor: not established",
+        "Full: 2605 passed",
+        "Warnings: 9 PytestRemovedIn10Warning",
+        "warning occurrence delta: 0",
+        "Observation deferred",
+        "Candidate A-F deferred",
+        "capability expansion none",
+        "After boundary durability is verified from Git and accepted by PM, any Rule 4 runtime migration requires a separately authorized future milestone",
     ):
         assert token in section10, f"Section 10 missing current token: {token}"
 
     for stale in (
-        "boundary candidate exists locally and is not finalized",
-        "independent audit pending",
-        "Independent audit/review of 92B Boundary candidate",
-        "before any commit, tag, push",
-        "final closure candidate is prepared locally",
-        "final durable closure commit has not yet been created",
-        "final durable closure commit is pending",
-        "CLOSED after the separately authorized final closure commit",
-        "awaiting final closure commit",
-        "future 92C is not authorized",
+        "no functional milestone is selected",
+        "no functional milestone is started",
+        "Milestone 93 not started",
+        "Milestone 93A not started",
+        "Milestone 93A finalization is not yet committed",
+        "commit/tag/push: none",
+        "PM authorization is required before finalization",
     ):
         assert stale not in section10, f"Stale Section 10 phrase found: {stale}"
