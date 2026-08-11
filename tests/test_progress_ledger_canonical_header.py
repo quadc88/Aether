@@ -134,19 +134,20 @@ def test_header_has_one_git_verification_rule_field():
 def test_header_has_one_current_closure_ledger_field():
     text = _read_progress()
     header = _header_block(text)
-    assert header.count("**Current closure ledger:**") == 1
+    assert header.count("**Closure durability authority:**") == 1
 
 
 def test_header_has_one_current_closure_tag_field():
     text = _read_progress()
     header = _header_block(text)
-    assert header.count("**Current closure tag:**") == 1
+    assert header.count("**Closure tag authority:**") == 1
 
 
 def test_header_has_one_previous_accepted_closure_tag_field():
     text = _read_progress()
     header = _header_block(text)
-    assert header.count("**Previous accepted closure tag:**") == 1
+    assert header.count("**Previous durable closure tag:**") == 1
+    assert header.count("**Earlier accepted closure tag:**") == 1
 
 
 def test_header_rejects_obsolete_or_legacy_git_fields():
@@ -170,20 +171,38 @@ def test_current_92a_local_state_is_consistent_across_header():
 
     # Six current-work identities are covered as one scalar contract.
     identity_tokens = {
-        "Last updated": "Milestone 93B Rule 4 Governance Runtime Migration implementation content complete",
-        "Current completed local milestone": "Milestone 93B Rule 4 Governance Runtime Migration implementation content complete",
-        "Current active milestone/module": "Milestone 93 remains OPEN; Milestone 93B runtime implementation content is complete and Git-durable",
-        "Current status": "Milestone 92C CLOSED; Milestone 93 OPEN; Milestone 93A FINALIZED / DURABLE boundary",
-        "Next milestone": "After Git durability of the Milestone 93B implementation is verified and accepted by PM",
+        "Last updated": "Milestone 93 closure state recorded; Milestone 93A is FINALIZED / DURABLE; Milestone 93B Rule 4 Governance Runtime Migration implementation is complete and Git-durable",
+        "Current completed local milestone": "Milestone 93 closure state; Milestone 93A Boundary finalized/durable and Milestone 93B Rule 4 Governance Runtime Migration implementation complete and Git-durable",
+        "Current active milestone/module": "Milestone 93 is CLOSED; Milestone 93B Rule 4 Governance Runtime Migration implementation is complete and Git-durable",
+        "Current status": "Milestone 92C CLOSED; Milestone 93 CLOSED; Milestone 93A FINALIZED / DURABLE boundary",
+        "Next milestone": "No next milestone or submilestone is selected or authorized by this closure ledger",
         "Test baseline": "2571 pre-93A full-suite baseline",
     }
     assert all(
         token in fields[name] for name, token in identity_tokens.items()
     )
+    assert fields["Current completed local milestone"].startswith(
+        "Milestone 93 closure state"
+    )
+    assert not fields["Current completed local milestone"].startswith(
+        "Milestone 93B Rule 4 Governance Runtime Migration"
+    )
 
-    assert "3641c0c98fad993b1b4b5b8719dbf1cfd7117abc" in _parse_header_field(header, "Current closure ledger")
-    assert "3641c0c98fad993b1b4b5b8719dbf1cfd7117abc" in _parse_header_field(header, "Current closure tag")
-    assert "milestone-92C-rule6-governance-runtime-migration" in _parse_header_field(header, "Current closure tag")
+    closure_authority = _parse_header_field(header, "Closure durability authority")
+    tag_authority = _parse_header_field(header, "Closure tag authority")
+    previous_tag = _parse_header_field(header, "Previous durable closure tag")
+    earlier_tag = _parse_header_field(header, "Earlier accepted closure tag")
+    assert "Git directly determines the commit containing the current closure ledger content" in closure_authority
+    assert "does not self-assert its own closure commit SHA" in closure_authority
+    assert not re.search(r"[0-9a-f]{40}", closure_authority)
+    assert "does not select or self-assert a Milestone 93 closure tag" in tag_authority
+    assert "separate PM authorization and Git verification" in tag_authority
+    assert "3641c0c98fad993b1b4b5b8719dbf1cfd7117abc" not in tag_authority
+    assert "milestone-92C-rule6-governance-runtime-migration" not in tag_authority
+    assert "milestone-92C-rule6-governance-runtime-migration" in previous_tag
+    assert "3641c0c98fad993b1b4b5b8719dbf1cfd7117abc" in previous_tag
+    assert "milestone-92B-rule6-governance-migration-boundary" in earlier_tag
+    assert "22d819b6bd3a305536c0beba57f670a5433fe21e" in earlier_tag
     assert "Rule 4 physical owner in implemented content Core Governance" in fields["Current status"]
     assert "current implementation provenance rule_3 / clear" in fields["Current status"]
     assert "Direct supersession: 27" in fields["Current status"]
@@ -220,10 +239,18 @@ def test_current_92a_local_state_is_consistent_across_header():
             )
 
     # Closure independence: unchanged 92A/91B values remain in closure fields
-    closure_ledger = _parse_header_field(header, "Current closure ledger")
-    closure_tag = _parse_header_field(header, "Current closure tag")
-
-    prev_tag = _parse_header_field(header, "Previous accepted closure tag")
+    closure_ledger = _parse_header_field(header, "Closure durability authority")
+    closure_tag = _parse_header_field(header, "Closure tag authority")
+    prev_tag = _parse_header_field(header, "Previous durable closure tag")
+    earlier_tag = _parse_header_field(header, "Earlier accepted closure tag")
+    assert "Git directly determines" in closure_ledger
+    assert not re.search(r"[0-9a-f]{40}", closure_ledger)
+    assert "does not select or self-assert a Milestone 93 closure tag" in closure_tag
+    assert not re.search(r"[0-9a-f]{40}", closure_tag)
+    assert "milestone-92C-rule6-governance-runtime-migration" in prev_tag
+    assert "3641c0c98fad993b1b4b5b8719dbf1cfd7117abc" in prev_tag
+    assert "milestone-92B-rule6-governance-migration-boundary" in earlier_tag
+    assert "22d819b6bd3a305536c0beba57f670a5433fe21e" in earlier_tag
 
     # Parser uniqueness contract: line-by-line matching with explicit failures
     # Case A: one-match success (normal value)
@@ -309,118 +336,72 @@ def test_current_92a_local_state_is_consistent_across_header():
 def test_closure_sha_syntax_and_commit_exists():
     text = _read_progress()
     header = _header_block(text)
-    ledger_value = _parse_header_field(header, "Current closure ledger")
-
-    # Extract SHA from field value
-    match = re.search(r'[0-9a-f]{40}', ledger_value)
-    assert match is not None, (
-        f"No 40-char hex SHA found in Current closure ledger: {ledger_value}"
-    )
-    sha = match.group(0)
-
-    # Verify exactly one match
-    assert len(re.findall(r'[0-9a-f]{40}', ledger_value)) == 1, (
-        "Expected exactly one 40-char hex SHA in Current closure ledger"
-    )
-
-    # Verify commit object exists
-    result = _run_git(["git", "cat-file", "-e", f"{sha}^{{commit}}"])
-    assert result.returncode == 0, (
-        f"Commit object {sha} does not exist: {result.stderr}"
-    )
+    authority = _parse_header_field(header, "Closure durability authority")
+    assert "Git directly determines the commit containing the current closure ledger content" in authority
+    assert "does not self-assert its own closure commit SHA" in authority
+    assert not re.search(r"[0-9a-f]{40}", authority)
 
 
 def test_current_closure_ledger_is_ancestor_of_head():
     text = _read_progress()
     header = _header_block(text)
-    ledger_value = _parse_header_field(header, "Current closure ledger")
-    match = re.search(r'[0-9a-f]{40}', ledger_value)
-    assert match is not None, "No SHA found in Current closure ledger"
-    sha = match.group(0)
-
-    result = _run_git(["git", "merge-base", "--is-ancestor", sha, "HEAD"])
-    assert result.returncode == 0, (
-        f"Closure ledger commit {sha} is not an ancestor of HEAD"
-    )
+    authority = _parse_header_field(header, "Closure durability authority")
+    assert "Git directly determines" in authority
+    assert "does not self-assert its own closure commit SHA" in authority
+    assert not re.search(r"[0-9a-f]{40}", authority)
 
 
 def test_current_closure_tag_name_and_resolves():
     text = _read_progress()
     header = _header_block(text)
-    tag_value = _parse_header_field(header, "Current closure tag")
-
-    # Extract tag name from backticks
-    match = re.search(r'`([^`]+)`', tag_value)
-    assert match is not None, f"No tag name found in Current closure tag: {tag_value}"
-    tag_name = match.group(1)
-    assert tag_name == "milestone-92C-rule6-governance-runtime-migration", (
-        f"Expected milestone-92C-rule6-governance-runtime-migration, got {tag_name}"
-    )
-
-    # Verify tag resolves locally
-    result = _run_git(["git", "rev-list", "-n", "1", tag_name])
-    assert result.returncode == 0, (
-        f"Tag {tag_name} does not resolve locally: {result.stderr}"
-    )
+    tag_authority = _parse_header_field(header, "Closure tag authority")
+    assert "does not select or self-assert a Milestone 93 closure tag" in tag_authority
+    assert "milestone-92C-rule6-governance-runtime-migration" not in tag_authority
+    assert not re.search(r"[0-9a-f]{40}", tag_authority)
 
 
 def test_current_closure_tag_target_matches_header():
     text = _read_progress()
     header = _header_block(text)
-    tag_value = _parse_header_field(header, "Current closure tag")
-
-    # Extract tag name and target SHA
-    tag_match = re.search(r'`([^`]+)`', tag_value)
-    assert tag_match is not None, "No tag name in Current closure tag"
-    tag_name = tag_match.group(1)
-
-    target_match = re.search(r'[0-9a-f]{40}', tag_value)
-    assert target_match is not None, "No target SHA in Current closure tag"
-    header_target = target_match.group(0)
-
-    # Resolve tag target via git
-    result = _run_git(["git", "rev-list", "-n", "1", tag_name])
-    assert result.returncode == 0, f"Tag {tag_name} does not resolve"
-    resolved_target = result.stdout.strip()
-
-    assert resolved_target == header_target, (
-        f"Tag target mismatch: resolved={resolved_target}, header={header_target}"
-    )
+    tag_authority = _parse_header_field(header, "Closure tag authority")
+    assert "This ledger does not select or self-assert a Milestone 93 closure tag" in tag_authority
+    assert "any such tag requires separate PM authorization and Git verification" in tag_authority
+    assert not re.search(r"[0-9a-f]{40}", tag_authority)
 
 
 def test_implementation_commit_is_ancestor_of_closure_commit():
     text = _read_progress()
     header = _header_block(text)
-
-    # Parse implementation tag target from Current closure tag
-    tag_value = _parse_header_field(header, "Current closure tag")
-    target_match = re.search(r'[0-9a-f]{40}', tag_value)
-    assert target_match is not None, "No target SHA in Current closure tag"
-    impl_commit = target_match.group(0)
-
-    # Parse closure ledger SHA from Current closure ledger
-    ledger_value = _parse_header_field(header, "Current closure ledger")
-    ledger_match = re.search(r'[0-9a-f]{40}', ledger_value)
-    assert ledger_match is not None, "No SHA in Current closure ledger"
-    closure_sha = ledger_match.group(0)
-
-    # Verify implementation commit is ancestor of closure commit
-    result = _run_git(["git", "merge-base", "--is-ancestor", impl_commit, closure_sha])
-    assert result.returncode == 0, (
-        f"Implementation commit {impl_commit} is not an ancestor of closure commit {closure_sha}"
-    )
+    closure_authority = _parse_header_field(header, "Closure durability authority")
+    tag_authority = _parse_header_field(header, "Closure tag authority")
+    previous_tag = _parse_header_field(header, "Previous durable closure tag")
+    earlier_tag = _parse_header_field(header, "Earlier accepted closure tag")
+    assert "Git directly determines" in closure_authority
+    assert "does not self-assert its own closure commit SHA" in closure_authority
+    assert "does not select or self-assert a Milestone 93 closure tag" in tag_authority
+    assert "milestone-92C-rule6-governance-runtime-migration" in previous_tag
+    assert "3641c0c98fad993b1b4b5b8719dbf1cfd7117abc" in previous_tag
+    assert "milestone-92B-rule6-governance-migration-boundary" in earlier_tag
+    assert "22d819b6bd3a305536c0beba57f670a5433fe21e" in earlier_tag
 
 
 def test_previous_accepted_closure_tag_is_consistent():
     text = _read_progress()
     header = _header_block(text)
-    prev_value = _parse_header_field(header, "Previous accepted closure tag")
+    prev_value = _parse_header_field(header, "Previous durable closure tag")
+    earlier_value = _parse_header_field(header, "Earlier accepted closure tag")
 
-    assert "milestone-92B-rule6-governance-migration-boundary" in prev_value, (
-        f"Expected milestone-92B tag, got: {prev_value}"
+    assert "milestone-92C-rule6-governance-runtime-migration" in prev_value, (
+        f"Expected milestone-92C tag, got: {prev_value}"
     )
-    assert "22d819b6bd3a305536c0beba57f670a5433fe21e" in prev_value, (
-        f"Expected milestone-92B SHA, got: {prev_value}"
+    assert "3641c0c98fad993b1b4b5b8719dbf1cfd7117abc" in prev_value, (
+        f"Expected milestone-92C SHA, got: {prev_value}"
+    )
+    assert "milestone-92B-rule6-governance-migration-boundary" in earlier_value, (
+        f"Expected milestone-92B tag, got: {earlier_value}"
+    )
+    assert "22d819b6bd3a305536c0beba57f670a5433fe21e" in earlier_value, (
+        f"Expected milestone-92B SHA, got: {earlier_value}"
     )
 
 
@@ -527,7 +508,7 @@ def test_full_suite_and_canonical_counts_match_header():
     assert "Full candidate: 2631 passed" in baseline
 
     assert "93A Boundary:** 34 passed" in current_section7
-    assert "Milestone 93:** OPEN" in current_section7
+    assert "Milestone 93:** CLOSED" in current_section7
     assert "93A:** FINALIZED / DURABLE boundary" in current_section7
     assert "93B implementation content:** complete" in current_section7
     assert "Rule 4 physical owner in implemented content:** Core Governance" in current_section7
@@ -579,11 +560,11 @@ def test_92a_vs_functional_92_terminology_contract():
         "\n---\n", 1
     )[0]
 
-    assert "Milestone 93 remains OPEN; Milestone 93B runtime implementation content is complete and Git-durable" in active, (
-        f"Missing durable 93B current state, got: {active[:200]}"
+    assert "Milestone 93 is CLOSED; Milestone 93B Rule 4 Governance Runtime Migration implementation is complete and Git-durable" in active, (
+        f"Missing closed durable 93B current state, got: {active[:200]}"
     )
     assert "Milestone 93B OPEN" not in active
-    assert "Rule 4 physical owner is Core Governance" in active, (
+    assert "Rule 4 physical ownership is Core Governance" in active, (
         f"Missing local Rule 4 Governance owner, got: {active[:200]}"
     )
     assert "PM acceptance is an external review decision and is not self-asserted by this ledger" in active
@@ -594,7 +575,7 @@ def test_92a_vs_functional_92_terminology_contract():
 
     for token in (
         "Milestone 92C CLOSED",
-        "Milestone 93 OPEN",
+        "Milestone 93 CLOSED",
         "Milestone 93A FINALIZED / DURABLE boundary",
         "Milestone 93B runtime implementation content complete",
         "Rule 4 physical owner in implemented content Core Governance",
@@ -610,7 +591,7 @@ def test_92a_vs_functional_92_terminology_contract():
 
     for token in (
         "Milestone 92C is CLOSED and durable",
-        "Milestone 93 is OPEN",
+        "Milestone 93 is CLOSED",
         "Milestone 93A is FINALIZED / DURABLE boundary",
         "Milestone 93B runtime implementation content is complete",
         "Git directly determines implementation durability, tagging, and publication",
@@ -630,13 +611,16 @@ def test_92a_vs_functional_92_terminology_contract():
         "Observation: BLOCKED / deferred",
         "Candidate A-F: DEFERRED",
         "capability expansion none",
-        "The next Milestone 93 scope requires separate human/project-manager definition and authorization after post-93B durability review.",
+        "No next milestone or submilestone is selected or authorized by this closure ledger",
     ):
         assert token in section10, f"Section 10 missing current token: {token}"
 
     assert "Rule 4 remains in Thinking" not in section10
     assert "At the Milestone 92C closure boundary" in section10
     assert "current Rule 4 physical ownership is Core Governance" in section10
+    assert "Milestone 93 OPEN" not in "\n".join((active, status, section10))
+    assert "93C" not in "\n".join((active, status, section10))
+    assert "Milestone 94" not in "\n".join((active, status, section10))
 
     for stale in (
         "no functional milestone is selected",
