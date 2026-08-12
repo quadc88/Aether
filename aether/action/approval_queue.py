@@ -3,10 +3,51 @@
 from pathlib import Path
 import json
 import uuid
+import hashlib
+import os
+import tempfile
 
 import yaml
 
 from aether.time.clock import get_timezone, now, now_iso
+
+
+def restricted_read_fingerprint(action: dict | None) -> str | None:
+    if not isinstance(action, dict):
+        return None
+    parameters = action.get("parameters")
+    from aether.action.tool_planner import normalize_restricted_read_target
+    if (
+        set(action) != {"tool_id", "action_type", "name", "target", "permission_class", "parameters"}
+        or
+        action.get("tool_id") != "file.restricted_read"
+        or action.get("action_type") != "restricted_file_read"
+        or action.get("name") != "Restricted File Read"
+        or action.get("permission_class") != "read_only"
+        or not isinstance(action.get("target"), str)
+        or action["target"] != normalize_restricted_read_target(action["target"])
+        or not isinstance(parameters, dict)
+        or set(parameters) != {"max_chars"}
+        or not isinstance(parameters["max_chars"], int)
+        or isinstance(parameters["max_chars"], bool)
+        or not 0 <= parameters["max_chars"] <= 12000
+    ):
+        return None
+    material = {
+        "capability_id": "file.restricted_read",
+        "max_chars": parameters["max_chars"],
+        "permission_class": "read_only",
+        "target": action["target"],
+    }
+    encoded = json.dumps(material, sort_keys=True, separators=(",", ":"), ensure_ascii=True).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def _normalize_approval_record(record: dict) -> dict:
+    record.setdefault("requested_action_fingerprint", None)
+    record.setdefault("execution_consumed", False)
+    record.setdefault("consumed_by_execution_attempt", None)
+    return record
 
 
 def load_aether_config(path: str = "config/aether.yaml") -> dict:
@@ -222,6 +263,11 @@ def create_approval_record(
         "tool_executed": False,
         "metadata": dict(context) if context else {},
         "warnings": [],
+        "requested_action_fingerprint": restricted_read_fingerprint(
+            approval_request.get("requested_action")
+        ),
+        "execution_consumed": False,
+        "consumed_by_execution_attempt": None,
     }
 
     path = _approval_record_dir() / f"approval_{approval_id}.json"
@@ -235,7 +281,7 @@ def get_approval_record(approval_id: str) -> dict | None:
     if not path.exists():
         return None
     with path.open("r", encoding="utf-8") as f:
-        return json.load(f)
+        return _normalize_approval_record(json.load(f))
 
 
 def list_approval_records(
@@ -255,9 +301,79 @@ def list_approval_records(
             rec = json.load(f)
         if status is not None and rec.get("status") != status:
             continue
-        records.append(rec)
+        records.append(_normalize_approval_record(rec))
     records.sort(key=lambda r: r.get("created_at", ""), reverse=True)
     return records[:limit]
+
+
+def claim_approval_for_execution(approval_id: str, execution_attempt_id: str) -> dict:
+    """Atomically consume one approved record for one execution attempt."""
+    directory = _approval_record_dir()
+    record_path = directory / f"approval_{approval_id}.json"
+    lock_path = directory / f"approval_{approval_id}.lock"
+    result = {
+        "claimed": False,
+        "approval_id": approval_id,
+        "execution_attempt_id": execution_attempt_id,
+        "reason": "Approval could not be claimed.",
+    }
+    directory.mkdir(parents=True, exist_ok=True)
+    lock_file = None
+    lock_platform = None
+    lock_acquired = False
+    try:
+        lock_file = lock_path.open("a+")
+        if os.name == "posix":
+            import fcntl
+            fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+            lock_platform = "posix"
+            lock_acquired = True
+        elif os.name == "nt":
+            import msvcrt
+            lock_file.seek(0)
+            msvcrt.locking(lock_file.fileno(), msvcrt.LK_LOCK, 1)
+            lock_platform = "nt"
+            lock_acquired = True
+        else:
+            raise OSError(f"Unsupported platform for approval claim: {os.name}")
+        if not record_path.exists():
+            result["reason"] = "Approval record was not found."
+            return result
+        record = _normalize_approval_record(json.loads(record_path.read_text(encoding="utf-8")))
+        if record.get("status") != "approved":
+            result["reason"] = "Approval record is not approved."
+            return result
+        if record.get("execution_consumed") or record.get("consumed_by_execution_attempt") is not None:
+            result["reason"] = "Approval record has already been consumed."
+            return result
+        record["execution_consumed"] = True
+        record["consumed_by_execution_attempt"] = execution_attempt_id
+        record["updated_at"] = datetime.now(_tz.utc).isoformat()
+        fd, temporary_name = tempfile.mkstemp(prefix=f"approval_{approval_id}.", suffix=".tmp", dir=directory)
+        try:
+            with os.fdopen(fd, "w", encoding="utf-8") as temporary:
+                json.dump(record, temporary, indent=2, default=str)
+                temporary.flush()
+                os.fsync(temporary.fileno())
+            os.replace(temporary_name, record_path)
+        finally:
+            if os.path.exists(temporary_name):
+                os.unlink(temporary_name)
+        result.update(claimed=True, reason="Approval claimed.", record=record)
+        return result
+    except (OSError, ValueError, json.JSONDecodeError):
+        result["reason"] = "Approval claim failed safely."
+        return result
+    finally:
+        if lock_file is not None:
+            if lock_acquired and lock_platform == "posix":
+                import fcntl
+                fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
+            elif lock_acquired and lock_platform == "nt":
+                import msvcrt
+                lock_file.seek(0)
+                msvcrt.locking(lock_file.fileno(), msvcrt.LK_UNLCK, 1)
+            lock_file.close()
 
 
 def update_approval_record_status(

@@ -5,6 +5,8 @@ from aether.interface.api_models import (
     RestrictedFileBrowseRequest,
     RestrictedFileSearchRequest,
     SelfInspectionRequest,
+    ApprovedReadExecutionAttemptRequest,
+    RestrictedFileReadExecutionAttemptResponse,
 )
 
 from aether.action.services.file_service import (
@@ -24,8 +26,18 @@ from aether.action.services.file_service import (
     handle_list_self_inspections,
     handle_get_self_inspection,
 )
+from aether.action.services.restricted_file_read_execution_service import handle_restricted_file_read_execution
 
 file_router = APIRouter()
+
+
+@file_router.post(
+    "/action/file/execute-approved-read",
+    response_model=RestrictedFileReadExecutionAttemptResponse,
+    operation_id="execute_approved_read",
+)
+def execute_approved_read(request: ApprovedReadExecutionAttemptRequest):
+    return handle_restricted_file_read_execution(request)
 
 
 @file_router.post("/action/file/read")

@@ -390,8 +390,8 @@ def test_graph_endpoints_capture_graph_timeline_and_working_side_effects(
 
 def test_openapi_and_all_memory_operation_ids_are_locked():
     schema = app.openapi()
-    assert len(schema.get("paths", {})) == 304
-    assert len(schema.get("components", {}).get("schemas", {})) == 108
+    assert len(schema.get("paths", {})) == 305
+    assert len(schema.get("components", {}).get("schemas", {})) == 110
 
     actual = {}
     for method_and_path in EXPECTED_MEMORY_OPERATION_IDS:

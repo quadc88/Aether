@@ -170,3 +170,49 @@ class TestEnsureDir:
         existing.mkdir()
         result = ensure_dir(existing)
         assert result.exists()
+
+    def test_restricted_roots_missing_is_empty(self, temp_config):
+        from aether.core.config import clear_cache, get_restricted_file_read_approved_roots
+        clear_cache()
+        assert get_restricted_file_read_approved_roots() == ()
+
+    def test_restricted_roots_empty_list_is_empty(self, temp_config):
+        from aether.core import config
+        cfg = config.load_aether_config()
+        cfg["security"] = {"restricted_file_read": {"approved_roots": []}}
+        assert config.get_restricted_file_read_approved_roots() == ()
+
+    def test_restricted_roots_relative_to_project(self, temp_config):
+        from aether.core import config
+        cfg = config.load_aether_config()
+        cfg["security"] = {"restricted_file_read": {"approved_roots": ["src"]}}
+        assert config.get_restricted_file_read_approved_roots()[0] == (config.get_project_root() / "src").resolve()
+
+    def test_restricted_roots_absolute_is_resolved(self, temp_config, tmp_path):
+        from aether.core import config
+        cfg = config.load_aether_config()
+        cfg["security"] = {"restricted_file_read": {"approved_roots": [str(tmp_path)]}}
+        assert config.get_restricted_file_read_approved_roots() == (tmp_path.resolve(),)
+
+    def test_restricted_roots_non_list_denies(self, temp_config):
+        from aether.core import config
+        cfg = config.load_aether_config()
+        cfg["security"] = {"restricted_file_read": {"approved_roots": "src"}}
+        assert config.get_restricted_file_read_approved_roots() == ()
+
+    def test_restricted_roots_mixed_invalid_denies(self, temp_config, tmp_path):
+        from aether.core import config
+        cfg = config.load_aether_config()
+        cfg["security"] = {"restricted_file_read": {"approved_roots": [str(tmp_path), 4]}}
+        assert config.get_restricted_file_read_approved_roots() == ()
+
+    def test_restricted_roots_env_expansion_denies(self, temp_config):
+        from aether.core import config
+        cfg = config.load_aether_config()
+        cfg["security"] = {"restricted_file_read": {"approved_roots": ["$ROOT"]}}
+        assert config.get_restricted_file_read_approved_roots() == ()
+
+    def test_production_restricted_root_list_is_empty(self):
+        from aether.core.config import clear_cache, get_restricted_file_read_approved_roots
+        clear_cache()
+        assert get_restricted_file_read_approved_roots() == ()

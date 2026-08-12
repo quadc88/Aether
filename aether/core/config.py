@@ -114,8 +114,45 @@ def resolve_path(value: str, base: Optional[Path] = None) -> Path:
 
 def _get_paths_section() -> dict:
     """Return the ``paths`` section from config, or empty dict."""
-    config = load_aether_config()
+    config = _CONFIG if isinstance(_CONFIG, dict) else load_aether_config()
     return config.get("paths", {})
+
+
+def get_restricted_file_read_approved_roots() -> tuple[Path, ...]:
+    """Return the explicitly configured roots for governed chat reads.
+
+    An invalid list fails closed rather than allowing a partial configuration to
+    become an accidental authority source.
+    """
+    config = _CONFIG if isinstance(_CONFIG, dict) else load_aether_config()
+    security = config.get("security", {})
+    if not isinstance(security, dict):
+        return ()
+    section = security.get("restricted_file_read", {})
+    values = section.get("approved_roots") if isinstance(section, dict) else None
+    if not isinstance(values, list) or not values:
+        return ()
+
+    roots: list[Path] = []
+    for value in values:
+        if not isinstance(value, str) or not value.strip():
+            return ()
+        if value.startswith(("$", "%")) or "${" in value:
+            return ()
+        try:
+            path = Path(value)
+        except (TypeError, ValueError, OSError):
+            return ()
+        if not __import__("os").name == "nt" and (value.startswith("\\\\") or (len(value) > 2 and value[1] == ":")):
+            return ()
+        if path.is_absolute():
+            if value[1:3] == ":/" and not __import__("os").name == "nt":
+                return ()
+            resolved = path.expanduser().resolve(strict=False)
+        else:
+            resolved = (get_project_root() / path).expanduser().resolve(strict=False)
+        roots.append(resolved)
+    return tuple(roots)
 
 
 def get_data_root() -> Path:

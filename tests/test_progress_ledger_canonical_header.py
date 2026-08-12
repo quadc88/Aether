@@ -171,18 +171,18 @@ def test_current_92a_local_state_is_consistent_across_header():
 
     # Six current-work identities are covered as one scalar contract.
     identity_tokens = {
-        "Last updated": "Milestone 94A boundary / contract-lock Build complete locally; Milestone 94 is OPEN",
-        "Current completed local milestone": "Milestone 94A boundary / contract-lock Build content complete locally; Milestone 94 remains OPEN; Milestone 93 remains CLOSED / DURABLE; Git remains authoritative for Milestone 94A commit, durability, tagging, and publication state",
-        "Current active milestone/module": "Milestone 94A current boundary / contract-lock submilestone; Milestone 94 is OPEN",
-        "Current status": "Milestone 93 CLOSED / DURABLE; Milestone 94 OPEN; Milestone 94A boundary / contract-lock Build complete locally",
-        "Next milestone": "Milestone 94B requires a fresh PM Plan and Build definition",
+        "Last updated": "Milestone 94B runtime Build content complete locally; Milestone 94 remains OPEN",
+        "Current completed local milestone": "Milestone 94B runtime Build content complete locally; Milestone 94 remains OPEN; Milestone 94A remains FINALIZED / DURABLE BOUNDARY; Milestone 94C remains NOT DEFINED; Git directly determines Milestone 94B commit, durability, tagging, and publication state",
+        "Current active milestone/module": "Milestone 94B governed read-only file inspection runtime bridge; Milestone 94 is OPEN",
+        "Current status": "Milestone 94 OPEN; Milestone 94A FINALIZED / DURABLE BOUNDARY; Milestone 94B runtime Build content complete locally; Strategy C selected; Observation Intake DEFER_FIRST_SLICE; execution-time Governance re-evaluation required; new 94B tests: 224; modified existing additions: 31; expected full candidate: 2910; OpenAPI: 305 paths / 110 schemas",
+        "Next milestone": "Milestone 94C is NOT DEFINED",
         "Test baseline": "2571 pre-93A full-suite baseline",
     }
     assert all(
         token in fields[name] for name, token in identity_tokens.items()
     )
     assert fields["Current completed local milestone"].startswith(
-        "Milestone 94A boundary / contract-lock Build content complete locally"
+        "Milestone 94B runtime Build content complete locally"
     )
     assert not fields["Current completed local milestone"].startswith(
         "Milestone 93B Rule 4 Governance Runtime Migration"
@@ -203,24 +203,40 @@ def test_current_92a_local_state_is_consistent_across_header():
     assert "3641c0c98fad993b1b4b5b8719dbf1cfd7117abc" in previous_tag
     assert "milestone-92B-rule6-governance-migration-boundary" in earlier_tag
     assert "22d819b6bd3a305536c0beba57f670a5433fe21e" in earlier_tag
-    assert "Milestone 94A current boundary / contract-lock submilestone" in fields["Current active milestone/module"]
-    assert "Milestone 94B is NOT AUTHORIZED" in fields["Current active milestone/module"]
+    assert "Milestone 94B governed read-only file inspection runtime bridge" in fields["Current active milestone/module"]
     assert "Milestone 94C is NOT DEFINED" in fields["Current active milestone/module"]
     assert "Strategy C selected" in fields["Current status"]
     assert "Observation Intake DEFER_FIRST_SLICE" in fields["Current status"]
     assert "root registration MANUAL_ADMIN_CONFIG_EDIT" in fields["Current status"]
     assert "approval may persist, scope may not persist" in fields["Current status"]
     assert "execution-time Governance re-evaluation is required" in fields["Current status"]
-    assert "capability expansion none" in fields["Current status"]
+    assert "94B capability exactly one governed read-only restricted-file execution slice" in fields["Current status"]
+    assert "94B capability: exactly one governed restricted-read execution slice" in fields["Current status"]
+    assert "capability: file.restricted_read" in fields["Current status"]
+    assert "execution endpoint: POST /action/file/execute-approved-read" in fields["Current status"]
+    assert "execution model: TWO_PHASE" in fields["Current status"]
+    assert "approval model: APPROVE != EXECUTE" in fields["Current status"]
+    assert "fresh Core Governance required" in fields["Current status"]
+    assert "scope: private / call-local / one-shot Strategy C" in fields["Current status"]
+    assert "generic capability expansion remains absent" in fields["Current status"]
+    assert "canonical /chat generic execution authority: NO" in fields["Current status"]
+    assert "legacy sandbox/direct execute_tool compatibility: PRESERVED" in fields["Current status"]
+    assert "legacy execute_tool supports file.restricted_read" in fields["Current status"]
+    assert "legacy surface introduced by 94B: NO" in fields["Current status"]
+    assert "94B Phase-2 execute_tool usage: NO" in fields["Current status"]
+    assert "94B Phase-2 generic tool-service usage: NO" in fields["Current status"]
+    assert "generic approval-to-execute pipeline: NO" in fields["Current status"]
+    assert "direct Strategy C bridge: YES" in fields["Current status"]
+    assert "tool_execution_allowed compatibility false" in fields["Current status"]
     assert "Current Progress-equivalent five-file family: 362 passed" in fields["Current status"]
     assert "Progress-referencing regression: 322 passed" not in fields["Current status"]
     assert "Architecture/Observation: 363 passed" not in fields["Current status"]
-    assert "OpenAPI: 304 paths / 108 schemas" in fields["Current status"]
+    assert "OpenAPI: 305 paths / 110 schemas" in fields["Current status"]
     assert "api_server: 8 direct @app routes / 23 include_router / 0 direct /action/*" in fields["Current status"]
     assert "2571 pre-93A full-suite baseline" in fields["Test baseline"]
     assert "New 93B: 26 passed" in fields["Test baseline"]
     assert "94A boundary: 24 passed" in fields["Test baseline"]
-    assert "Full candidate: 2655 passed" in fields["Test baseline"]
+    assert "Full candidate: 2910 passed" in fields["Test baseline"]
     assert "9 existing PytestRemovedIn10Warning" in fields["Test baseline"]
     assert "Current Progress-equivalent five-file family: 362 passed" in fields["Test baseline"]
     assert "94A boundary: 24 tests pending verification" not in fields["Test baseline"]
@@ -521,13 +537,13 @@ def test_full_suite_and_canonical_counts_match_header():
     assert "93A Boundary: 34 passed" in status
     assert "New 93B: 26" in status
     assert "Current Progress-equivalent five-file family: 362 passed" in status
-    assert "Full candidate: 2655 passed" in status
+    assert "Full candidate: 2910 passed" in status
     assert "2571 pre-93A full-suite baseline" in baseline
     assert "93A Boundary: 34 passed" in baseline
     assert "New 93B: 26 passed" in baseline
     assert "Current Progress-equivalent five-file family: 362 passed" in baseline
     assert "94A boundary: 24 passed" in baseline
-    assert "Full candidate: 2655 passed" in baseline
+    assert "Full candidate: 2910 passed" in baseline
 
     assert "93A Boundary:** 34 passed" in current_section7
     assert "Milestone 93:** CLOSED" in current_section7
@@ -539,13 +555,29 @@ def test_full_suite_and_canonical_counts_match_header():
     assert "Parameter cases:** 3" in current_section7
     assert "Observation:** BLOCKED / deferred" in current_section7
     assert "Candidate A-F:** DEFERRED" in current_section7
-    assert "Capability expansion:** none" in current_section7
+    assert "**94B capability:** exactly one governed restricted-read execution slice" in current_section7
+    assert "**94B capability identifier:** file.restricted_read" in current_section7
+    assert "**Execution endpoint:** POST /action/file/execute-approved-read" in current_section7
+    assert "**Execution model:** TWO_PHASE" in current_section7
+    assert "**Approval model:** APPROVE != EXECUTE" in current_section7
+    assert "**Fresh Governance:** Core Governance required" in current_section7
+    assert "**Scope:** private / call-local / one-shot Strategy C" in current_section7
+    assert "**generic capability expansion:** absent" in current_section7
+    assert "**canonical /chat generic execution authority:** NO" in current_section7
+    assert "**legacy sandbox/direct execute_tool compatibility:** PRESERVED" in current_section7
+    assert "**legacy execute_tool supports:** file.restricted_read" in current_section7
+    assert "**legacy surface introduced by 94B:** NO" in current_section7
+    assert "**94B Phase-2 execute_tool usage:** NO" in current_section7
+    assert "**94B Phase-2 generic tool-service usage:** NO" in current_section7
+    assert "**generic approval-to-execute pipeline:** NO" in current_section7
+    assert "**Direct Strategy C bridge:** YES" in current_section7
+    assert "**tool_execution_allowed compatibility:** false" in current_section7
     assert "Git directly determines implementation durability, tagging, and publication" in current_section7
     assert "93B Rule 4 runtime contract:** 26 passed" in current_section7
     assert "Progress ledger canonical-header contract:** 23 passed" in current_section7
     assert "Current Progress-equivalent five-file family:** 362 passed" in current_section7
     assert "94A boundary:** 24 passed" in current_section7
-    assert "Full suite:** 2655/2655 passed, 0 failures, 0 errors" in current_section7
+    assert "Full suite:** 2910/2910 passed, 0 failures, 0 errors" in current_section7
     assert "2605" not in current_section7
     assert "Warnings:** 9 existing PytestRemovedIn10Warning" in current_section7
     assert "Warning occurrence delta versus parent:** 0" in current_section7
@@ -583,7 +615,7 @@ def test_92a_vs_functional_92_terminology_contract():
         "\n---\n", 1
     )[0]
 
-    assert "Milestone 94A current boundary / contract-lock submilestone" in active
+    assert "Milestone 94B governed read-only file inspection runtime bridge" in active
     assert "Milestone 94 is OPEN" in active
     assert "Milestone 93 is CLOSED / DURABLE" in active
     assert "Milestone 93B OPEN" not in active
@@ -597,32 +629,29 @@ def test_92a_vs_functional_92_terminology_contract():
     )
 
     for token in (
-        "Milestone 93 CLOSED / DURABLE",
         "Milestone 94 OPEN",
-        "Milestone 94A boundary / contract-lock Build complete locally",
+        "Milestone 94B runtime Build content complete locally",
         "Strategy C selected",
         "Observation Intake DEFER_FIRST_SLICE",
         "root registration MANUAL_ADMIN_CONFIG_EDIT",
         "approval may persist, scope may not persist",
         "execution-time Governance re-evaluation is required",
         "94A boundary: 24 passed",
-        "Full candidate: 2655 passed",
+        "Full candidate: 2910 passed",
     ):
         assert token in status, f"Current status missing token: {token}"
 
     for token in (
-        "Milestone 93 is CLOSED / DURABLE",
         "Milestone 94 is OPEN",
-        "Milestone 94A is the current boundary / contract-lock submilestone",
+        "Milestone 94B runtime Build content complete locally",
         "Strategy C selected",
         "Observation Intake DEFER_FIRST_SLICE",
         "Root registration MANUAL_ADMIN_CONFIG_EDIT",
         "approval may persist / scope may not persist",
         "execution-time Governance re-evaluation required",
-        "Milestone 94B is NOT AUTHORIZED",
         "Milestone 94C is NOT DEFINED",
         "94A Boundary: 24 passed",
-        "Full candidate: 2655 passed",
+        "Full candidate: 2910 passed",
     ):
         assert token in section10, f"Section 10 missing current token: {token}"
 

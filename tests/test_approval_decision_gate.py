@@ -219,6 +219,95 @@ class TestSafetyAndEdgeCases:
         })
         assert len(result["matched_fields"]) > 0
 
+    def test_strict_read_binding_accepts_exact_action(self, _create, _update):
+        from aether.action.approval_decision_gate import validate_restricted_read_approval
+        action = {"tool_id": "file.restricted_read", "action_type": "restricted_file_read",
+                  "name": "Restricted File Read", "target": "/tmp/x.py",
+                  "permission_class": "read_only", "parameters": {"max_chars": 1}}
+        rec = _create({"approval_required": True, "requested_action": action})
+        _update(rec["approval_id"], "approved")
+        assert validate_restricted_read_approval(rec["approval_id"], action)["approval_valid"] is True
+
+    def test_strict_read_binding_rejects_target_change(self, _create, _update):
+        from aether.action.approval_decision_gate import validate_restricted_read_approval
+        action = {"tool_id": "file.restricted_read", "action_type": "restricted_file_read",
+                  "name": "Restricted File Read", "target": "/tmp/x.py",
+                  "permission_class": "read_only", "parameters": {"max_chars": 1}}
+        rec = _create({"approval_required": True, "requested_action": action})
+        _update(rec["approval_id"], "approved")
+        changed = {**action, "target": "/tmp/y.py"}
+        assert validate_restricted_read_approval(rec["approval_id"], changed)["approval_valid"] is False
+
+    def test_strict_read_binding_rejects_parameter_change(self, _create, _update):
+        from aether.action.approval_decision_gate import validate_restricted_read_approval
+        action = {"tool_id": "file.restricted_read", "action_type": "restricted_file_read",
+                  "name": "Restricted File Read", "target": "/tmp/x.py",
+                  "permission_class": "read_only", "parameters": {"max_chars": 1}}
+        rec = _create({"approval_required": True, "requested_action": action})
+        _update(rec["approval_id"], "approved")
+        changed = {**action, "parameters": {"max_chars": 2}}
+        assert validate_restricted_read_approval(rec["approval_id"], changed)["approval_valid"] is False
+
+    def test_strict_read_binding_rejects_legacy_record(self, _create, _update):
+        from aether.action.approval_decision_gate import validate_restricted_read_approval
+        rec = _create({"approval_required": True, "requested_action": {"tool_id": "x"}})
+        _update(rec["approval_id"], "approved")
+        assert validate_restricted_read_approval(rec["approval_id"], {"tool_id": "x"})["approval_valid"] is False
+
+    def test_strict_read_binding_rejects_consumed_record(self, _create, _update, approval_store_dir):
+        from aether.action.approval_decision_gate import validate_restricted_read_approval
+        from aether.action.approval_queue import claim_approval_for_execution
+        action = {"tool_id": "file.restricted_read", "action_type": "restricted_file_read",
+                  "name": "Restricted File Read", "target": "/tmp/x.py",
+                  "permission_class": "read_only", "parameters": {"max_chars": 1}}
+        rec = _create({"approval_required": True, "requested_action": action})
+        _update(rec["approval_id"], "approved")
+        claim_approval_for_execution(rec["approval_id"], "attempt")
+        assert validate_restricted_read_approval(rec["approval_id"], action)["approval_valid"] is False
+
+    def test_strict_read_binding_rejects_session_mismatch(self, _create, _update):
+        from aether.action.approval_decision_gate import validate_restricted_read_approval
+        action = {"tool_id": "file.restricted_read", "action_type": "restricted_file_read",
+                  "name": "Restricted File Read", "target": "/tmp/x.py",
+                  "permission_class": "read_only", "parameters": {"max_chars": 1}}
+        rec = _create({"approval_required": True, "requested_action": action}, {"session_id": "s1"})
+        _update(rec["approval_id"], "approved")
+        assert validate_restricted_read_approval(rec["approval_id"], action, "s2")["approval_valid"] is False
+
+    def test_strict_read_binding_has_no_execution_authority(self, _create, _update):
+        from aether.action.approval_decision_gate import validate_restricted_read_approval
+        action = {"tool_id": "file.restricted_read", "action_type": "restricted_file_read",
+                  "name": "Restricted File Read", "target": "/tmp/x.py",
+                  "permission_class": "read_only", "parameters": {"max_chars": 1}}
+        rec = _create({"approval_required": True, "requested_action": action})
+        _update(rec["approval_id"], "approved")
+        result = validate_restricted_read_approval(rec["approval_id"], action)
+        assert result["approval_valid"] is True
+        assert "execution_allowed" not in result
+
+    def test_strict_read_binding_rejects_extra_action_field(self, _create, _update):
+        from aether.action.approval_decision_gate import validate_restricted_read_approval
+        action = {"tool_id": "file.restricted_read", "action_type": "restricted_file_read",
+                  "name": "Restricted File Read", "target": "/tmp/x.py",
+                  "permission_class": "read_only", "parameters": {"max_chars": 1}}
+        rec = _create({"approval_required": True, "requested_action": action})
+        _update(rec["approval_id"], "approved")
+        assert validate_restricted_read_approval(rec["approval_id"], {**action, "extra": 1})["approval_valid"] is False
+
+    def test_strict_read_binding_rejects_malformed_record(self, _create, _update, approval_store_dir):
+        from aether.action.approval_decision_gate import validate_restricted_read_approval
+        import json
+        action = {"tool_id": "file.restricted_read", "action_type": "restricted_file_read",
+                  "name": "Restricted File Read", "target": "/tmp/x.py",
+                  "permission_class": "read_only", "parameters": {"max_chars": 1}}
+        rec = _create({"approval_required": True, "requested_action": action})
+        _update(rec["approval_id"], "approved")
+        path = approval_store_dir / f"approval_{rec['approval_id']}.json"
+        record = json.loads(path.read_text())
+        record["approval_request"] = None
+        path.write_text(json.dumps(record))
+        assert validate_restricted_read_approval(rec["approval_id"], action)["approval_valid"] is False
+
     def test_mismatched_fields_populated(self, _create, _update, _validate):
         rec = _create({"approval_required": True, "requested_action": {
             "tool_id": "shell.run", "target": "/tmp"

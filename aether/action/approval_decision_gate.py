@@ -16,6 +16,61 @@ from __future__ import annotations
 _REQUIRED_MATCH_FIELDS = {"tool_id", "action_type", "name", "target"}
 
 
+def validate_restricted_read_approval(
+    approval_id: str | None,
+    requested_action: dict | None,
+    session_id: str | None = None,
+) -> dict:
+    """Strictly validate the immutable binding for a governed read attempt."""
+    result = {
+        "approval_valid": False,
+        "decision": "denied",
+        "reason": "Approval is not valid for this restricted read.",
+        "approval_id": approval_id,
+        "approval_record": None,
+        "matched_fields": [],
+        "mismatched_fields": [],
+    }
+    if not approval_id or not isinstance(requested_action, dict):
+        result["reason"] = "Approval identity and exact action are required."
+        return result
+    from aether.action.approval_queue import get_approval_record, restricted_read_fingerprint
+    record = get_approval_record(approval_id)
+    result["approval_record"] = record
+    if record is None:
+        result["reason"] = "Approval record was not found."
+        return result
+    if record.get("status") != "approved":
+        result["reason"] = "Approval record is not approved."
+        return result
+    if record.get("execution_consumed") or record.get("consumed_by_execution_attempt") is not None:
+        result["reason"] = "Approval record has already been consumed."
+        return result
+    approval_request = record.get("approval_request")
+    metadata = record.get("metadata")
+    if not isinstance(approval_request, dict) or not isinstance(metadata, dict):
+        result["reason"] = "Approval record binding is malformed."
+        return result
+    stored = approval_request.get("requested_action")
+    if not isinstance(stored, dict) or stored != requested_action:
+        result["reason"] = "Requested action does not match the approved action."
+        result["mismatched_fields"] = ["requested_action"]
+        return result
+    fingerprint = restricted_read_fingerprint(stored)
+    if not fingerprint or record.get("requested_action_fingerprint") != fingerprint:
+        result["reason"] = "Approval binding fingerprint is invalid."
+        result["mismatched_fields"] = ["fingerprint"]
+        return result
+    stored_session = record.get("metadata", {}).get("session_id")
+    if stored_session is not None and stored_session != session_id:
+        result["reason"] = "Session binding does not match the approval."
+        result["mismatched_fields"] = ["session_id"]
+        return result
+    result.update(approval_valid=True, decision="allow_restricted_read", reason="Approval binding is valid.")
+    result["matched_fields"] = ["tool_id", "action_type", "name", "target", "permission_class", "parameters", "fingerprint"]
+    return result
+
+
 def validate_approval_for_action(
     approval_id: str | None,
     requested_action: dict | None,

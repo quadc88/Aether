@@ -16,12 +16,130 @@ after Milestone 89B. Thinking proposes only Rules 3 through 9.
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+from pathlib import Path
+import threading
+from typing import Callable, Literal, Mapping
+
+from aether.core.config import get_restricted_file_read_approved_roots
+
 
 _SECRET_RISK_TERMS = {
     "password", "secret", "api key", "token", "private_key",
     "credential", "secret_key", "access_key",
 }
 _MISSING_RULE4_RISK_TERMS = object()
+
+
+class _ScopeDispatchState:
+    def __init__(self) -> None:
+        self.lock = threading.Lock()
+        self.consumed = False
+
+
+@dataclass(frozen=True)
+class RestrictedReadScope:
+    capability_id: Literal["file.restricted_read"]
+    bound_function: Callable[..., dict]
+    normalized_target: str
+    approved_root: Path
+    permission_class: Literal["read_only"]
+    max_chars: int
+    execution_attempt_id: str
+    session_id: str | None
+    task_binding: str | None
+    _dispatch_state: _ScopeDispatchState
+
+
+@dataclass(frozen=True)
+class RestrictedReadAuthorizationDecision:
+    generic_envelope: Mapping[str, object]
+    approval_requirement_state: Literal[
+        "not_required", "required_unsatisfied", "required_satisfied", "invalid_or_stale"
+    ]
+    approval_requirement_satisfied: bool
+    authorization_granted: bool
+    scope: RestrictedReadScope | None
+    safe_reason: str
+    warnings: tuple[str, ...]
+
+
+def authorize_restricted_read_execution(
+    *,
+    thinking_policy: dict | None,
+    requested_action: dict | None,
+    context: dict | None = None,
+    risk_evidence: dict | None = None,
+    identity_integrity_evidence: dict | None = None,
+    rule_3_4_precedence: str | None = None,
+    rule4_risk_terms_detected=None,
+    approval_evidence: dict | None = None,
+    execution_attempt_id: str = "",
+    session_id: str | None = None,
+) -> RestrictedReadAuthorizationDecision:
+    """Authorize only one exact restricted-read attempt and mint its scope."""
+    generic = evaluate_authorization_envelope(
+        thinking_policy=thinking_policy,
+        requested_action=requested_action,
+        context=context,
+        risk_evidence=risk_evidence,
+        identity_integrity_evidence=identity_integrity_evidence,
+        rule_3_4_precedence=rule_3_4_precedence,
+        rule4_risk_terms_detected=rule4_risk_terms_detected,
+    )
+    denied = lambda state, reason, warnings=(): RestrictedReadAuthorizationDecision(
+        generic, state, False, False, None, reason, tuple(warnings)
+    )
+    if not isinstance(requested_action, dict) or requested_action.get("tool_id") != "file.restricted_read":
+        return denied("invalid_or_stale", "Restricted-read action binding is invalid.")
+    if rule_3_4_precedence == "rule_3":
+        return denied("required_unsatisfied", "Current Thinking precedence blocks the read.")
+    identity_status = identity_integrity_evidence.get("status") if isinstance(identity_integrity_evidence, Mapping) else None
+    if identity_status == "changed":
+        return denied("required_unsatisfied", "Identity integrity changed.")
+    if identity_status in {"missing", "failed", "not_initialized"}:
+        return denied("required_unsatisfied", "Identity integrity is not verified.")
+    if not isinstance(thinking_policy, dict) or thinking_policy.get("decision_type") == "block":
+        return denied("required_unsatisfied", "Current Thinking policy blocks the read.")
+    risk_terms = rule4_risk_terms_detected or []
+    if isinstance(risk_terms, (list, tuple)):
+        for term in risk_terms:
+            if term in _SECRET_RISK_TERMS:
+                return denied("required_unsatisfied", "Current sensitive evidence blocks the read.")
+    if not isinstance(risk_evidence, dict) or risk_evidence.get("risk_level") != "medium":
+        return denied("required_unsatisfied", "Current risk evidence is not eligible for this read.")
+    if rule_3_4_precedence != "clear":
+        return denied("required_unsatisfied", "Current Thinking precedence is unavailable.")
+    if approval_evidence is None:
+        approval_state = "required_unsatisfied"
+    elif approval_evidence.get("approval_valid") is True:
+        approval_state = "required_satisfied"
+    else:
+        return denied("invalid_or_stale", "Approval evidence is invalid or stale.")
+    roots = get_restricted_file_read_approved_roots()
+    if not roots:
+        return denied(approval_state, "No approved restricted-read root is configured.")
+    target = requested_action.get("target")
+    params = requested_action.get("parameters")
+    if (
+        not isinstance(target, str) or requested_action.get("permission_class") != "read_only"
+        or not isinstance(params, dict) or set(params) != {"max_chars"}
+        or not isinstance(params["max_chars"], int) or not 0 <= params["max_chars"] <= 12000
+    ):
+        return denied("invalid_or_stale", "Restricted-read parameters are invalid.")
+    normalized = Path(target).expanduser().resolve(strict=False)
+    root = next((root for root in roots if normalized == root or root in normalized.parents), None)
+    if root is None:
+        return denied("required_satisfied", "Target is outside approved restricted-read roots.")
+    from aether.action.restricted_file_reader import read_restricted_file
+    scope = RestrictedReadScope(
+        "file.restricted_read", read_restricted_file, str(normalized), root,
+        "read_only", params["max_chars"], execution_attempt_id, session_id,
+        (context or {}).get("task_binding"), _ScopeDispatchState(),
+    )
+    return RestrictedReadAuthorizationDecision(
+        generic, approval_state, True, True, scope, "Restricted read authorized.", ()
+    )
 
 
 def _format_rule_4_compatibility_policy(risk_terms_detected) -> dict:

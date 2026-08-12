@@ -236,7 +236,7 @@ def test_rule6_trace_separates_raw_and_authoritative_policy():
 def test_rule6_response_shape_and_openapi_unchanged():
     from aether.interface.api_server import app
 
-    assert (len(app.openapi()["paths"]), len(app.openapi()["components"]["schemas"])) == (304, 108)
+    assert (len(app.openapi()["paths"]), len(app.openapi()["components"]["schemas"])) == (305, 110)
     result = _envelope({"decision_type": "respond_only", "tool_execution_allowed": False}, {"tool_id": "x"})
     assert set(result) == {"allowed", "decision", "reason", "warnings", "required_user_confirmation", "tool_execution_allowed", "action_execution_allowed", "requested_action", "policy_snapshot"}
 

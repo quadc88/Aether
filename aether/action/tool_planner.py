@@ -3,10 +3,12 @@
 from pathlib import Path
 import json
 import uuid
+import re
 
 import yaml
 
 from aether.action.approval_queue import create_approval_item
+from aether.core.config import get_project_root
 from aether.action.tool_registry import get_tool
 from aether.time.clock import get_timezone, now_iso
 from aether.verification.risk import verification_plan
@@ -136,6 +138,43 @@ INFERENCE_RULES = [
 
 RISK_ORDER = {"low": 0, "medium": 1, "high": 2}
 
+_RESTRICTED_READ_COMMAND = re.compile(
+    r'^read file "([^"\x00\r\n]+)"(?: \[max_chars=(\d+)\])?$',
+    re.IGNORECASE,
+)
+
+
+def normalize_restricted_read_target(target: str) -> str:
+    path = Path(target).expanduser()
+    if not path.is_absolute():
+        path = get_project_root() / path
+    return str(path.resolve(strict=False))
+
+
+def parse_restricted_read_command(text: str) -> dict | None:
+    """Parse only the locked, quoted Phase-1 read grammar."""
+    if not isinstance(text, str):
+        return None
+    match = _RESTRICTED_READ_COMMAND.fullmatch(text)
+    if not match:
+        return None
+    target, raw_max = match.groups()
+    try:
+        max_chars = 12000 if raw_max is None else int(raw_max)
+    except (TypeError, ValueError):
+        return None
+    if not 0 <= max_chars <= 12000:
+        return None
+    normalized_target = normalize_restricted_read_target(target)
+    return {
+        "tool_id": "file.restricted_read",
+        "action_type": "restricted_file_read",
+        "name": "Restricted File Read",
+        "target": normalized_target,
+        "permission_class": "read_only",
+        "parameters": {"max_chars": max_chars},
+    }
+
 
 def load_aether_config(path: str = "config/aether.yaml") -> dict:
     config_path = Path(path)
@@ -192,7 +231,12 @@ def _save_plan_store(store: dict) -> None:
 
 
 def infer_candidate_tool(text: str) -> dict:
+    exact_read = parse_restricted_read_command(text)
+    if exact_read is not None:
+        return exact_read
     normalized = text.lower().strip()
+    if normalized.startswith("read file"):
+        return {"tool_id": None, "match_confidence": "uncertain", "reason": "Malformed exact read command.", "status": "no_tool_matched"}
     for tool_id, keywords, reason in INFERENCE_RULES:
         if any(keyword.lower() in normalized for keyword in keywords):
             return {"tool_id": tool_id, "match_confidence": "likely", "reason": reason}

@@ -169,3 +169,74 @@ class TestEdgeCases:
         rec = _create({"approval_required": True}, context=ctx)
         assert rec["metadata"]["session_id"] == "test-sid-99"
         assert rec["metadata"]["extra_key"] == "value"
+
+    def test_new_record_has_consumption_defaults(self, _create):
+        rec = _create({"approval_required": True})
+        assert rec["requested_action_fingerprint"] is None
+        assert rec["execution_consumed"] is False
+        assert rec["consumed_by_execution_attempt"] is None
+
+    def test_exact_read_fingerprint_is_persisted(self, _create):
+        action = {"tool_id": "file.restricted_read", "action_type": "restricted_file_read",
+                  "name": "Restricted File Read", "target": "/tmp/x.py",
+                  "permission_class": "read_only", "parameters": {"max_chars": 1}}
+        rec = _create({"approval_required": True, "requested_action": action})
+        assert len(rec["requested_action_fingerprint"]) == 64
+
+    def test_legacy_record_is_normalized_by_get(self, _create, _get, approval_store_dir):
+        rec = _create({"approval_required": True})
+        path = approval_store_dir / f"approval_{rec['approval_id']}.json"
+        data = json.loads(path.read_text())
+        for key in ("requested_action_fingerprint", "execution_consumed", "consumed_by_execution_attempt"):
+            data.pop(key)
+        path.write_text(json.dumps(data))
+        loaded = _get(rec["approval_id"])
+        assert loaded["execution_consumed"] is False
+
+    def test_claim_requires_approved_record(self, _create, _update):
+        from aether.action.approval_queue import claim_approval_for_execution
+        rec = _create({"approval_required": True})
+        result = claim_approval_for_execution(rec["approval_id"], "attempt-1")
+        assert result["claimed"] is False
+
+    def test_claim_marks_approved_record_consumed(self, _create, _update, _get):
+        from aether.action.approval_queue import claim_approval_for_execution
+        rec = _create({"approval_required": True})
+        _update(rec["approval_id"], "approved")
+        result = claim_approval_for_execution(rec["approval_id"], "attempt-1")
+        assert result["claimed"] is True
+        assert _get(rec["approval_id"])["execution_consumed"] is True
+
+    def test_second_claim_is_rejected(self, _create, _update):
+        from aether.action.approval_queue import claim_approval_for_execution
+        rec = _create({"approval_required": True})
+        _update(rec["approval_id"], "approved")
+        claim_approval_for_execution(rec["approval_id"], "attempt-1")
+        assert claim_approval_for_execution(rec["approval_id"], "attempt-2")["claimed"] is False
+
+    def test_claim_keeps_attempt_identity(self, _create, _update):
+        from aether.action.approval_queue import claim_approval_for_execution
+        rec = _create({"approval_required": True})
+        _update(rec["approval_id"], "approved")
+        claim_approval_for_execution(rec["approval_id"], "attempt-1")
+        assert claim_approval_for_execution(rec["approval_id"], "attempt-2")["reason"]
+
+    def test_claim_does_not_change_generic_execution_flags(self, _create, _update, _get):
+        from aether.action.approval_queue import claim_approval_for_execution
+        rec = _create({"approval_required": True})
+        _update(rec["approval_id"], "approved")
+        claim_approval_for_execution(rec["approval_id"], "attempt-1")
+        saved = _get(rec["approval_id"])
+        assert saved["execution_allowed_after_decision"] is False
+        assert saved["tool_executed"] is False
+
+        source = Path(__file__).parents[1].joinpath(
+            "aether/action/approval_queue.py"
+        ).read_text(encoding="utf-8")
+        assert 'if os.name == "posix":' in source
+        assert "fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)" in source
+        assert 'elif os.name == "nt":' in source
+        assert "msvcrt.locking(lock_file.fileno(), msvcrt.LK_LOCK, 1)" in source
+        assert "raise OSError(f\"Unsupported platform for approval claim: {os.name}\")" in source
+        assert "fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)" in source
+        assert "msvcrt.locking(lock_file.fileno(), msvcrt.LK_UNLCK, 1)" in source

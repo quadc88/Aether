@@ -142,6 +142,14 @@ def run_core_chat_loop(
 
     # --- Step 7: Suggest tool (read-only suggestion, no execution) ---
     suggested_tool = _suggest_tool(text, risk)
+    if suggested_tool and suggested_tool.get("tool_id") == "file.restricted_read":
+        risk = {
+            **risk,
+            "risk_level": "medium",
+            "action_type": "restricted_file_read",
+            "confidence": "certain",
+            "reasons": ["Exact governed read requires human approval."],
+        }
     stages.append(build_stage(
         "tool_suggestion",
         summary=f"Tool suggested: {suggested_tool['tool_id']} ({suggested_tool.get('match_confidence', 'unknown')})" if suggested_tool else "No tool matched",
@@ -430,13 +438,20 @@ def _suggest_tool(text: str, risk: dict) -> dict | None:
 
     try:
         suggestion = infer_candidate_tool(text)
+        if suggestion.get("tool_id") == "file.restricted_read" and "parameters" in suggestion:
+            return {
+                key: suggestion[key]
+                for key in ("tool_id", "action_type", "name", "target", "permission_class", "parameters")
+                if key in suggestion
+            }
         # Shape A: top-level tool_id (e.g. infer_candidate_tool direct output)
         candidate = suggestion.get("candidate_tool") or {}
         if not candidate or not candidate.get("tool_id"):
             # Shape B: tool_id at top level of suggestion
             if suggestion.get("tool_id"):
                 candidate = {k: v for k, v in suggestion.items()
-                             if k in ("tool_id", "name", "match_confidence", "reason")}
+                             if k in ("tool_id", "action_type", "name", "target",
+                                      "permission_class", "parameters", "match_confidence", "reason")}
         if candidate and candidate.get("tool_id"):
             return candidate
         return None

@@ -1,4 +1,6 @@
-from pydantic import BaseModel
+from typing import Literal as _L
+
+from pydantic import BaseModel, Field as _F, StrictInt, field_validator
 
 
 # ===================================================================== #
@@ -199,6 +201,43 @@ class RestrictedFileReadRequest(BaseModel):
     path: str
     max_chars: int = 12000
     metadata: dict = {}
+
+
+class ApprovedReadExecutionAttemptRequest(BaseModel):
+    approval_id: str
+    request_text: str
+    capability_id: _L["file.restricted_read"]
+    target: str
+    permission_class: _L["read_only"]
+    max_chars: StrictInt = _F(default=12000, ge=0, le=12000)
+    session_id: str | None = None
+
+    @field_validator("request_text", "target")
+    @classmethod
+    def _non_empty(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("must not be empty")
+        return value
+
+
+class RestrictedFileReadExecutionAttemptResponse(BaseModel):
+    name: str = "Aether"
+    status: _L["completed", "denied", "error"]
+    approval_id: str | None = None
+    execution_attempt_status: _L[
+        "NOT_ATTEMPTED", "REJECTED", "AUTHORIZED", "CLAIMED",
+        "DISPATCHED", "COMPLETED", "FAILED",
+    ]
+    verification_status: _L[
+        "VERIFIED_SUCCESS", "VERIFIED_PARTIAL", "DENIED", "NOT_FOUND",
+        "CHANGED_DURING_READ", "INTERNAL_ERROR",
+    ]
+    action_dispatched: bool = False
+    content: str | None = None
+    truncated: bool = False
+    reason: str | None = None
+    warnings: list[str] = []
+    tool_execution_allowed: bool = False
 
 
 class RestrictedFileAccessListRequest(BaseModel):

@@ -454,6 +454,13 @@ def test_exact_production_path_lock():
         "aether/thinking/policy.py",
         "aether/core/governance.py",
         "aether/core/loop.py",
+        "aether/action/approval_decision_gate.py",
+        "aether/action/approval_queue.py",
+        "aether/action/restricted_file_reader.py",
+        "aether/action/tool_planner.py",
+        "aether/core/config.py",
+        "aether/interface/api_models.py",
+        "aether/interface/routers/file_routes.py",
     }
 
 

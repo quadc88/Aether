@@ -525,11 +525,11 @@ class TestCancelEndpoint:
 class TestOpenAPI:
     def test_openapi_path_count_304(self):
         schema = ap_mod.app.openapi()
-        assert len(schema.get("paths", {})) == 304
+        assert len(schema.get("paths", {})) == 305
 
     def test_openapi_schema_count_108(self):
         schema = ap_mod.app.openapi()
-        assert len(schema.get("components", {}).get("schemas", {})) == 108
+        assert len(schema.get("components", {}).get("schemas", {})) == 110
 
     def test_openapi_observation_paths_exact(self):
         schema = ap_mod.app.openapi()

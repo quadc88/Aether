@@ -705,8 +705,8 @@ def isolated_repair_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
 
 def test_openapi_contract_and_operation_ids_locked():
     schema = app.openapi()
-    assert len(schema.get("paths", {})) == 304
-    assert len(schema.get("components", {}).get("schemas", {})) == 108
+    assert len(schema.get("paths", {})) == 305
+    assert len(schema.get("components", {}).get("schemas", {})) == 110
     assert len(REPAIR_ENDPOINTS) == 43
 
     for (method, path), (_, _, operation_id, _, _) in REPAIR_ENDPOINTS.items():

@@ -4,11 +4,13 @@ from pathlib import Path
 import re
 import json
 import uuid
+from typing import Literal
 
 import yaml
 
 from aether.action.tool_registry import get_tool, register_tool
 from aether.time.clock import get_timezone, now_iso
+from aether.core.config import get_restricted_file_read_approved_roots
 
 
 ALLOWED_ROOTS = [
@@ -33,6 +35,92 @@ SENSITIVE_NAME_TOKENS = {
 BASIC_SENSITIVE_DIRECTORY_NAMES = {"appdata", "windows", "system32", "users"}
 BROWSER_PROFILE_MARKERS = {"profile", "profiles", "cache", "cookies", "cookie", "userdata", "user data"}
 MAX_FILE_SIZE_BYTES = 64 * 1024
+
+
+def _scan_governed_content_for_secrets(content: str) -> bool:
+    if not isinstance(content, str):
+        raise TypeError("content must be text")
+    assignment = r"\b(?:password|passwd|pwd|secret|secret_key|token|access_token|api_key|api-key|apikey|access_key|credential|credentials)\b[ \t]*[:=][^\r\n]+"
+    private_key = r"-----BEGIN [A-Z0-9 ]*PRIVATE KEY-----|-----END [A-Z0-9 ]*PRIVATE KEY-----"
+    return bool(re.search(f"(?:{assignment}|{private_key})", content, re.IGNORECASE))
+
+
+def _identity_tuple(path: Path, *, follow_symlinks: bool = False) -> tuple[int, int, int, int]:
+    stat = path.stat() if follow_symlinks else path.lstat()
+    return stat.st_dev, stat.st_ino, stat.st_size, stat.st_mtime_ns
+
+
+def _governed_read(path: str, max_chars: int, metadata: dict | None) -> dict:
+    timestamp = now_iso()
+    base = {
+        "id": f"file_access_{uuid.uuid4().hex}", "created": timestamp,
+        "updated": timestamp, "timezone": get_timezone(), "path": path,
+        "normalized_path": "", "allowed": False, "status": "blocked",
+        "reason": "", "size_bytes": None, "extension": "", "content": None,
+        "regular_file": False,
+        "truncated": False, "max_chars": max_chars, "metadata": metadata or {},
+        "read_started": False, "changed_during_read": False, "privacy_filtered": False,
+    }
+    if not isinstance(max_chars, int) or not 0 <= max_chars <= 12000:
+        base["reason"] = "Read bound is invalid."
+        return base
+    try:
+        requested = Path(path).expanduser()
+        resolved = requested.resolve(strict=True)
+    except FileNotFoundError:
+        base["status"], base["reason"] = "not_found", "File was not found."
+        return base
+    except OSError:
+        base["status"], base["reason"] = "error", "File path could not be resolved safely."
+        return base
+    base["normalized_path"] = str(resolved)
+    base["extension"] = resolved.suffix.lower()
+    roots = get_restricted_file_read_approved_roots()
+    try:
+        contained = any(resolved == root or root in resolved.parents for root in roots)
+        if not roots or not contained or is_sensitive_path(resolved) or not resolved.is_file():
+            base["reason"] = "Path is not approved for governed reading."
+            return base
+        base["regular_file"] = True
+        if base["extension"] not in ALLOWED_EXTENSIONS and resolved.name.lower() != ".gitignore":
+            base["reason"] = "File extension is not allowed."
+            return base
+        if resolved.stat().st_size > MAX_FILE_SIZE_BYTES:
+            base["reason"] = "File is larger than the allowed 64 KB limit."
+            return base
+        before_lstat = _identity_tuple(requested)
+        before_stat = _identity_tuple(resolved, follow_symlinks=True)
+        base["read_started"] = True
+        content = resolved.read_text(encoding="utf-8", errors="replace")
+        after_lstat = _identity_tuple(requested)
+        after_stat = _identity_tuple(resolved, follow_symlinks=True)
+        after_resolved = requested.resolve(strict=True)
+        if str(after_resolved) != str(resolved) or before_lstat != after_lstat or before_stat != after_stat:
+            base.update(status="changed", reason="File changed during read.", changed_during_read=True)
+            return base
+        bounded = content[:max_chars]
+        base["size_bytes"] = len(content.encode("utf-8"))
+        base["truncated"] = len(content) > max_chars
+        try:
+            privacy_hit = _scan_governed_content_for_secrets(bounded)
+        except Exception:
+            base.update(status="error", reason="Content privacy check failed safely.")
+            return base
+        base["privacy_filtered"] = True
+        if privacy_hit:
+            base.update(status="blocked", reason="Content is not eligible for disclosure.")
+            return base
+        base.update(allowed=True, status="success", content=bounded, reason="")
+        return base
+    except FileNotFoundError:
+        if base["read_started"]:
+            base.update(status="error", reason="File could not be classified safely after read.")
+        else:
+            base.update(status="not_found", reason="File was not found during read.")
+        return base
+    except OSError:
+        base.update(status="error", reason="File could not be read safely.")
+        return base
 
 
 def load_aether_config(path: str = "config/aether.yaml") -> dict:
@@ -133,7 +221,14 @@ def is_path_allowed(path: str) -> dict:
     return {"allowed": True, "reason": "", "normalized_path": str(normalized_path), "extension": extension}
 
 
-def read_restricted_file(path: str, max_chars: int = 12000, metadata: dict | None = None) -> dict:
+def read_restricted_file(path: str, max_chars: int = 12000, metadata: dict | None = None, *, mode: Literal["direct", "governed_chat"] = "direct") -> dict:
+    if mode == "governed_chat":
+        record = _governed_read(path, max_chars, metadata)
+        audit_record = {key: value for key, value in record.items() if key not in {"content", "metadata", "path"}}
+        log = load_file_access_log()
+        log["accesses"].append(audit_record)
+        save_file_access_log(log)
+        return record
     check = is_path_allowed(path)
     timestamp = now_iso()
     record = {

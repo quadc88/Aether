@@ -182,8 +182,8 @@ class TestProtectedCoreOpenAPIContract:
         schema = app.openapi()
         paths = len(schema.get("paths", {}))
         schemas = len(schema.get("components", {}).get("schemas", {}))
-        assert paths == 304, f"Expected 304 paths, got {paths}"
-        assert schemas == 108, f"Expected 108 schemas, got {schemas}"
+        assert paths == 305, f"Expected 305 paths, got {paths}"
+        assert schemas == 110, f"Expected 110 schemas, got {schemas}"
 
     def test_protected_core_paths_present(self):
         from aether.interface.api_server import app

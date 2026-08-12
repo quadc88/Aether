@@ -112,6 +112,23 @@ class TestCoreLoopStructure:
         result = patched_core_loop.run_core_chat_loop(text="verify my identity")
         assert "identity_integrity_status" in result
 
+    def test_exact_read_carries_complete_binding_without_execution(self, patched_core_loop, monkeypatch):
+        import aether.action.tool_planner as planner
+        monkeypatch.setattr(planner, "infer_candidate_tool", lambda text: planner.parse_restricted_read_command(text))
+        result = patched_core_loop.run_core_chat_loop('read file "aether/core/config.py" [max_chars=10]')
+        action = result["suggested_tool"]
+        assert action["tool_id"] == "file.restricted_read"
+        assert action["permission_class"] == "read_only"
+        assert action["parameters"] == {"max_chars": 10}
+        assert result["tool_executed"] is False
+
+    def test_malformed_read_does_not_create_exact_binding(self, patched_core_loop, monkeypatch):
+        import aether.action.tool_planner as planner
+        monkeypatch.setattr(planner, "infer_candidate_tool", lambda text: planner.parse_restricted_read_command(text) or {"tool_id": None})
+        result = patched_core_loop.run_core_chat_loop('read file "aether/core/config.py" extra')
+        assert result["suggested_tool"] is None
+        assert result["approval_request"] is None
+
 
 class TestSuggestToolShapeCompatibility:
     """_suggest_tool must handle both top-level and nested tool_id shapes."""

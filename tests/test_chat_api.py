@@ -163,6 +163,44 @@ class TestChatEndpoint:
         data = resp.json()
         assert data["tool_execution_allowed"] is False
 
+
+class TestGovernedReadPhaseOne:
+    client = None
+
+    @classmethod
+    def setup_class(cls):
+        cls.client = _get_test_client()
+
+    def test_exact_read_creates_approval_binding(self):
+        response = self.client.post(
+            "/chat", json={"text": 'read file "aether/core/config.py" [max_chars=10]'}
+        )
+        data = response.json()
+        assert response.status_code == 200
+        assert data["tool_executed"] is False
+        assert data["approval_record"]["approval_request"]["requested_action"]["permission_class"] == "read_only"
+
+    def test_exact_read_approval_has_fingerprint(self):
+        response = self.client.post(
+            "/chat", json={"text": 'read file "aether/core/config.py" [max_chars=10]'}
+        )
+        assert len(response.json()["approval_record"]["requested_action_fingerprint"]) == 64
+
+    def test_malformed_read_has_no_exact_approval(self):
+        response = self.client.post(
+            "/chat", json={"text": 'read file "aether/core/config.py" extra'}
+        )
+        assert response.status_code == 200
+        assert response.json()["suggested_tool"] is None
+
+    def test_chat_never_dispatches_read(self):
+        response = self.client.post(
+            "/chat", json={"text": 'read file "aether/core/config.py"'}
+        )
+        data = response.json()
+        assert data["tool_executed"] is False
+        assert data["tool_execution_allowed"] is False
+
     def test_tool_executed_is_false(self):
         """tool_executed must always be False in this milestone."""
         resp = self.client.post("/chat", json={"text": "test exec"})
