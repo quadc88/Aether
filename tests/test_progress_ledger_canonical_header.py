@@ -171,18 +171,18 @@ def test_current_92a_local_state_is_consistent_across_header():
 
     # Six current-work identities are covered as one scalar contract.
     identity_tokens = {
-        "Last updated": "Milestone 93 closure state recorded; Milestone 93A is FINALIZED / DURABLE; Milestone 93B Rule 4 Governance Runtime Migration implementation is complete and Git-durable",
-        "Current completed local milestone": "Milestone 93 closure state; Milestone 93A Boundary finalized/durable and Milestone 93B Rule 4 Governance Runtime Migration implementation complete and Git-durable",
-        "Current active milestone/module": "Milestone 93 is CLOSED; Milestone 93B Rule 4 Governance Runtime Migration implementation is complete and Git-durable",
-        "Current status": "Milestone 92C CLOSED; Milestone 93 CLOSED; Milestone 93A FINALIZED / DURABLE boundary",
-        "Next milestone": "No next milestone or submilestone is selected or authorized by this closure ledger",
+        "Last updated": "Milestone 94A boundary / contract-lock Build complete locally; Milestone 94 is OPEN",
+        "Current completed local milestone": "Milestone 94A boundary / contract-lock Build content complete locally; Milestone 94 remains OPEN; Milestone 93 remains CLOSED / DURABLE; Git remains authoritative for Milestone 94A commit, durability, tagging, and publication state",
+        "Current active milestone/module": "Milestone 94A current boundary / contract-lock submilestone; Milestone 94 is OPEN",
+        "Current status": "Milestone 93 CLOSED / DURABLE; Milestone 94 OPEN; Milestone 94A boundary / contract-lock Build complete locally",
+        "Next milestone": "Milestone 94B requires a fresh PM Plan and Build definition",
         "Test baseline": "2571 pre-93A full-suite baseline",
     }
     assert all(
         token in fields[name] for name, token in identity_tokens.items()
     )
     assert fields["Current completed local milestone"].startswith(
-        "Milestone 93 closure state"
+        "Milestone 94A boundary / contract-lock Build content complete locally"
     )
     assert not fields["Current completed local milestone"].startswith(
         "Milestone 93B Rule 4 Governance Runtime Migration"
@@ -203,15 +203,14 @@ def test_current_92a_local_state_is_consistent_across_header():
     assert "3641c0c98fad993b1b4b5b8719dbf1cfd7117abc" in previous_tag
     assert "milestone-92B-rule6-governance-migration-boundary" in earlier_tag
     assert "22d819b6bd3a305536c0beba57f670a5433fe21e" in earlier_tag
-    assert "Rule 4 physical owner in implemented content Core Governance" in fields["Current status"]
-    assert "current implementation provenance rule_3 / clear" in fields["Current status"]
-    assert "Direct supersession: 27" in fields["Current status"]
-    assert "Parameter cases: 3" in fields["Current status"]
-    assert "New 93B: 26" in fields["Current status"]
-    assert "Full candidate: 2631 passed" in fields["Current status"]
-    assert "93A Boundary: 34 passed" in fields["Current status"]
-    assert "Observation BLOCKED / deferred" in fields["Current status"]
-    assert "Candidate A-F DEFERRED" in fields["Current status"]
+    assert "Milestone 94A current boundary / contract-lock submilestone" in fields["Current active milestone/module"]
+    assert "Milestone 94B is NOT AUTHORIZED" in fields["Current active milestone/module"]
+    assert "Milestone 94C is NOT DEFINED" in fields["Current active milestone/module"]
+    assert "Strategy C selected" in fields["Current status"]
+    assert "Observation Intake DEFER_FIRST_SLICE" in fields["Current status"]
+    assert "root registration MANUAL_ADMIN_CONFIG_EDIT" in fields["Current status"]
+    assert "approval may persist, scope may not persist" in fields["Current status"]
+    assert "execution-time Governance re-evaluation is required" in fields["Current status"]
     assert "capability expansion none" in fields["Current status"]
     assert "Current Progress-equivalent five-file family: 362 passed" in fields["Current status"]
     assert "Progress-referencing regression: 322 passed" not in fields["Current status"]
@@ -220,10 +219,30 @@ def test_current_92a_local_state_is_consistent_across_header():
     assert "api_server: 8 direct @app routes / 23 include_router / 0 direct /action/*" in fields["Current status"]
     assert "2571 pre-93A full-suite baseline" in fields["Test baseline"]
     assert "New 93B: 26 passed" in fields["Test baseline"]
-    assert "Full candidate: 2631 passed" in fields["Test baseline"]
+    assert "94A boundary: 24 passed" in fields["Test baseline"]
+    assert "Full candidate: 2655 passed" in fields["Test baseline"]
     assert "9 existing PytestRemovedIn10Warning" in fields["Test baseline"]
     assert "Current Progress-equivalent five-file family: 362 passed" in fields["Test baseline"]
+    assert "94A boundary: 24 tests pending verification" not in fields["Test baseline"]
     assert "warning occurrence delta versus parent: 0" in fields["Test baseline"]
+
+    section5 = text.split("## 5. Current Implemented Safety Chain\n", 1)[1].split(
+        "\n---\n", 1
+    )[0]
+    assert "This chain remains **declarative and non-executing**" in section5
+    assert "action-specific final-real-apply and rollback direct surfaces exist behind their own gates" in section5
+    assert "outside the canonical `/chat` execution loop" in section5
+    assert "No general-purpose `/chat` executor or automatic evidence collector exists" in section5
+
+    section9 = text.split("## 9. Hard Safety Invariants\n", 1)[1].split(
+        "\n---\n", 1
+    )[0]
+    assert "NO UNAUTHORIZED OR GENERIC /CHAT EXTERNAL ACTION AUTHORITY" in section9
+    assert "`/chat` does not execute real tools" in section9
+    assert "`/chat` does not perform real apply or rollback" in section9
+    assert "action-specific direct apply/rollback surfaces remain separately gated" in section9
+    assert "do not grant `/chat` authority" in section9
+    assert "No automatic evidence collection occurs" in section9
 
     # Commit-3 lifecycle phrases must not appear in any current-work field.
     prohibited_phrases = [
@@ -465,8 +484,9 @@ def test_pipeline_maturity_records_current_state():
 
     required_durable_suffix = (
         "Milestone 92B finalized; Rule 6 Governance migration boundary committed, "
-        "tagged, pushed, and remotely verified; Rule 6 remains physically evaluated "
-        "in Thinking; Rule 6 Governance Runtime Migration closure state complete; "
+        "tagged, pushed, and remotely verified; Rule 4, Rule 5, and Rule 6 are "
+        "Core Governance-owned; Rule 7 is a Thinking Soft Decision Signal; Rule 6 "
+        "Governance Runtime Migration closure state complete; "
         "implementation durable; Milestone 92C CLOSED; Candidate A-F deferred."
     )
     stale_r2_suffix = (
@@ -497,15 +517,17 @@ def test_full_suite_and_canonical_counts_match_header():
         "HISTORICAL BASELINE PROVENANCE", 1
     )
 
+    assert "94A boundary: 24 passed" in status
     assert "93A Boundary: 34 passed" in status
     assert "New 93B: 26" in status
     assert "Current Progress-equivalent five-file family: 362 passed" in status
-    assert "Full candidate: 2631 passed" in status
+    assert "Full candidate: 2655 passed" in status
     assert "2571 pre-93A full-suite baseline" in baseline
     assert "93A Boundary: 34 passed" in baseline
     assert "New 93B: 26 passed" in baseline
     assert "Current Progress-equivalent five-file family: 362 passed" in baseline
-    assert "Full candidate: 2631 passed" in baseline
+    assert "94A boundary: 24 passed" in baseline
+    assert "Full candidate: 2655 passed" in baseline
 
     assert "93A Boundary:** 34 passed" in current_section7
     assert "Milestone 93:** CLOSED" in current_section7
@@ -522,7 +544,8 @@ def test_full_suite_and_canonical_counts_match_header():
     assert "93B Rule 4 runtime contract:** 26 passed" in current_section7
     assert "Progress ledger canonical-header contract:** 23 passed" in current_section7
     assert "Current Progress-equivalent five-file family:** 362 passed" in current_section7
-    assert "Full suite:** 2631/2631 passed, 0 failures, 0 errors" in current_section7
+    assert "94A boundary:** 24 passed" in current_section7
+    assert "Full suite:** 2655/2655 passed, 0 failures, 0 errors" in current_section7
     assert "2605" not in current_section7
     assert "Warnings:** 9 existing PytestRemovedIn10Warning" in current_section7
     assert "Warning occurrence delta versus parent:** 0" in current_section7
@@ -560,9 +583,9 @@ def test_92a_vs_functional_92_terminology_contract():
         "\n---\n", 1
     )[0]
 
-    assert "Milestone 93 is CLOSED; Milestone 93B Rule 4 Governance Runtime Migration implementation is complete and Git-durable" in active, (
-        f"Missing closed durable 93B current state, got: {active[:200]}"
-    )
+    assert "Milestone 94A current boundary / contract-lock submilestone" in active
+    assert "Milestone 94 is OPEN" in active
+    assert "Milestone 93 is CLOSED / DURABLE" in active
     assert "Milestone 93B OPEN" not in active
     assert "Rule 4 physical ownership is Core Governance" in active, (
         f"Missing local Rule 4 Governance owner, got: {active[:200]}"
@@ -574,44 +597,32 @@ def test_92a_vs_functional_92_terminology_contract():
     )
 
     for token in (
-        "Milestone 92C CLOSED",
-        "Milestone 93 CLOSED",
-        "Milestone 93A FINALIZED / DURABLE boundary",
-        "Milestone 93B runtime implementation content complete",
-        "Rule 4 physical owner in implemented content Core Governance",
-        "current implementation provenance rule_3 / clear",
-        "Direct supersession: 27",
-        "Parameter cases: 3",
-        "New 93B: 26",
-        "Full candidate: 2631 passed",
-        "Observation BLOCKED / deferred",
-        "Candidate A-F DEFERRED",
+        "Milestone 93 CLOSED / DURABLE",
+        "Milestone 94 OPEN",
+        "Milestone 94A boundary / contract-lock Build complete locally",
+        "Strategy C selected",
+        "Observation Intake DEFER_FIRST_SLICE",
+        "root registration MANUAL_ADMIN_CONFIG_EDIT",
+        "approval may persist, scope may not persist",
+        "execution-time Governance re-evaluation is required",
+        "94A boundary: 24 passed",
+        "Full candidate: 2655 passed",
     ):
         assert token in status, f"Current status missing token: {token}"
 
     for token in (
-        "Milestone 92C is CLOSED and durable",
-        "Milestone 93 is CLOSED",
-        "Milestone 93A is FINALIZED / DURABLE boundary",
-        "Milestone 93B runtime implementation content is complete",
-        "Git directly determines implementation durability, tagging, and publication",
-        "Rule 4 physical owner in implemented content is Core Governance",
-        "current implementation provenance is rule_3 / clear",
-        "Direct supersession: 27",
-        "Parameter cases: 3",
-        "New 93B: 26",
-        "Full candidate: 2631 passed",
-        "93A Boundary: 34 passed",
-        "Canonical: 23 passed",
-        "Current Progress-equivalent family: 362 passed",
-        "Warnings: 9 PytestRemovedIn10Warning",
-        "warning occurrence delta: 0",
-        "OpenAPI: 304 paths / 108 schemas",
-        "api_server: 8 direct @app routes / 23 include_router / 0 direct /action/*",
-        "Observation: BLOCKED / deferred",
-        "Candidate A-F: DEFERRED",
-        "capability expansion none",
-        "No next milestone or submilestone is selected or authorized by this closure ledger",
+        "Milestone 93 is CLOSED / DURABLE",
+        "Milestone 94 is OPEN",
+        "Milestone 94A is the current boundary / contract-lock submilestone",
+        "Strategy C selected",
+        "Observation Intake DEFER_FIRST_SLICE",
+        "Root registration MANUAL_ADMIN_CONFIG_EDIT",
+        "approval may persist / scope may not persist",
+        "execution-time Governance re-evaluation required",
+        "Milestone 94B is NOT AUTHORIZED",
+        "Milestone 94C is NOT DEFINED",
+        "94A Boundary: 24 passed",
+        "Full candidate: 2655 passed",
     ):
         assert token in section10, f"Section 10 missing current token: {token}"
 
@@ -620,7 +631,7 @@ def test_92a_vs_functional_92_terminology_contract():
     assert "current Rule 4 physical ownership is Core Governance" in section10
     assert "Milestone 93 OPEN" not in "\n".join((active, status, section10))
     assert "93C" not in "\n".join((active, status, section10))
-    assert "Milestone 94" not in "\n".join((active, status, section10))
+    assert "Milestone 94" in "\n".join((active, status, section10))
 
     for stale in (
         "no functional milestone is selected",
