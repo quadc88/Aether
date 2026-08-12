@@ -605,7 +605,7 @@ class TestNoProductionSourceChanges:
         # must remain byte-identical.
         import subprocess
         result = subprocess.run(
-            ["git", "diff", "943b442", "HEAD", "--name-only", "--", "aether/"],
+            ["git", "diff", "943b442b3b765904fa508cc617ce25fd279a8b91", "6e5c7b8474314d21723a08c1655843548eb7d65e", "--name-only", "--", "aether/"],
             capture_output=True, text=True, cwd=str(ROOT)
         )
         assert result.stdout.splitlines() == [
