@@ -7,6 +7,8 @@ from aether.interface.api_models import (
     SelfInspectionRequest,
     ApprovedReadExecutionAttemptRequest,
     RestrictedFileReadExecutionAttemptResponse,
+    RestrictedReadChatResumeRequest,
+    RestrictedReadChatResumeResponse,
 )
 
 from aether.action.services.file_service import (
@@ -26,9 +28,21 @@ from aether.action.services.file_service import (
     handle_list_self_inspections,
     handle_get_self_inspection,
 )
-from aether.action.services.restricted_file_read_execution_service import handle_restricted_file_read_execution
+from aether.action.services.restricted_file_read_execution_service import (
+    handle_restricted_file_read_execution,
+    handle_restricted_read_chat_resume,
+)
 
 file_router = APIRouter()
+
+
+@file_router.post(
+    "/chat/restricted-read/resume",
+    response_model=RestrictedReadChatResumeResponse,
+    operation_id="resume_restricted_read_chat",
+)
+def resume_restricted_read_chat(request: RestrictedReadChatResumeRequest):
+    return handle_restricted_read_chat_resume(request)
 
 
 @file_router.post(

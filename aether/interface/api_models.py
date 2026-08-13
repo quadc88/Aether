@@ -1,6 +1,6 @@
 from typing import Literal as _L
 
-from pydantic import BaseModel, Field as _F, StrictInt, field_validator
+from pydantic import BaseModel, ConfigDict, Field as _F, StrictInt, field_validator
 
 
 # ===================================================================== #
@@ -218,6 +218,45 @@ class ApprovedReadExecutionAttemptRequest(BaseModel):
         if not value.strip():
             raise ValueError("must not be empty")
         return value
+
+
+class RestrictedReadChatResumeRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    approval_id: str
+    request_text: str
+    session_id: str | None = None
+
+    @field_validator("approval_id", "request_text")
+    @classmethod
+    def _non_empty_resume_field(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("must not be empty")
+        return value
+
+
+class RestrictedReadChatResumeResponse(BaseModel):
+    name: str = "Aether"
+    status: _L["pending", "completed", "denied", "error"]
+    approval_id: str | None = None
+    approval_state: _L[
+        "pending", "approved", "rejected", "cancelled", "consumed",
+        "missing", "invalid",
+    ]
+    execution_attempt_status: _L[
+        "NOT_ATTEMPTED", "REJECTED", "AUTHORIZED", "CLAIMED",
+        "DISPATCHED", "COMPLETED", "FAILED",
+    ]
+    verification_status: _L[
+        "VERIFIED_SUCCESS", "VERIFIED_PARTIAL", "DENIED", "NOT_FOUND",
+        "CHANGED_DURING_READ", "INTERNAL_ERROR",
+    ] | None = None
+    action_dispatched: bool = False
+    content: str | None = None
+    truncated: bool = False
+    reason: str | None = None
+    warnings: list[str] = []
+    tool_execution_allowed: bool = False
 
 
 class RestrictedFileReadExecutionAttemptResponse(BaseModel):

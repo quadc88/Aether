@@ -171,18 +171,18 @@ def test_current_92a_local_state_is_consistent_across_header():
 
     # Six current-work identities are covered as one scalar contract.
     identity_tokens = {
-        "Last updated": "Milestone 94C Restricted-Read Observation Consumer-Proof Decision Record complete locally; Milestone 94 remains OPEN",
-        "Current completed local milestone": "Milestone 94C Restricted-Read Observation Consumer-Proof Decision Record complete locally; Milestone 94 remains OPEN; Milestone 94A remains FINALIZED / DURABLE BOUNDARY; Milestone 94B remains FINALIZED / GIT-DURABLE / PM-ACCEPTED externally; selected outcome C_NOT_YET_COMPATIBLE; runtime bridge NOT JUSTIFIED",
-        "Current active milestone/module": "Milestone 94C Restricted-Read Observation Consumer-Proof Decision Record; Milestone 94 is OPEN",
-        "Current status": "Milestone 94 OPEN; Milestone 94A FINALIZED / DURABLE BOUNDARY; Milestone 94B is FINALIZED / GIT-DURABLE / PM-ACCEPTED externally; Milestone 94C Restricted-Read Observation Consumer-Proof Decision Record complete locally; selected outcome C_NOT_YET_COMPATIBLE; runtime bridge NOT JUSTIFIED",
-        "Next milestone": "human/project-manager Build review of the Milestone 94C decision record; no runtime bridge, Milestone 94D, or Milestone 94 closure is authorized",
+        "Last updated": "Milestone 94D Canonical /chat Restricted-Read Execution Completion Build complete locally; Milestone 94 remains OPEN",
+        "Current completed local milestone": "Milestone 94D Canonical /chat Restricted-Read Execution Completion Build complete locally; Milestone 94 remains OPEN; Milestone 94A remains FINALIZED / DURABLE BOUNDARY; Milestone 94B remains FINALIZED / GIT-DURABLE / PM-ACCEPTED externally",
+        "Current active milestone/module": "Milestone 94D Canonical /chat Restricted-Read Execution Completion; Milestone 94 is OPEN",
+        "Current status": "Milestone 94 OPEN; Milestone 94 remains OPEN / NOT CLOSED YET; Milestone 94A FINALIZED / DURABLE BOUNDARY; Milestone 94B is FINALIZED / GIT-DURABLE / PM-ACCEPTED externally; Milestone 94C is FINALIZED / GIT-DURABLE / PM-ACCEPTED externally; Milestone 94D Canonical /chat Restricted-Read Execution Completion Build complete locally",
+        "Next milestone": "human/project-manager Build review of the Milestone 94D local Build; no Milestone 94 closure or Milestone 95 is authorized",
         "Test baseline": "2571 pre-93A full-suite baseline",
     }
     assert all(
         token in fields[name] for name, token in identity_tokens.items()
     )
     assert fields["Current completed local milestone"].startswith(
-        "Milestone 94C Restricted-Read Observation Consumer-Proof Decision Record complete locally"
+        "Milestone 94D Canonical /chat Restricted-Read Execution Completion Build complete locally"
     )
     assert not fields["Current completed local milestone"].startswith(
         "Milestone 93B Rule 4 Governance Runtime Migration"
@@ -203,58 +203,38 @@ def test_current_92a_local_state_is_consistent_across_header():
     assert "3641c0c98fad993b1b4b5b8719dbf1cfd7117abc" in previous_tag
     assert "milestone-92B-rule6-governance-migration-boundary" in earlier_tag
     assert "22d819b6bd3a305536c0beba57f670a5433fe21e" in earlier_tag
-    assert "Milestone 94C Restricted-Read Observation Consumer-Proof Decision Record" in fields["Current active milestone/module"]
+    assert "Milestone 94D Canonical /chat Restricted-Read Execution Completion" in fields["Current active milestone/module"]
     assert "Milestone 94B is FINALIZED / GIT-DURABLE / PM-ACCEPTED externally" in fields["Current active milestone/module"]
-    assert "selected outcome C_NOT_YET_COMPATIBLE" in fields["Current active milestone/module"]
-    assert "runtime bridge NOT JUSTIFIED" in fields["Current active milestone/module"]
+    assert "selected model D" in fields["Current active milestone/module"]
     assert "Rule 4 physical ownership is Core Governance" in fields["Current active milestone/module"]
-    assert "Strategy C selected" in fields["Current status"]
-    assert "Observation Intake DEFER_FIRST_SLICE" in fields["Current status"]
-    assert "root registration MANUAL_ADMIN_CONFIG_EDIT" in fields["Current status"]
-    assert "approval may persist, scope may not persist" in fields["Current status"]
-    assert "execution-time Governance re-evaluation is required" in fields["Current status"]
-    assert "94B capability exactly one governed read-only restricted-file execution slice" in fields["Current status"]
-    assert "94B capability: exactly one governed restricted-read execution slice" in fields["Current status"]
+    assert "generic POST /chat does not execute real tools" in fields["Current status"]
+    assert "generic /chat execution authority NO" in fields["Current status"]
+    assert "approval_state DERIVED" in fields["Current status"]
+    assert "capability file.restricted_read" in fields["Current status"]
     assert "capability: file.restricted_read" in fields["Current status"]
-    assert "execution endpoint: POST /action/file/execute-approved-read" in fields["Current status"]
-    assert "execution model: TWO_PHASE" in fields["Current status"]
-    assert "approval model: APPROVE != EXECUTE" in fields["Current status"]
-    assert "fresh Core Governance required" in fields["Current status"]
-    assert "scope: private / call-local / one-shot Strategy C" in fields["Current status"]
-    assert "generic capability expansion remains absent" in fields["Current status"]
-    assert "canonical /chat generic execution authority: NO" in fields["Current status"]
-    assert "legacy sandbox/direct execute_tool compatibility: PRESERVED" in fields["Current status"]
-    assert "legacy execute_tool supports file.restricted_read" in fields["Current status"]
-    assert "legacy surface introduced by 94B: NO" in fields["Current status"]
-    assert "94B Phase-2 execute_tool usage: NO" in fields["Current status"]
-    assert "94B Phase-2 generic tool-service usage: NO" in fields["Current status"]
-    assert "generic approval-to-execute pipeline: NO" in fields["Current status"]
-    assert "direct Strategy C bridge: YES" in fields["Current status"]
-    assert "tool_execution_allowed compatibility false" in fields["Current status"]
-    assert "Milestone 94C Restricted-Read Observation Consumer-Proof Decision Record complete locally" in fields["Current status"]
-    assert "selected outcome C_NOT_YET_COMPATIBLE" in fields["Current status"]
-    assert "runtime bridge NOT JUSTIFIED" in fields["Current status"]
-    assert "collector_contract_id NOT_PROVEN" in fields["Current status"]
-    assert "plan_step_id NOT_PROVEN" in fields["Current status"]
-    assert "expected/observed NOT_PROVEN" in fields["Current status"]
-    assert "privacy-safe persistence NOT_PROVEN" in fields["Current status"]
-    assert "New API: NO" in fields["Current status"]
-    assert "Verification Aggregation: NO" in fields["Current status"]
+    assert "POST /chat/restricted-read/resume" in fields["Current status"]
+    assert "TWO_PHASE" in fields["Current status"]
+    assert "APPROVE != EXECUTE" in fields["Current status"]
+    assert "Milestone 94D Canonical /chat Restricted-Read Execution Completion Build complete locally" in fields["Current status"]
+    assert "Observation call-local" in fields["Current status"]
+    assert "Persistent Observation Record NO" in fields["Current status"]
+    assert "Observation Intake NO" in fields["Current status"]
+    assert "Verification Aggregation NO" in fields["Current status"]
     assert "Critic: NO" in fields["Current status"]
     assert "Repair: NO" in fields["Current status"]
     assert "Learning: NO" in fields["Current status"]
-    assert "generic capability expansion: NO" in fields["Current status"]
-    assert "Milestone 94D NOT DEFINED" in fields["Current status"]
+    assert "generic /chat execution authority NO" in fields["Current status"]
+    assert "approval_state DERIVED" in fields["Current status"]
     assert "Milestone 94 remains OPEN / NOT CLOSED YET" in fields["Current status"]
     assert "Current Progress-equivalent five-file family: 362 passed" in fields["Current status"]
     assert "Progress-referencing regression: 322 passed" not in fields["Current status"]
     assert "Architecture/Observation: 363 passed" not in fields["Current status"]
-    assert "OpenAPI: 305 paths / 110 schemas" in fields["Current status"]
+    assert "OpenAPI: 306 paths / 112 schemas" in fields["Current status"]
     assert "api_server: 8 direct @app routes / 23 include_router / 0 direct /action/*" in fields["Current status"]
     assert "2571 pre-93A full-suite baseline" in fields["Test baseline"]
     assert "New 93B: 26 passed" in fields["Test baseline"]
     assert "94A boundary: 24 passed" in fields["Test baseline"]
-    assert "Full candidate: 2916 passed" in fields["Test baseline"]
+    assert "Full candidate: 2952 passed" in fields["Test baseline"]
     assert "9 existing PytestRemovedIn10Warning" in fields["Test baseline"]
     assert "Current Progress-equivalent five-file family: 362 passed" in fields["Test baseline"]
     assert "94A boundary: 24 tests pending verification" not in fields["Test baseline"]
@@ -272,8 +252,13 @@ def test_current_92a_local_state_is_consistent_across_header():
         "\n---\n", 1
     )[0]
     assert "NO UNAUTHORIZED OR GENERIC /CHAT EXTERNAL ACTION AUTHORITY" in section9
-    assert "`/chat` does not execute real tools" in section9
-    assert "`/chat` does not perform real apply or rollback" in section9
+    assert "Generic `POST /chat` does not execute real tools." in section9
+    assert "Generic `/chat` execution authority remains NO." in section9
+    assert "Ordinary Phase-1 `POST /chat` never dispatches Action." in section9
+    assert "Approval creation never dispatches Action." in section9
+    assert "Approval transition never dispatches Action." in section9
+    assert "Only the explicitly capability-specific `POST /chat/restricted-read/resume` may initiate the one governed `file.restricted_read` execution attempt." in section9
+    assert "Generic `POST /chat` does not perform real apply or rollback." in section9
     assert "action-specific direct apply/rollback surfaces remain separately gated" in section9
     assert "do not grant `/chat` authority" in section9
     assert "No automatic evidence collection occurs" in section9
@@ -555,13 +540,13 @@ def test_full_suite_and_canonical_counts_match_header():
     assert "93A Boundary: 34 passed" in status
     assert "New 93B: 26" in status
     assert "Current Progress-equivalent five-file family: 362 passed" in status
-    assert "Full candidate: 2916 passed" in status
+    assert "Full candidate: 2952 passed" in status
     assert "2571 pre-93A full-suite baseline" in baseline
     assert "93A Boundary: 34 passed" in baseline
     assert "New 93B: 26 passed" in baseline
     assert "Current Progress-equivalent five-file family: 362 passed" in baseline
     assert "94A boundary: 24 passed" in baseline
-    assert "Full candidate: 2916 passed" in baseline
+    assert "Full candidate: 2952 passed" in baseline
 
     assert "93A Boundary:** 34 passed" in current_section7
     assert "Milestone 93:** CLOSED" in current_section7
@@ -580,49 +565,30 @@ def test_full_suite_and_canonical_counts_match_header():
     assert "Milestone 94:** OPEN / NOT CLOSED YET" in current_section7
     assert "Milestone 94A:** FINALIZED / DURABLE boundary" in current_section7
     assert "Milestone 94B:** FINALIZED / GIT-DURABLE / PM-ACCEPTED externally" in current_section7
-    assert "Milestone 94C:** Restricted-Read Observation Consumer-Proof Decision Record complete locally" in current_section7
-    assert "Selected outcome:** C_NOT_YET_COMPATIBLE" in current_section7
-    assert "Runtime bridge:** NOT JUSTIFIED" in current_section7
-    assert "Milestone 94D:** NOT DEFINED" in current_section7
-    assert "collector_contract_id:** NOT_PROVEN" in current_section7
-    assert "plan_step_id:** NOT_PROVEN" in current_section7
-    assert "expected/observed:** NOT_PROVEN" in current_section7
-    assert "privacy-safe persistence:** NOT_PROVEN" in current_section7
-    assert "New API:** NO" in current_section7
+    assert "Milestone 94D:** Canonical /chat Restricted-Read Execution Completion Build complete locally" in current_section7
+    assert "Selected lifecycle:** Model D" in current_section7
+    assert "Resume route:** POST /chat/restricted-read/resume" in current_section7
+    assert "Capability:** file.restricted_read" in current_section7
+    assert "Governed capability count:** 1" in current_section7
+    assert "M95:** NOT AUTHORIZED" in current_section7
     assert "Verification Aggregation:** NO" in current_section7
     assert "Critic:** NO" in current_section7
     assert "Repair:** NO" in current_section7
     assert "Learning:** NO" in current_section7
-    assert "generic capability expansion:** NO" in current_section7
-    assert "**94B capability:** exactly one governed restricted-read execution slice" in current_section7
-    assert "**94B capability identifier:** file.restricted_read" in current_section7
-    assert "**Execution endpoint:** POST /action/file/execute-approved-read" in current_section7
-    assert "**Execution model:** TWO_PHASE" in current_section7
-    assert "**Approval model:** APPROVE != EXECUTE" in current_section7
-    assert "**Fresh Governance:** Core Governance required" in current_section7
-    assert "**Scope:** private / call-local / one-shot Strategy C" in current_section7
-    assert "**generic capability expansion:** absent" in current_section7
-    assert "**canonical /chat generic execution authority:** NO" in current_section7
-    assert "**legacy sandbox/direct execute_tool compatibility:** PRESERVED" in current_section7
-    assert "**legacy execute_tool supports:** file.restricted_read" in current_section7
-    assert "**legacy surface introduced by 94B:** NO" in current_section7
-    assert "**94B Phase-2 execute_tool usage:** NO" in current_section7
-    assert "**94B Phase-2 generic tool-service usage:** NO" in current_section7
-    assert "**generic approval-to-execute pipeline:** NO" in current_section7
-    assert "**Direct Strategy C bridge:** YES" in current_section7
-    assert "**tool_execution_allowed compatibility:** false" in current_section7
-    assert "Git directly determines implementation durability, tagging, and publication" in current_section7
+    assert "Generic /chat execution authority:** NO" in current_section7
+    assert "**TWO_PHASE:** YES" in current_section7
+    assert "**APPROVE != EXECUTE:** YES" in current_section7
+    assert "OpenAPI:** 306 paths / 112 schemas" in current_section7
     assert "93B Rule 4 runtime contract:** 26 passed" in current_section7
     assert "Progress ledger canonical-header contract:** 23 passed" in current_section7
-    assert "Current Progress-equivalent five-file family:** 362 passed" in current_section7
+    assert "94D focused:** 36 passed" in current_section7
     assert "Observation regression family:** 472 passed" in current_section7
     assert "Rule migration family:** 177 passed" in current_section7
     assert "94A boundary:** 24 passed" in current_section7
-    assert "Full suite:** 2916/2916 passed, 0 failures, 0 errors" in current_section7
+    assert "Full current result:** 2952/2952 passed, 0 failures, 0 errors" in current_section7
     assert "2605" not in current_section7
     assert "Warnings:** 9 existing PytestRemovedIn10Warning" in current_section7
     assert "Warning occurrence delta versus parent:** 0" in current_section7
-    assert "New warning regression caused by 93A:** none" in current_section7
     assert "Historical full suite: 2499" not in current_section7
     assert "Historical Progress accounting: 322" not in current_section7
     assert "Historical Architecture/Observation: 363" not in current_section7
@@ -656,7 +622,7 @@ def test_92a_vs_functional_92_terminology_contract():
         "\n---\n", 1
     )[0]
 
-    assert "Milestone 94C Restricted-Read Observation Consumer-Proof Decision Record" in active
+    assert "Milestone 94D Canonical /chat Restricted-Read Execution Completion" in active
     assert "Milestone 94 is OPEN" in active
     assert "Milestone 93 is CLOSED / DURABLE" in active
     assert "Milestone 93B OPEN" not in active
@@ -665,8 +631,7 @@ def test_92a_vs_functional_92_terminology_contract():
     )
     assert "PM acceptance is an external review decision and is not self-asserted by this ledger" in active
     assert "Milestone 94B is FINALIZED / GIT-DURABLE / PM-ACCEPTED externally" in active
-    assert "selected outcome C_NOT_YET_COMPATIBLE" in active
-    assert "runtime bridge NOT JUSTIFIED" in active
+    assert "selected model D" in active
     # Prohibit standalone "Milestone 92 not started" without qualification
     assert "Milestone 92 not started" not in active, (
         f"Must not contain standalone 'Milestone 92 not started', got: {active[:200]}"
@@ -675,56 +640,40 @@ def test_92a_vs_functional_92_terminology_contract():
     for token in (
         "Milestone 94 OPEN",
         "Milestone 94B is FINALIZED / GIT-DURABLE / PM-ACCEPTED externally",
-        "Milestone 94C Restricted-Read Observation Consumer-Proof Decision Record complete locally",
-        "C_NOT_YET_COMPATIBLE",
-        "runtime bridge NOT JUSTIFIED",
-        "Strategy C selected",
-        "Observation Intake DEFER_FIRST_SLICE",
-        "collector_contract_id NOT_PROVEN",
-        "plan_step_id NOT_PROVEN",
-        "expected/observed NOT_PROVEN",
-        "privacy-safe persistence NOT_PROVEN",
-        "New API: NO",
-        "Verification Aggregation: NO",
-        "Critic: NO",
-        "Repair: NO",
-        "Learning: NO",
-        "generic capability expansion: NO",
-        "Milestone 94D NOT DEFINED",
+            "Milestone 94D Canonical /chat Restricted-Read Execution Completion Build complete locally",
+            "selected model D",
+        "generic POST /chat does not execute real tools",
+            "Observation Intake NO",
+            "Persistent Observation Record NO",
+        "Verification Aggregation NO",
+        "Critic NO",
+        "Repair NO",
+        "Learning NO",
+            "generic /chat execution authority NO",
         "Milestone 94 remains OPEN / NOT CLOSED YET",
-        "root registration MANUAL_ADMIN_CONFIG_EDIT",
-        "approval may persist, scope may not persist",
-        "execution-time Governance re-evaluation is required",
         "94A boundary: 24 passed",
-        "Full candidate: 2916 passed",
+            "Full candidate: 2952 passed",
     ):
         assert token in status, f"Current status missing token: {token}"
 
     for token in (
         "Milestone 94 is OPEN",
-        "Milestone 94C Restricted-Read Observation Consumer-Proof Decision Record complete locally",
+        "Milestone 94C is FINALIZED / GIT-DURABLE / PM-ACCEPTED",
+        "Milestone 94D Build complete locally, pending PM Build review",
+        "selected lifecycle Model D",
         "Milestone 94B is FINALIZED / GIT-DURABLE / PM-ACCEPTED externally",
-        "C_NOT_YET_COMPATIBLE",
-        "runtime bridge NOT JUSTIFIED",
-        "Strategy C selected",
-        "Observation Intake DEFER_FIRST_SLICE",
-        "collector_contract_id NOT_PROVEN",
-        "plan_step_id NOT_PROVEN",
-        "expected/observed NOT_PROVEN",
-        "privacy-safe persistence NOT_PROVEN",
-        "New API: NO",
-        "Verification Aggregation: NO",
-        "Critic: NO",
-        "Repair: NO",
-        "Learning: NO",
-        "generic capability expansion: NO",
-        "Milestone 94D NOT DEFINED",
+        "Observation call-local",
+        "Persistent Observation Record NO",
+        "Observation Intake NO",
+        "Aggregator NO",
+        "Critic NO",
+        "Repair NO",
+        "Learning NO",
+        "generic /chat execution authority NO",
+        "M95 NOT AUTHORIZED",
         "Milestone 94 is OPEN / NOT CLOSED YET",
-        "Root registration MANUAL_ADMIN_CONFIG_EDIT",
-        "approval may persist / scope may not persist",
-        "execution-time Governance re-evaluation required",
         "94A Boundary: 24 passed",
-        "Full candidate: 2916 passed",
+        "Full current: 2952/2952 passed",
     ):
         assert token in section10, f"Section 10 missing current token: {token}"
 

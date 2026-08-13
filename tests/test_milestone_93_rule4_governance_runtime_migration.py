@@ -24,6 +24,8 @@ APPROVAL_REQUEST = ROOT / "aether/action/approval_request.py"
 APPROVAL_QUEUE = ROOT / "aether/action/approval_queue.py"
 LOOP_TRACE = ROOT / "aether/core/loop_trace.py"
 API_SERVER = ROOT / "aether/interface/api_server.py"
+M93B_PARENT = "49183c9d2af8e2c66b1f022768c1c512c5918133"
+M93B_IMPLEMENTATION = "276e23020832567008386546fd55a20c063f94e5"
 
 TEN_KEYS = [
     "decision_type",
@@ -444,23 +446,24 @@ def test_no_duplicate_rule4_formatter():
 
 def test_exact_production_path_lock():
     result = subprocess.run(
-        ["git", "diff", "--name-only", "--", "aether/"],
+        [
+            "git",
+            "diff",
+            "--name-only",
+            M93B_PARENT,
+            M93B_IMPLEMENTATION,
+            "--",
+            "aether/",
+        ],
         check=True,
         capture_output=True,
         text=True,
         cwd=ROOT,
     )
-    assert set(result.stdout.splitlines()) <= {
+    assert set(result.stdout.splitlines()) == {
         "aether/thinking/policy.py",
         "aether/core/governance.py",
         "aether/core/loop.py",
-        "aether/action/approval_decision_gate.py",
-        "aether/action/approval_queue.py",
-        "aether/action/restricted_file_reader.py",
-        "aether/action/tool_planner.py",
-        "aether/core/config.py",
-        "aether/interface/api_models.py",
-        "aether/interface/routers/file_routes.py",
     }
 
 

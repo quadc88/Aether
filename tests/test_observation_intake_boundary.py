@@ -233,9 +233,9 @@ def test_design_doc_locks_forbidden_imports():
 def test_openapi_surface_locked():
     schema = app.openapi()
     paths = schema.get("paths", {})
-    assert len(paths) == 305, "OpenAPI path count must stay locked at 305"
+    assert len(paths) == 306, "OpenAPI path count must stay locked at 306"
     schemas = schema.get("components", {}).get("schemas", {})
-    assert len(schemas) == 110, "OpenAPI schema count must stay locked at 110"
+    assert len(schemas) == 112, "OpenAPI schema count must stay locked at 112"
     observation_paths = sorted(p for p in paths if "/observation-records" in p)
     assert observation_paths == [
         "/observation-records",

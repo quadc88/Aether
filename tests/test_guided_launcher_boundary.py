@@ -514,8 +514,8 @@ def _import_froms(tree: ast.Module) -> list[ast.ImportFrom]:
 def test_guided_openapi_contract_and_operation_ids_are_locked():
     spec = app.openapi()
     paths = spec["paths"]
-    assert len(paths) == 305
-    assert len(spec["components"]["schemas"]) == 110
+    assert len(paths) == 306
+    assert len(spec["components"]["schemas"]) == 112
     guided_paths = {p for p in paths if p.startswith("/action/guided-")}
     assert guided_paths == {p for _, p in GUIDED_ENDPOINTS}
     for (method, path), (_, _, operation_id, _, request_model, _) in (

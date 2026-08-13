@@ -250,11 +250,11 @@ class TestOpenAPIStrictBaseline:
 
     def test_openapi_path_count_304(self, openapi_schema):
         paths = len(openapi_schema.get("paths", {}))
-        assert paths == 305, f"Expected 305 paths; got {paths}"
+        assert paths == 306, f"Expected 306 paths; got {paths}"
 
     def test_openapi_schema_count_108(self, openapi_schema):
         schemas = len(openapi_schema.get("components", {}).get("schemas", {}))
-        assert schemas == 110, f"Expected 110 schemas; got {schemas}"
+        assert schemas == 112, f"Expected 112 schemas; got {schemas}"
 
     def test_observation_paths_exact(self, openapi_schema):
         paths = openapi_schema.get("paths", {})

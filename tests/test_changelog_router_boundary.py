@@ -133,7 +133,7 @@ def test_changelog_openapi_contract_and_operation_ids_are_locked():
     for (method, path), (_, _, operation_id) in CHANGELOG_ENDPOINTS.items():
         assert method.lower() in paths[path]
         assert paths[path][method.lower()]["operationId"] == operation_id
-    assert len(paths) == 305
+    assert len(paths) == 306
 
 
 def test_changelog_routes_are_exact_direct_action_pass_throughs():

@@ -429,8 +429,8 @@ class TestProtectedStructureAndNonGoals:
     def test_38_openapi_counts_unchanged(self):
         app = importlib.import_module("aether.interface.api_server").app
         schema = app.openapi()
-        assert len(schema.get("paths", {})) == 305
-        assert len(schema.get("components", {}).get("schemas", {})) == 110
+        assert len(schema.get("paths", {})) == 306
+        assert len(schema.get("components", {}).get("schemas", {})) == 112
 
     def test_39_api_server_shape_unchanged(self):
         tree = _tree(API_SERVER)
