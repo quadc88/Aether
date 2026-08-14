@@ -170,16 +170,16 @@ def test_current_92a_local_state_is_consistent_across_header():
     fields = _get_all_current_work_fields(header)
 
     identity_tokens = {
-        "Last updated": "Milestone 95B Minimal Observation Provenance Envelope Contract Foundation Build complete locally; Milestone 95A FINALIZED / GIT-DURABLE / PM-ACCEPTED",
-        "Current completed local milestone": "Milestone 95B Minimal Observation Provenance Envelope Contract Foundation Build complete locally",
-        "Current active milestone/module": "Milestone 95B Minimal Observation Provenance Envelope Contract Foundation; Milestone 95 OPEN; Milestone 95A is FINALIZED / GIT-DURABLE / PM-ACCEPTED",
-        "Current status": "Milestone 94 CLOSED / GIT-DURABLE / PM-ACCEPTED externally; Milestone 95 OPEN; Milestone 95A FINALIZED / GIT-DURABLE / PM-ACCEPTED",
-        "Next milestone": "human/project-manager review of Milestone 95B Minimal Observation Provenance Envelope Contract Foundation",
+        "Last updated": "Milestone 95C Restricted-Read Durable Consumer Identity & Use-Case Proof Boundary Build complete locally; Milestone 95B FINALIZED / GIT-DURABLE / PM-ACCEPTED",
+        "Current completed local milestone": "Milestone 95C Restricted-Read Durable Consumer Identity & Use-Case Proof Boundary Build complete locally",
+        "Current active milestone/module": "Milestone 95C Restricted-Read Durable Consumer Identity & Use-Case Proof Boundary; Milestone 95 OPEN; Milestone 95B is FINALIZED / GIT-DURABLE / PM-ACCEPTED",
+        "Current status": "Milestone 94 CLOSED / GIT-DURABLE / PM-ACCEPTED externally; Milestone 95 OPEN; Milestone 95A FINALIZED / GIT-DURABLE / PM-ACCEPTED; Milestone 95B FINALIZED / GIT-DURABLE / PM-ACCEPTED",
+        "Next milestone": "human/project-manager review of Milestone 95C Restricted-Read Durable Consumer Identity & Use-Case Proof Boundary",
         "Test baseline": "2571 pre-93A full-suite baseline",
     }
     assert all(token in fields[name] for name, token in identity_tokens.items())
     assert fields["Current completed local milestone"].startswith(
-        "Milestone 95B Minimal Observation Provenance Envelope Contract Foundation"
+        "Milestone 95C Restricted-Read Durable Consumer Identity & Use-Case Proof Boundary"
     )
 
     for field_name in ("Closure durability authority", "Closure tag authority"):
@@ -196,7 +196,8 @@ def test_current_92a_local_state_is_consistent_across_header():
     assert _parse_header_field(header, "M94 durable closure") == "CLOSED / GIT-DURABLE / PM-ACCEPTED."
     assert _parse_header_field(header, "M95 authority").startswith("OPEN;")
     assert _parse_header_field(header, "M95A status") == "FINALIZED / GIT-DURABLE / PM-ACCEPTED."
-    assert _parse_header_field(header, "M95B status") == "COMPLETE LOCALLY / PENDING PM REVIEW."
+    assert _parse_header_field(header, "M95B status") == "FINALIZED / GIT-DURABLE / PM-ACCEPTED."
+    assert _parse_header_field(header, "M95C status") == "COMPLETE LOCALLY / PENDING PM REVIEW."
 
     active = fields["Current active milestone/module"]
     status = fields["Current status"]
@@ -207,7 +208,8 @@ def test_current_92a_local_state_is_consistent_across_header():
         "file.restricted_read",
         "generic /chat execution authority NO",
         "Observation call-local",
-        "M95B Plan / Contract / Source-Ownership Boundary only",
+        "selected outcome D_NO_DURABLE_CONSUMER_CURRENTLY_JUSTIFIED",
+        "runtime eligibility BLOCKED",
     ):
         assert token in active or token in status
     for token in (
@@ -217,6 +219,7 @@ def test_current_92a_local_state_is_consistent_across_header():
         "privacy-safe persistence NOT_SAFE_TO_PERSIST",
         "current proven durable consumer NONE",
         "MODEL_B_JUSTIFIED",
+        "M95D NOT AUTHORIZED",
     ):
         assert token in status
 
@@ -391,11 +394,16 @@ def test_full_suite_and_canonical_counts_match_header():
         "**M95A:** Observation Provenance Source and Consumer-Proof Boundary",
         "**M95A status:** FINALIZED / GIT-DURABLE / PM-ACCEPTED",
         "**M95B:** Minimal Observation Provenance Envelope Contract Foundation",
-        "**M95B status:** COMPLETE LOCALLY / PENDING PM REVIEW",
+        "**M95B status:** FINALIZED / GIT-DURABLE / PM-ACCEPTED",
+        "**M95C:** Restricted-Read Durable Consumer Identity & Use-Case Proof Boundary",
+        "**M95C status:** COMPLETE LOCALLY / PENDING PM REVIEW",
+        "**Selected outcome:** D_NO_DURABLE_CONSUMER_CURRENTLY_JUSTIFIED",
+        "**Runtime eligibility:** BLOCKED",
         "**Selected model:** MODEL_B_JUSTIFIED",
         "**Current proven durable consumer:** NONE",
         "M95_PROVENANCE_FOUNDATION_REQUIRED_BEFORE_RUNTIME",
-        "**Full current result:** 2978/2978 passed, 0 failures, 0 errors",
+        "**95C consumer-proof lock:** 10 passed",
+        "**Full current result:** 2988/2988 passed, 0 failures, 0 errors",
     ):
         assert token in status or token in current_section7
     for token in (
@@ -405,7 +413,8 @@ def test_full_suite_and_canonical_counts_match_header():
         "Rule migration family:** 177 passed",
         "OpenAPI family:** 653 passed",
         "95B contract-lock:** 10 passed",
-        "Full current result:** 2978/2978 passed, 0 failures, 0 errors",
+        "95C consumer-proof lock:** 10 passed",
+        "Full current result:** 2988/2988 passed, 0 failures, 0 errors",
     ):
         assert token in current_section7
     assert "Historical full suite:** 2499" in historical_section7
@@ -425,11 +434,11 @@ def test_92a_vs_functional_92_terminology_contract():
         "\n---\n", 1
     )[0]
 
-    assert "Milestone 95B Minimal Observation Provenance Envelope Contract Foundation" in active
+    assert "Milestone 95C Restricted-Read Durable Consumer Identity & Use-Case Proof Boundary" in active
     assert "Milestone 94 is CLOSED / GIT-DURABLE / PM-ACCEPTED externally" in active
     assert "Milestone 95 OPEN" in active
     assert "selected model B" in active
-    assert "M95B status COMPLETE LOCALLY / PENDING PM REVIEW" in status
+    assert "M95C status COMPLETE LOCALLY / PENDING PM REVIEW" in status
     for token in (
         "MODEL_B_JUSTIFIED",
         "current runtime containment Model E",
@@ -448,13 +457,14 @@ def test_92a_vs_functional_92_terminology_contract():
     for token in (
         "Milestone 94 CLOSED / GIT-DURABLE / PM-ACCEPTED externally",
         "Milestone 95 OPEN",
-        "Milestone 95B Minimal Observation Provenance Envelope Contract Foundation complete locally",
-        "M95B status COMPLETE LOCALLY / PENDING PM REVIEW",
-        "No M95B runtime implementation or M95C work is authorized",
+        "Milestone 95C Restricted-Read Durable Consumer Identity & Use-Case Proof Boundary complete locally",
+        "M95C status COMPLETE LOCALLY / PENDING PM REVIEW",
+        "selected outcome D_NO_DURABLE_CONSUMER_CURRENTLY_JUSTIFIED",
+        "No M95C runtime implementation or M95D work is authorized",
         "selected model B",
         "current runtime containment Model E",
         "Observation call-local",
-        "No M95B runtime implementation or M95C work is authorized",
+        "No M95C runtime implementation or M95D work is authorized",
     ):
         assert token in section10
     assert "At the Milestone 92C closure boundary" in section10
