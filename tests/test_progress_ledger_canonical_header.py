@@ -170,16 +170,16 @@ def test_current_92a_local_state_is_consistent_across_header():
     fields = _get_all_current_work_fields(header)
 
     identity_tokens = {
-        "Last updated": "Milestone 95A Observation Provenance Source and Consumer-Proof Boundary Build complete locally; Milestone 94 CLOSED / GIT-DURABLE / PM-ACCEPTED externally",
-        "Current completed local milestone": "Milestone 95A Observation Provenance Source and Consumer-Proof Boundary Build complete locally",
-        "Current active milestone/module": "Milestone 95A Observation Provenance Source and Consumer-Proof Boundary; Milestone 95 OPEN; Milestone 94 is CLOSED / GIT-DURABLE / PM-ACCEPTED externally",
-        "Current status": "Milestone 94 CLOSED / GIT-DURABLE / PM-ACCEPTED externally; Milestone 95 OPEN; Milestone 95A Observation Provenance Source and Consumer-Proof Boundary complete locally",
-        "Next milestone": "human/project-manager review of Milestone 95A Observation Provenance Source and Consumer-Proof Boundary",
+        "Last updated": "Milestone 95B Minimal Observation Provenance Envelope Contract Foundation Build complete locally; Milestone 95A FINALIZED / GIT-DURABLE / PM-ACCEPTED",
+        "Current completed local milestone": "Milestone 95B Minimal Observation Provenance Envelope Contract Foundation Build complete locally",
+        "Current active milestone/module": "Milestone 95B Minimal Observation Provenance Envelope Contract Foundation; Milestone 95 OPEN; Milestone 95A is FINALIZED / GIT-DURABLE / PM-ACCEPTED",
+        "Current status": "Milestone 94 CLOSED / GIT-DURABLE / PM-ACCEPTED externally; Milestone 95 OPEN; Milestone 95A FINALIZED / GIT-DURABLE / PM-ACCEPTED",
+        "Next milestone": "human/project-manager review of Milestone 95B Minimal Observation Provenance Envelope Contract Foundation",
         "Test baseline": "2571 pre-93A full-suite baseline",
     }
     assert all(token in fields[name] for name, token in identity_tokens.items())
     assert fields["Current completed local milestone"].startswith(
-        "Milestone 95A Observation Provenance Source and Consumer-Proof Boundary"
+        "Milestone 95B Minimal Observation Provenance Envelope Contract Foundation"
     )
 
     for field_name in ("Closure durability authority", "Closure tag authority"):
@@ -195,8 +195,8 @@ def test_current_92a_local_state_is_consistent_across_header():
     assert _parse_header_field(header, "M94 closure record") == "GIT-DURABLE."
     assert _parse_header_field(header, "M94 durable closure") == "CLOSED / GIT-DURABLE / PM-ACCEPTED."
     assert _parse_header_field(header, "M95 authority").startswith("OPEN;")
-    assert _parse_header_field(header, "M95A status") == "COMPLETE LOCALLY / PENDING PM REVIEW."
-    assert _parse_header_field(header, "M95B status") == "NOT AUTHORIZED."
+    assert _parse_header_field(header, "M95A status") == "FINALIZED / GIT-DURABLE / PM-ACCEPTED."
+    assert _parse_header_field(header, "M95B status") == "COMPLETE LOCALLY / PENDING PM REVIEW."
 
     active = fields["Current active milestone/module"]
     status = fields["Current status"]
@@ -207,13 +207,13 @@ def test_current_92a_local_state_is_consistent_across_header():
         "file.restricted_read",
         "generic /chat execution authority NO",
         "Observation call-local",
-        "M95B NOT AUTHORIZED",
+        "M95B Plan / Contract / Source-Ownership Boundary only",
     ):
         assert token in active or token in status
     for token in (
         "plan_step_id NOT_CURRENTLY_PROVABLE",
         "collector_contract_id NOT_CURRENTLY_PROVABLE",
-        "expected_value NOT_CURRENTLY_PROVABLE",
+        "expected_value CURRENT_INTAKE_EXPECTATION_MODEL_INCOMPATIBLE",
         "privacy-safe persistence NOT_SAFE_TO_PERSIST",
         "current proven durable consumer NONE",
         "MODEL_B_JUSTIFIED",
@@ -389,12 +389,13 @@ def test_full_suite_and_canonical_counts_match_header():
         "Milestone 94 CLOSED / GIT-DURABLE / PM-ACCEPTED externally",
         "Milestone 95 OPEN",
         "**M95A:** Observation Provenance Source and Consumer-Proof Boundary",
-        "**M95A status:** COMPLETE LOCALLY / PENDING PM REVIEW",
-        "**M95B:** NOT AUTHORIZED",
+        "**M95A status:** FINALIZED / GIT-DURABLE / PM-ACCEPTED",
+        "**M95B:** Minimal Observation Provenance Envelope Contract Foundation",
+        "**M95B status:** COMPLETE LOCALLY / PENDING PM REVIEW",
         "**Selected model:** MODEL_B_JUSTIFIED",
         "**Current proven durable consumer:** NONE",
         "M95_PROVENANCE_FOUNDATION_REQUIRED_BEFORE_RUNTIME",
-        "**Full current result:** 2968/2968 passed, 0 failures, 0 errors",
+        "**Full current result:** 2978/2978 passed, 0 failures, 0 errors",
     ):
         assert token in status or token in current_section7
     for token in (
@@ -403,7 +404,8 @@ def test_full_suite_and_canonical_counts_match_header():
         "Observation regression family:** 472 passed",
         "Rule migration family:** 177 passed",
         "OpenAPI family:** 653 passed",
-        "Full current result:** 2968/2968 passed, 0 failures, 0 errors",
+        "95B contract-lock:** 10 passed",
+        "Full current result:** 2978/2978 passed, 0 failures, 0 errors",
     ):
         assert token in current_section7
     assert "Historical full suite:** 2499" in historical_section7
@@ -423,11 +425,11 @@ def test_92a_vs_functional_92_terminology_contract():
         "\n---\n", 1
     )[0]
 
-    assert "Milestone 95A Observation Provenance Source and Consumer-Proof Boundary" in active
+    assert "Milestone 95B Minimal Observation Provenance Envelope Contract Foundation" in active
     assert "Milestone 94 is CLOSED / GIT-DURABLE / PM-ACCEPTED externally" in active
     assert "Milestone 95 OPEN" in active
     assert "selected model B" in active
-    assert "M95B NOT AUTHORIZED" in status
+    assert "M95B status COMPLETE LOCALLY / PENDING PM REVIEW" in status
     for token in (
         "MODEL_B_JUSTIFIED",
         "current runtime containment Model E",
@@ -446,13 +448,13 @@ def test_92a_vs_functional_92_terminology_contract():
     for token in (
         "Milestone 94 CLOSED / GIT-DURABLE / PM-ACCEPTED externally",
         "Milestone 95 OPEN",
-        "Milestone 95A Observation Provenance Source and Consumer-Proof Boundary Build complete locally",
-        "M95A status COMPLETE LOCALLY / PENDING PM REVIEW",
-        "M95B NOT AUTHORIZED",
+        "Milestone 95B Minimal Observation Provenance Envelope Contract Foundation complete locally",
+        "M95B status COMPLETE LOCALLY / PENDING PM REVIEW",
+        "No M95B runtime implementation or M95C work is authorized",
         "selected model B",
         "current runtime containment Model E",
         "Observation call-local",
-        "No M95B implementation is authorized",
+        "No M95B runtime implementation or M95C work is authorized",
     ):
         assert token in section10
     assert "At the Milestone 92C closure boundary" in section10
