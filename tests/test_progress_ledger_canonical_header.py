@@ -170,16 +170,16 @@ def test_current_92a_local_state_is_consistent_across_header():
     fields = _get_all_current_work_fields(header)
 
     identity_tokens = {
-        "Last updated": "Milestone 95C Restricted-Read Durable Consumer Identity & Use-Case Proof Boundary Build complete locally; Milestone 95B FINALIZED / GIT-DURABLE / PM-ACCEPTED",
-        "Current completed local milestone": "Milestone 95C Restricted-Read Durable Consumer Identity & Use-Case Proof Boundary Build complete locally",
-        "Current active milestone/module": "Milestone 95C Restricted-Read Durable Consumer Identity & Use-Case Proof Boundary; Milestone 95 OPEN; Milestone 95B is FINALIZED / GIT-DURABLE / PM-ACCEPTED",
-        "Current status": "Milestone 94 CLOSED / GIT-DURABLE / PM-ACCEPTED externally; Milestone 95 OPEN; Milestone 95A FINALIZED / GIT-DURABLE / PM-ACCEPTED; Milestone 95B FINALIZED / GIT-DURABLE / PM-ACCEPTED",
-        "Next milestone": "human/project-manager review of Milestone 95C Restricted-Read Durable Consumer Identity & Use-Case Proof Boundary",
+        "Last updated": "Milestone 95 Parent Closure Ledger Build complete locally; Milestone 95C FINALIZED / GIT-DURABLE / PM-ACCEPTED",
+        "Current completed local milestone": "Milestone 95 Parent Closure Ledger Build complete locally",
+        "Current active milestone/module": "Milestone 95 Parent Closure Ledger; Milestone 95 OPEN; M95 parent contract EXACTLY PROVEN",
+        "Current status": "Milestone 94 CLOSED / GIT-DURABLE / PM-ACCEPTED externally; Milestone 95 OPEN; M95 parent contract EXACTLY PROVEN",
+        "Next milestone": "human/project-manager review of the M95 parent closure ledger",
         "Test baseline": "2571 pre-93A full-suite baseline",
     }
     assert all(token in fields[name] for name, token in identity_tokens.items())
     assert fields["Current completed local milestone"].startswith(
-        "Milestone 95C Restricted-Read Durable Consumer Identity & Use-Case Proof Boundary"
+        "Milestone 95 Parent Closure Ledger"
     )
 
     for field_name in ("Closure durability authority", "Closure tag authority"):
@@ -197,12 +197,33 @@ def test_current_92a_local_state_is_consistent_across_header():
     assert _parse_header_field(header, "M95 authority").startswith("OPEN;")
     assert _parse_header_field(header, "M95A status") == "FINALIZED / GIT-DURABLE / PM-ACCEPTED."
     assert _parse_header_field(header, "M95B status") == "FINALIZED / GIT-DURABLE / PM-ACCEPTED."
-    assert _parse_header_field(header, "M95C status") == "COMPLETE LOCALLY / PENDING PM REVIEW."
+    assert _parse_header_field(header, "M95C status") == "FINALIZED / GIT-DURABLE / PM-ACCEPTED."
+    assert _parse_header_field(header, "M95 parent contract") == "EXACTLY PROVEN."
+    assert _parse_header_field(header, "M95 parent obligations") == "ALL SATISFIED."
+    assert _parse_header_field(header, "M95 parent substantive obligations") == "COMPLETE."
+    assert _parse_header_field(header, "M95 closure ledger") == "COMPLETE LOCALLY."
+    assert _parse_header_field(header, "M95 durable closure") == "PENDING GIT FINALIZATION AND PM ACCEPTANCE."
+    assert _parse_header_field(header, "M95 parent closure model") == "A."
+    assert _parse_header_field(header, "M95 Model A") == "SUPPORTED."
+    assert _parse_header_field(header, "M95 Model B additional non-runtime parent scope") == "NOT_PROVEN."
+    assert _parse_header_field(header, "M95 Model C wait-for-real-consumer scope") == "NOT_SUPPORTED."
+    assert _parse_header_field(header, "M95 real Action -> factual Observation") == "SATISFIED."
+    assert _parse_header_field(header, "M95 truthful provenance") == "SATISFIED."
+    assert _parse_header_field(header, "M95 durable evidence eligibility") == "SATISFIED AS ELIGIBILITY BOUNDARY."
+    assert _parse_header_field(header, "M95 current durable admission") == "BLOCKED."
+    assert _parse_header_field(header, "M95 later consumer-proof integration") == "SATISFIED AS PROOF / DECISION SCOPE."
+    assert _parse_header_field(header, "M95 current durable restricted-read consumer") == "NONE."
+    assert _parse_header_field(header, "M95 current proven durable consumer") == "NONE."
+    assert _parse_header_field(header, "M95 runtime eligibility") == "BLOCKED."
+    assert _parse_header_field(header, "M95 call-local Observation") == "AUTHORITATIVE."
+    assert _parse_header_field(header, "M95 capability Verification") == "AUTHORITATIVE."
 
     active = fields["Current active milestone/module"]
     status = fields["Current status"]
     for token in (
         "selected model B",
+        "Model B: FUTURE CONTRACT FOUNDATION ONLY",
+        "M95 parent contract EXACTLY PROVEN",
         "current runtime containment Model E",
         "Rule 4 physical ownership is Core Governance",
         "file.restricted_read",
@@ -220,6 +241,8 @@ def test_current_92a_local_state_is_consistent_across_header():
         "current proven durable consumer NONE",
         "MODEL_B_JUSTIFIED",
         "M95D NOT AUTHORIZED",
+        "M95 parent obligations ALL SATISFIED",
+        "M95 durable closure PENDING GIT FINALIZATION AND PM ACCEPTANCE",
     ):
         assert token in status
 
@@ -396,7 +419,13 @@ def test_full_suite_and_canonical_counts_match_header():
         "**M95B:** Minimal Observation Provenance Envelope Contract Foundation",
         "**M95B status:** FINALIZED / GIT-DURABLE / PM-ACCEPTED",
         "**M95C:** Restricted-Read Durable Consumer Identity & Use-Case Proof Boundary",
-        "**M95C status:** COMPLETE LOCALLY / PENDING PM REVIEW",
+        "**M95C status:** FINALIZED / GIT-DURABLE / PM-ACCEPTED",
+        "**M95 parent contract:** EXACTLY PROVEN",
+        "**M95 parent obligations:** ALL SATISFIED",
+        "**M95 closure ledger:** COMPLETE LOCALLY",
+        "**M95 durable closure:** PENDING GIT FINALIZATION AND PM ACCEPTANCE",
+        "M95 parent completion matrix:** real Action -> factual Observation SATISFIED",
+        "M95 parent model decision:** Model A SUPPORTED; Model B additional non-runtime parent scope NOT_PROVEN; Model C wait-for-real-consumer scope NOT_SUPPORTED",
         "**Selected outcome:** D_NO_DURABLE_CONSUMER_CURRENTLY_JUSTIFIED",
         "**Runtime eligibility:** BLOCKED",
         "**Selected model:** MODEL_B_JUSTIFIED",
@@ -434,11 +463,12 @@ def test_92a_vs_functional_92_terminology_contract():
         "\n---\n", 1
     )[0]
 
-    assert "Milestone 95C Restricted-Read Durable Consumer Identity & Use-Case Proof Boundary" in active
+    assert "Milestone 95 Parent Closure Ledger" in active
     assert "Milestone 94 is CLOSED / GIT-DURABLE / PM-ACCEPTED externally" in active
     assert "Milestone 95 OPEN" in active
     assert "selected model B" in active
-    assert "M95C status COMPLETE LOCALLY / PENDING PM REVIEW" in status
+    assert "M95 parent substantive obligations COMPLETE" in status
+    assert "Milestone 95C FINALIZED / GIT-DURABLE / PM-ACCEPTED" in status
     for token in (
         "MODEL_B_JUSTIFIED",
         "current runtime containment Model E",
@@ -457,14 +487,17 @@ def test_92a_vs_functional_92_terminology_contract():
     for token in (
         "Milestone 94 CLOSED / GIT-DURABLE / PM-ACCEPTED externally",
         "Milestone 95 OPEN",
-        "Milestone 95C Restricted-Read Durable Consumer Identity & Use-Case Proof Boundary complete locally",
-        "M95C status COMPLETE LOCALLY / PENDING PM REVIEW",
+        "M95 parent substantive obligations COMPLETE",
+        "M95 closure ledger COMPLETE LOCALLY",
+        "M95 durable closure PENDING GIT FINALIZATION AND PM ACCEPTANCE",
+        "M95 parent decision:** Model A SUPPORTED; Model B additional non-runtime parent scope NOT_PROVEN; Model C wait-for-real-consumer scope NOT_SUPPORTED",
+        "Milestone 95C FINALIZED / GIT-DURABLE / PM-ACCEPTED",
         "selected outcome D_NO_DURABLE_CONSUMER_CURRENTLY_JUSTIFIED",
-        "No M95C runtime implementation or M95D work is authorized",
+        "No M95D, runtime persistence, Intake caller, provenance envelope implementation, or consumer integration is authorized",
         "selected model B",
         "current runtime containment Model E",
         "Observation call-local",
-        "No M95C runtime implementation or M95D work is authorized",
+        "No M95D, runtime persistence, Intake caller, provenance envelope implementation, or consumer integration is authorized",
     ):
         assert token in section10
     assert "At the Milestone 92C closure boundary" in section10
