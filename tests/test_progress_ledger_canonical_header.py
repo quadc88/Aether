@@ -170,16 +170,16 @@ def test_current_92a_local_state_is_consistent_across_header():
     fields = _get_all_current_work_fields(header)
 
     identity_tokens = {
-        "Last updated": "Milestone 95 Parent Closure Ledger Build complete locally; Milestone 95C FINALIZED / GIT-DURABLE / PM-ACCEPTED",
-        "Current completed local milestone": "Milestone 95 Parent Closure Ledger Build complete locally",
-        "Current active milestone/module": "Milestone 95 Parent Closure Ledger; Milestone 95 OPEN; M95 parent contract EXACTLY PROVEN",
-        "Current status": "Milestone 94 CLOSED / GIT-DURABLE / PM-ACCEPTED externally; Milestone 95 OPEN; M95 parent contract EXACTLY PROVEN",
-        "Next milestone": "human/project-manager review of the M95 parent closure ledger",
+        "Last updated": "M95 Parent Closure Ledger GIT-DURABLE; M95 Git closure FINALIZED / COMMITTED / TAGGED / PUSHED; M95 durable PM acceptance PENDING",
+        "Current completed local milestone": "M95 Parent Closure Ledger GIT-DURABLE / FINALIZED / COMMITTED / TAGGED / PUSHED",
+        "Current active milestone/module": "M95 Parent Closure Ledger; M95 parent contract EXACTLY PROVEN; M95 parent obligations ALL SATISFIED; M95 parent substantive obligations COMPLETE; M95 closure ledger GIT-DURABLE; M95 Git closure FINALIZED / COMMITTED / TAGGED / PUSHED; M95 durable PM acceptance PENDING",
+        "Current status": "Milestone 94 CLOSED / GIT-DURABLE / PM-ACCEPTED externally; M95 parent contract EXACTLY PROVEN; M95 parent obligations ALL SATISFIED; M95 parent substantive obligations COMPLETE; M95 closure ledger GIT-DURABLE; M95 Git closure FINALIZED / COMMITTED / TAGGED / PUSHED; M95 durable PM acceptance PENDING",
+        "Next milestone": "human/project-manager minimum temporal-truth correction review",
         "Test baseline": "2571 pre-93A full-suite baseline",
     }
     assert all(token in fields[name] for name, token in identity_tokens.items())
     assert fields["Current completed local milestone"].startswith(
-        "Milestone 95 Parent Closure Ledger"
+        "M95 Parent Closure Ledger"
     )
 
     for field_name in ("Closure durability authority", "Closure tag authority"):
@@ -194,15 +194,16 @@ def test_current_92a_local_state_is_consistent_across_header():
     assert _parse_header_field(header, "M94 functional obligations") == "COMPLETE."
     assert _parse_header_field(header, "M94 closure record") == "GIT-DURABLE."
     assert _parse_header_field(header, "M94 durable closure") == "CLOSED / GIT-DURABLE / PM-ACCEPTED."
-    assert _parse_header_field(header, "M95 authority").startswith("OPEN;")
+    assert _parse_header_field(header, "M95 authority").startswith("GIT-DURABLE;")
     assert _parse_header_field(header, "M95A status") == "FINALIZED / GIT-DURABLE / PM-ACCEPTED."
     assert _parse_header_field(header, "M95B status") == "FINALIZED / GIT-DURABLE / PM-ACCEPTED."
     assert _parse_header_field(header, "M95C status") == "FINALIZED / GIT-DURABLE / PM-ACCEPTED."
     assert _parse_header_field(header, "M95 parent contract") == "EXACTLY PROVEN."
     assert _parse_header_field(header, "M95 parent obligations") == "ALL SATISFIED."
     assert _parse_header_field(header, "M95 parent substantive obligations") == "COMPLETE."
-    assert _parse_header_field(header, "M95 closure ledger") == "COMPLETE LOCALLY."
-    assert _parse_header_field(header, "M95 durable closure") == "PENDING GIT FINALIZATION AND PM ACCEPTANCE."
+    assert _parse_header_field(header, "M95 closure ledger") == "GIT-DURABLE."
+    assert _parse_header_field(header, "M95 Git closure") == "FINALIZED / COMMITTED / TAGGED / PUSHED."
+    assert _parse_header_field(header, "M95 durable closure") == "FINALIZED / COMMITTED / TAGGED / PUSHED; PM durable acceptance PENDING."
     assert _parse_header_field(header, "M95 parent closure model") == "A."
     assert _parse_header_field(header, "M95 Model A") == "SUPPORTED."
     assert _parse_header_field(header, "M95 Model B additional non-runtime parent scope") == "NOT_PROVEN."
@@ -242,7 +243,7 @@ def test_current_92a_local_state_is_consistent_across_header():
         "MODEL_B_JUSTIFIED",
         "M95D NOT AUTHORIZED",
         "M95 parent obligations ALL SATISFIED",
-        "M95 durable closure PENDING GIT FINALIZATION AND PM ACCEPTANCE",
+        "M95 Git closure FINALIZED / COMMITTED / TAGGED / PUSHED",
     ):
         assert token in status
 
@@ -413,7 +414,7 @@ def test_full_suite_and_canonical_counts_match_header():
 
     for token in (
         "Milestone 94 CLOSED / GIT-DURABLE / PM-ACCEPTED externally",
-        "Milestone 95 OPEN",
+        "**Milestone 95:** GIT-DURABLE / FINALIZED / COMMITTED / TAGGED / PUSHED / PM acceptance PENDING",
         "**M95A:** Observation Provenance Source and Consumer-Proof Boundary",
         "**M95A status:** FINALIZED / GIT-DURABLE / PM-ACCEPTED",
         "**M95B:** Minimal Observation Provenance Envelope Contract Foundation",
@@ -422,8 +423,9 @@ def test_full_suite_and_canonical_counts_match_header():
         "**M95C status:** FINALIZED / GIT-DURABLE / PM-ACCEPTED",
         "**M95 parent contract:** EXACTLY PROVEN",
         "**M95 parent obligations:** ALL SATISFIED",
-        "**M95 closure ledger:** COMPLETE LOCALLY",
-        "**M95 durable closure:** PENDING GIT FINALIZATION AND PM ACCEPTANCE",
+        "**M95 closure ledger:** GIT-DURABLE",
+        "**M95 Git closure:** FINALIZED / COMMITTED / TAGGED / PUSHED",
+        "**M95 durable PM acceptance:** PENDING",
         "M95 parent completion matrix:** real Action -> factual Observation SATISFIED",
         "M95 parent model decision:** Model A SUPPORTED; Model B additional non-runtime parent scope NOT_PROVEN; Model C wait-for-real-consumer scope NOT_SUPPORTED",
         "**Selected outcome:** D_NO_DURABLE_CONSUMER_CURRENTLY_JUSTIFIED",
@@ -463,9 +465,10 @@ def test_92a_vs_functional_92_terminology_contract():
         "\n---\n", 1
     )[0]
 
-    assert "Milestone 95 Parent Closure Ledger" in active
+    assert "M95 Parent Closure Ledger" in active
     assert "Milestone 94 is CLOSED / GIT-DURABLE / PM-ACCEPTED externally" in active
-    assert "Milestone 95 OPEN" in active
+    assert "M95 closure ledger GIT-DURABLE" in active
+    assert "M95 Git closure FINALIZED / COMMITTED / TAGGED / PUSHED" in active
     assert "selected model B" in active
     assert "M95 parent substantive obligations COMPLETE" in status
     assert "Milestone 95C FINALIZED / GIT-DURABLE / PM-ACCEPTED" in status
@@ -486,18 +489,18 @@ def test_92a_vs_functional_92_terminology_contract():
 
     for token in (
         "Milestone 94 CLOSED / GIT-DURABLE / PM-ACCEPTED externally",
-        "Milestone 95 OPEN",
         "M95 parent substantive obligations COMPLETE",
-        "M95 closure ledger COMPLETE LOCALLY",
-        "M95 durable closure PENDING GIT FINALIZATION AND PM ACCEPTANCE",
+        "M95 closure ledger GIT-DURABLE",
+        "M95 Git closure FINALIZED / COMMITTED / TAGGED / PUSHED",
+        "M95 durable PM acceptance PENDING",
         "M95 parent decision:** Model A SUPPORTED; Model B additional non-runtime parent scope NOT_PROVEN; Model C wait-for-real-consumer scope NOT_SUPPORTED",
         "Milestone 95C FINALIZED / GIT-DURABLE / PM-ACCEPTED",
         "selected outcome D_NO_DURABLE_CONSUMER_CURRENTLY_JUSTIFIED",
-        "No M95D, runtime persistence, Intake caller, provenance envelope implementation, or consumer integration is authorized",
+        "M95D NOT AUTHORIZED",
+        "next numbered milestone NOT DEFINED / NOT AUTHORIZED",
         "selected model B",
         "current runtime containment Model E",
         "Observation call-local",
-        "No M95D, runtime persistence, Intake caller, provenance envelope implementation, or consumer integration is authorized",
     ):
         assert token in section10
     assert "At the Milestone 92C closure boundary" in section10
