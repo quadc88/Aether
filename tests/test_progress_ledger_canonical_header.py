@@ -175,7 +175,7 @@ def test_current_92a_local_state_is_consistent_across_header():
         "Current completed local milestone": "Milestone 94D Canonical /chat Restricted-Read Execution Completion Build complete locally; Milestone 94 remains OPEN; Milestone 94A remains FINALIZED / DURABLE BOUNDARY; Milestone 94B remains FINALIZED / GIT-DURABLE / PM-ACCEPTED externally",
         "Current active milestone/module": "Milestone 94D Canonical /chat Restricted-Read Execution Completion; Milestone 94 is OPEN",
         "Current status": "Milestone 94 OPEN; Milestone 94 remains OPEN / NOT CLOSED YET; Milestone 94A FINALIZED / DURABLE BOUNDARY; Milestone 94B is FINALIZED / GIT-DURABLE / PM-ACCEPTED externally; Milestone 94C is FINALIZED / GIT-DURABLE / PM-ACCEPTED externally; Milestone 94D Canonical /chat Restricted-Read Execution Completion Build complete locally",
-        "Next milestone": "human/project-manager Build review of the Milestone 94D local Build; no Milestone 94 closure or Milestone 95 is authorized",
+        "Next milestone": "human/project-manager review of Milestone 94 closure-record Build; no Milestone 95 is authorized",
         "Test baseline": "2571 pre-93A full-suite baseline",
     }
     assert all(
@@ -239,6 +239,20 @@ def test_current_92a_local_state_is_consistent_across_header():
     assert "Current Progress-equivalent five-file family: 362 passed" in fields["Test baseline"]
     assert "94A boundary: 24 tests pending verification" not in fields["Test baseline"]
     assert "warning occurrence delta versus parent: 0" in fields["Test baseline"]
+
+    parent_closure = _parse_header_field(header, "M94 parent closure state")
+    assert "M94 parent closure Build complete locally" in parent_closure
+    assert "M94 remains OPEN / NOT CLOSED YET" in parent_closure
+    assert "closure finalization is pending Git finalization and separate PM acceptance" in parent_closure
+    assert "M95 is NOT AUTHORIZED" in parent_closure
+
+    assert "SATISFIED" in _parse_header_field(header, "M94 parent objective")
+    assert _parse_header_field(header, "M94 functional obligations") == "COMPLETE."
+    assert _parse_header_field(header, "M94 closure record") == "COMPLETE LOCALLY."
+    assert _parse_header_field(header, "M94 durable closure") == "PENDING GIT FINALIZATION AND PM ACCEPTANCE."
+    lifecycle = _parse_header_field(header, "M94D lifecycle authority")
+    assert "FINALIZED / GIT-DURABLE / PM-ACCEPTED externally" in lifecycle
+    assert "Model D" in lifecycle
 
     section5 = text.split("## 5. Current Implemented Safety Chain\n", 1)[1].split(
         "\n---\n", 1
@@ -585,7 +599,7 @@ def test_full_suite_and_canonical_counts_match_header():
     assert "Observation regression family:** 472 passed" in current_section7
     assert "Rule migration family:** 177 passed" in current_section7
     assert "94A boundary:** 24 passed" in current_section7
-    assert "Full current result:** 2952/2952 passed, 0 failures, 0 errors" in current_section7
+    assert "Full current result:** 2960/2960 passed, 0 failures, 0 errors" in current_section7
     assert "2605" not in current_section7
     assert "Warnings:** 9 existing PytestRemovedIn10Warning" in current_section7
     assert "Warning occurrence delta versus parent:** 0" in current_section7
