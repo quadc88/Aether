@@ -170,30 +170,27 @@ def test_current_92a_local_state_is_consistent_across_header():
     fields = _get_all_current_work_fields(header)
 
     identity_tokens = {
-        "Last updated": "M95 CLOSED / GIT-DURABLE / PM-ACCEPTED; M95 Parent Closure Ledger GIT-DURABLE; M95 Git closure FINALIZED / COMMITTED / TAGGED / PUSHED; M95 durable PM acceptance ACCEPTED",
-        "Current completed local milestone": "M95 CLOSED / GIT-DURABLE / PM-ACCEPTED; M95 Parent Closure Ledger GIT-DURABLE / FINALIZED / COMMITTED / TAGGED / PUSHED",
-        "Current active milestone/module": "M95 CLOSED / GIT-DURABLE / PM-ACCEPTED; M95 Parent Closure Ledger; M95 parent contract EXACTLY PROVEN; M95 parent obligations ALL SATISFIED; M95 parent substantive obligations COMPLETE; M95 closure ledger GIT-DURABLE; M95 Git closure FINALIZED / COMMITTED / TAGGED / PUSHED; M95 durable PM acceptance ACCEPTED",
-        "Current status": "Milestone 94 CLOSED / GIT-DURABLE / PM-ACCEPTED externally; M95 CLOSED / GIT-DURABLE / PM-ACCEPTED; M95 parent contract EXACTLY PROVEN; M95 parent obligations ALL SATISFIED; M95 parent substantive obligations COMPLETE; M95 closure ledger GIT-DURABLE; M95 Git closure FINALIZED / COMMITTED / TAGGED / PUSHED; M95 durable PM acceptance ACCEPTED",
-        "Next milestone": "human/project-manager review of M96A Design-Boundary Build",
+        "Last updated": "M96B Goal-First In-Memory Foundation BUILD COMPLETE LOCALLY / PENDING PM REVIEW / GIT FINALIZATION",
+        "Current completed local milestone": "M96B Goal-First In-Memory Foundation BUILD COMPLETE LOCALLY / PENDING PM REVIEW / GIT FINALIZATION",
+        "Current active milestone/module": "M96B Goal-First In-Memory Foundation BUILD COMPLETE LOCALLY / PENDING PM REVIEW / GIT FINALIZATION",
+        "Current status": "M96B Goal-First In-Memory Foundation BUILD COMPLETE LOCALLY / PENDING PM REVIEW / GIT FINALIZATION",
+        "Next milestone": "human/project-manager review of M96B Goal-First In-Memory Foundation Build",
         "Test baseline": "2571 pre-93A full-suite baseline",
     }
     assert all(token in fields[name] for name, token in identity_tokens.items())
     assert fields["Current completed local milestone"].startswith(
-        "M96A Authoritative Goal / TaskContext / Canonical Plan Boundary DESIGN BUILD COMPLETE LOCALLY"
+        "M96B Goal-First In-Memory Foundation BUILD COMPLETE LOCALLY"
     )
-    assert "M96A Authoritative Goal / TaskContext / Canonical Plan Boundary DESIGN BUILD COMPLETE LOCALLY" in fields[
+    assert "M96B Goal-First In-Memory Foundation BUILD COMPLETE LOCALLY" in fields[
         "Current completed local milestone"
     ]
-    assert "CORE_COORDINATION_ASC_GOAL_TASK_PLAN_BOUNDARY_DEFINED" in fields["Current status"]
-    assert "THINK_TO_PLAN" in fields["Current status"]
-    assert "Goal completion criteria owner NO" in fields["Current status"]
-    assert "Canonical Plan criteria owner PLAN CONTRACT" in fields["Current status"]
-    assert "Canonical PlanStep criteria owner PLANSTEP CONTRACT" in fields["Current status"]
-    assert "TaskContext criteria REFERENCE ONLY" in fields["Current status"]
-    assert "one authoritative TaskContext per active Task YES" in fields["Current status"]
-    assert "one selected TaskContext per reasoning turn YES" in fields["Current status"]
+    assert "Model B runtime foundation AUTHORIZED" in fields["Current status"]
+    assert "Goal -> accepted Goal -> Task -> initial authoritative TaskContext" in fields["Current status"]
+    assert "process-local only" in fields["Current status"]
+    assert "immutable context snapshots YES" in fields["Current status"]
+    assert "one authoritative TaskContext per active Task" in fields["Current status"]
+    assert "one selected TaskContext per reasoning turn only after explicit selection" in fields["Current status"]
     assert "silent context merge NO" in fields["Current status"]
-    assert "M96A runtime implementation NOT AUTHORIZED" in fields["Current status"]
 
     for field_name in ("Closure durability authority", "Closure tag authority"):
         value = _parse_header_field(header, field_name)
@@ -236,27 +233,20 @@ def test_current_92a_local_state_is_consistent_across_header():
     status = fields["Current status"]
     for token in (
         "selected model B",
-        "Model B: FUTURE CONTRACT FOUNDATION ONLY",
-        "M95 parent contract EXACTLY PROVEN",
-        "current runtime containment Model E",
-        "Rule 4 physical ownership is Core Governance",
-        "file.restricted_read",
+        "Model B runtime foundation AUTHORIZED",
+        "process-local only",
+        "governed capability count 1",
         "generic /chat execution authority NO",
         "Observation call-local",
-        "selected outcome D_NO_DURABLE_CONSUMER_CURRENTLY_JUSTIFIED",
-        "runtime eligibility BLOCKED",
     ):
         assert token in active or token in status
     for token in (
-        "plan_step_id NOT_CURRENTLY_PROVABLE",
-        "collector_contract_id NOT_CURRENTLY_PROVABLE",
-        "expected_value CURRENT_INTAKE_EXPECTATION_MODEL_INCOMPATIBLE",
-        "privacy-safe persistence NOT_SAFE_TO_PERSIST",
-        "current proven durable consumer NONE",
-        "MODEL_B_JUSTIFIED",
+        "Goal -> accepted Goal -> Task -> initial authoritative TaskContext",
+        "immutable context snapshots YES",
+        "no API",
+        "no persistence",
+        "M96A FINALIZED / GIT-DURABLE / PM-ACCEPTED",
         "M95D NOT AUTHORIZED",
-        "M95 parent obligations ALL SATISFIED",
-        "M95 Git closure FINALIZED / COMMITTED / TAGGED / PUSHED",
     ):
         assert token in status
 
@@ -426,7 +416,7 @@ def test_full_suite_and_canonical_counts_match_header():
     )
 
     for token in (
-        "Milestone 94 CLOSED / GIT-DURABLE / PM-ACCEPTED externally",
+        "**Milestone 94:** CLOSED / GIT-DURABLE / PM-ACCEPTED externally",
         "**Milestone 95:** CLOSED / GIT-DURABLE / PM-ACCEPTED / FINALIZED / COMMITTED / TAGGED / PUSHED / PM acceptance ACCEPTED",
         "**M95A:** Observation Provenance Source and Consumer-Proof Boundary",
         "**M95A status:** FINALIZED / GIT-DURABLE / PM-ACCEPTED",
@@ -445,11 +435,11 @@ def test_full_suite_and_canonical_counts_match_header():
         "**Runtime eligibility:** BLOCKED",
         "**Selected model:** MODEL_B_JUSTIFIED",
         "**Current proven durable consumer:** NONE",
-        "M95_PROVENANCE_FOUNDATION_REQUIRED_BEFORE_RUNTIME",
         "**95C consumer-proof lock:** 10 passed",
-        "**Full current result:** 3000/3000 passed, 0 failures, 0 errors",
-        "**M96A Design Boundary:** design record and static design-lock complete locally",
+        "**Full current result:** 3024/3024 passed, 0 failures, 0 errors",
+        "**M96A Design Boundary:** finalized / Git-durable / PM-accepted",
         "M96A design-boundary lock: 12 passed",
+        "M96B Goal-first foundation: 24 passed",
     ):
         assert token in status or token in current_section7 or token in baseline
     for token in (
@@ -460,7 +450,7 @@ def test_full_suite_and_canonical_counts_match_header():
         "OpenAPI family:** 653 passed",
         "95B contract-lock:** 10 passed",
         "95C consumer-proof lock:** 10 passed",
-        "Full current result:** 3000/3000 passed, 0 failures, 0 errors",
+        "Full current result:** 3024/3024 passed, 0 failures, 0 errors",
     ):
         assert token in current_section7
     assert "Historical full suite:** 2499" in historical_section7
@@ -468,7 +458,7 @@ def test_full_suite_and_canonical_counts_match_header():
     assert "M89A-R3 HISTORICAL_BASELINE_ACCOUNTING" in historical_section7
     assert "M92A-R2 HISTORICAL_RECORDED_BASELINE_WITH_SELECTOR_PROVENANCE_NOT_PRESERVED" in historical_section7
     assert "M96A Design Boundary" in current_section7
-    assert "no runtime implementation" in current_section7
+    assert "no API, persistence, generic execution" in current_section7
     assert "Full candidate: 2952 passed" not in status
     assert "Full candidate: 2952 passed" not in baseline
 
@@ -482,48 +472,36 @@ def test_92a_vs_functional_92_terminology_contract():
         "\n---\n", 1
     )[0]
 
-    assert "M95 CLOSED / GIT-DURABLE / PM-ACCEPTED; M95 Parent Closure Ledger" in active
-    assert "Milestone 94 is CLOSED / GIT-DURABLE / PM-ACCEPTED externally" in active
-    assert "M95 closure ledger GIT-DURABLE" in active
-    assert "M95 Git closure FINALIZED / COMMITTED / TAGGED / PUSHED" in active
+    assert "M96B Goal-First In-Memory Foundation BUILD COMPLETE LOCALLY" in active
+    assert "M96A FINALIZED / GIT-DURABLE / PM-ACCEPTED" in active
+    assert "explicit context selection/switching" in active
     assert "selected model B" in active
-    assert "M95 parent substantive obligations COMPLETE" in status
-    assert "Milestone 95C FINALIZED / GIT-DURABLE / PM-ACCEPTED" in status
+    assert "Goal -> accepted Goal -> Task -> initial authoritative TaskContext" in status
+    assert "Model B runtime foundation AUTHORIZED" in status
     for token in (
-        "MODEL_B_JUSTIFIED",
-        "current runtime containment Model E",
+        "process-local only",
+        "immutable context snapshots YES",
         "generic /chat execution authority NO",
-        "Observation call-local",
-        "no runtime bridge",
-        "no Observation Intake caller",
-        "no persistent Observation Record",
-        "Verification Aggregation",
-        "Critic",
-        "Repair",
-        "Learning",
+        "no Observation Intake",
+        "no API",
+        "no persistence",
+        "no loop wiring",
+        "no Plan/PlanStep runtime",
+        "no Act",
     ):
         assert token in status
 
     for token in (
-        "Milestone 94 CLOSED / GIT-DURABLE / PM-ACCEPTED externally",
-        "M95 parent substantive obligations COMPLETE",
-        "M95 closure ledger GIT-DURABLE",
-        "M95 Git closure FINALIZED / COMMITTED / TAGGED / PUSHED",
-        "M95 durable PM acceptance ACCEPTED",
-        "M95 parent decision:** Model A SUPPORTED; Model B additional non-runtime parent scope NOT_PROVEN; Model C wait-for-real-consumer scope NOT_SUPPORTED",
-        "Milestone 95C FINALIZED / GIT-DURABLE / PM-ACCEPTED",
-        "selected outcome D_NO_DURABLE_CONSUMER_CURRENTLY_JUSTIFIED",
+        "M96B Goal-First In-Memory Foundation BUILD COMPLETE LOCALLY",
+        "M96A FINALIZED / GIT-DURABLE / PM-ACCEPTED",
+        "process-local and unintegrated",
         "M95D NOT AUTHORIZED",
-        "next numbered milestone NOT DEFINED / NOT AUTHORIZED",
-        "selected model B",
-        "current runtime containment Model E",
-        "Observation call-local",
     ):
         assert token in section10
     assert "At the Milestone 92C closure boundary" in section10
     assert "current Rule 4 physical ownership is Core Governance" in section10
     assert "Milestone 94 OPEN" not in "\n".join((active, status, section10))
-    assert "Milestone 95" in "\n".join((active, status, section10))
+    assert "M95D NOT AUTHORIZED" in "\n".join((active, status, section10))
 
     for stale in (
         "no functional milestone is selected",
