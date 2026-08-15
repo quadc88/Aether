@@ -174,13 +174,26 @@ def test_current_92a_local_state_is_consistent_across_header():
         "Current completed local milestone": "M95 CLOSED / GIT-DURABLE / PM-ACCEPTED; M95 Parent Closure Ledger GIT-DURABLE / FINALIZED / COMMITTED / TAGGED / PUSHED",
         "Current active milestone/module": "M95 CLOSED / GIT-DURABLE / PM-ACCEPTED; M95 Parent Closure Ledger; M95 parent contract EXACTLY PROVEN; M95 parent obligations ALL SATISFIED; M95 parent substantive obligations COMPLETE; M95 closure ledger GIT-DURABLE; M95 Git closure FINALIZED / COMMITTED / TAGGED / PUSHED; M95 durable PM acceptance ACCEPTED",
         "Current status": "Milestone 94 CLOSED / GIT-DURABLE / PM-ACCEPTED externally; M95 CLOSED / GIT-DURABLE / PM-ACCEPTED; M95 parent contract EXACTLY PROVEN; M95 parent obligations ALL SATISFIED; M95 parent substantive obligations COMPLETE; M95 closure ledger GIT-DURABLE; M95 Git closure FINALIZED / COMMITTED / TAGGED / PUSHED; M95 durable PM acceptance ACCEPTED",
-        "Next milestone": "human/project-manager post-correction review",
+        "Next milestone": "human/project-manager review of M96A Design-Boundary Build",
         "Test baseline": "2571 pre-93A full-suite baseline",
     }
     assert all(token in fields[name] for name, token in identity_tokens.items())
     assert fields["Current completed local milestone"].startswith(
-        "M95 CLOSED / GIT-DURABLE / PM-ACCEPTED; M95 Parent Closure Ledger"
+        "M96A Authoritative Goal / TaskContext / Canonical Plan Boundary DESIGN BUILD COMPLETE LOCALLY"
     )
+    assert "M96A Authoritative Goal / TaskContext / Canonical Plan Boundary DESIGN BUILD COMPLETE LOCALLY" in fields[
+        "Current completed local milestone"
+    ]
+    assert "CORE_COORDINATION_ASC_GOAL_TASK_PLAN_BOUNDARY_DEFINED" in fields["Current status"]
+    assert "THINK_TO_PLAN" in fields["Current status"]
+    assert "Goal completion criteria owner NO" in fields["Current status"]
+    assert "Canonical Plan criteria owner PLAN CONTRACT" in fields["Current status"]
+    assert "Canonical PlanStep criteria owner PLANSTEP CONTRACT" in fields["Current status"]
+    assert "TaskContext criteria REFERENCE ONLY" in fields["Current status"]
+    assert "one authoritative TaskContext per active Task YES" in fields["Current status"]
+    assert "one selected TaskContext per reasoning turn YES" in fields["Current status"]
+    assert "silent context merge NO" in fields["Current status"]
+    assert "M96A runtime implementation NOT AUTHORIZED" in fields["Current status"]
 
     for field_name in ("Closure durability authority", "Closure tag authority"):
         value = _parse_header_field(header, field_name)
@@ -434,9 +447,11 @@ def test_full_suite_and_canonical_counts_match_header():
         "**Current proven durable consumer:** NONE",
         "M95_PROVENANCE_FOUNDATION_REQUIRED_BEFORE_RUNTIME",
         "**95C consumer-proof lock:** 10 passed",
-        "**Full current result:** 2988/2988 passed, 0 failures, 0 errors",
+        "**Full current result:** 3000/3000 passed, 0 failures, 0 errors",
+        "**M96A Design Boundary:** design record and static design-lock complete locally",
+        "M96A design-boundary lock: 12 passed",
     ):
-        assert token in status or token in current_section7
+        assert token in status or token in current_section7 or token in baseline
     for token in (
         "95A design-lock:** 8 passed",
         "M94 closure lock:** 8 passed",
@@ -445,13 +460,15 @@ def test_full_suite_and_canonical_counts_match_header():
         "OpenAPI family:** 653 passed",
         "95B contract-lock:** 10 passed",
         "95C consumer-proof lock:** 10 passed",
-        "Full current result:** 2988/2988 passed, 0 failures, 0 errors",
+        "Full current result:** 3000/3000 passed, 0 failures, 0 errors",
     ):
         assert token in current_section7
     assert "Historical full suite:** 2499" in historical_section7
     assert "Historical Progress accounting:** 322" in historical_section7
     assert "M89A-R3 HISTORICAL_BASELINE_ACCOUNTING" in historical_section7
     assert "M92A-R2 HISTORICAL_RECORDED_BASELINE_WITH_SELECTOR_PROVENANCE_NOT_PRESERVED" in historical_section7
+    assert "M96A Design Boundary" in current_section7
+    assert "no runtime implementation" in current_section7
     assert "Full candidate: 2952 passed" not in status
     assert "Full candidate: 2952 passed" not in baseline
 
