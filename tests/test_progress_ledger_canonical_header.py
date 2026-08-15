@@ -170,21 +170,32 @@ def test_current_92a_local_state_is_consistent_across_header():
     fields = _get_all_current_work_fields(header)
 
     identity_tokens = {
-        "Last updated": "M96B Goal-First In-Memory Foundation BUILD COMPLETE LOCALLY / PENDING PM REVIEW / GIT FINALIZATION",
-        "Current completed local milestone": "M96B Goal-First In-Memory Foundation BUILD COMPLETE LOCALLY / PENDING PM REVIEW / GIT FINALIZATION",
-        "Current active milestone/module": "M96B Goal-First In-Memory Foundation BUILD COMPLETE LOCALLY / PENDING PM REVIEW / GIT FINALIZATION",
-        "Current status": "M96B Goal-First In-Memory Foundation BUILD COMPLETE LOCALLY / PENDING PM REVIEW / GIT FINALIZATION",
-        "Next milestone": "human/project-manager review of M96B Goal-First In-Memory Foundation Build",
+        "Last updated": "M96 Parent Contract Authority CONTENT ESTABLISHED; Git determines commit/tag/publication state; PM acceptance is external",
+        "Current completed local milestone": "M96 Parent Contract Authority CONTENT ESTABLISHED; Git determines commit/tag/publication state; PM acceptance is external",
+        "Current active milestone/module": "M96 Parent Contract Authority CONTENT ESTABLISHED; Git determines commit/tag/publication state; PM acceptance is external",
+        "Current status": "M96 Parent Contract Authority CONTENT ESTABLISHED; Git determines commit/tag/publication state; PM acceptance is external",
+        "Next milestone": "No subsequent M96 submilestone is authorized by this parent-authority record",
         "Test baseline": "2571 pre-93A full-suite baseline",
     }
     assert all(token in fields[name] for name, token in identity_tokens.items())
     assert fields["Current completed local milestone"].startswith(
-        "M96B Goal-First In-Memory Foundation BUILD COMPLETE LOCALLY"
+        "M96 Parent Contract Authority CONTENT ESTABLISHED"
     )
-    assert "M96B Goal-First In-Memory Foundation BUILD COMPLETE LOCALLY" in fields[
+    assert "M96 Parent Contract Authority CONTENT ESTABLISHED" in fields[
         "Current completed local milestone"
     ]
-    assert "Model B runtime foundation AUTHORIZED" in fields["Current status"]
+    assert "M96 OPEN" in fields["Current status"]
+    assert "Git determines commit/tag/publication state" in fields["Current status"]
+    assert "PM acceptance is external" in fields["Current status"]
+    assert "M96C NOT AUTHORIZED" in fields["Current status"]
+    assert "No subsequent M96 submilestone is authorized by this parent-authority record" in fields[
+        "Next milestone"
+    ]
+    assert "Goal admission SATISFIED" in fields["Current status"]
+    assert "Canonical Plan runtime NOT YET SATISFIED" in fields["Current status"]
+    assert "Canonical PlanStep runtime NOT YET SATISFIED" in fields["Current status"]
+    assert "Think -> Plan consumer NOT YET SATISFIED" in fields["Current status"]
+    assert "Governance-before-generic-Act runtime NOT YET SATISFIED" in fields["Current status"]
     assert "Goal -> accepted Goal -> Task -> initial authoritative TaskContext" in fields["Current status"]
     assert "process-local only" in fields["Current status"]
     assert "immutable context snapshots YES" in fields["Current status"]
@@ -233,7 +244,7 @@ def test_current_92a_local_state_is_consistent_across_header():
     status = fields["Current status"]
     for token in (
         "selected model B",
-        "Model B runtime foundation AUTHORIZED",
+        "M96 OPEN",
         "process-local only",
         "governed capability count 1",
         "generic /chat execution authority NO",
@@ -436,7 +447,7 @@ def test_full_suite_and_canonical_counts_match_header():
         "**Selected model:** MODEL_B_JUSTIFIED",
         "**Current proven durable consumer:** NONE",
         "**95C consumer-proof lock:** 10 passed",
-        "**Full current result:** 3024/3024 passed, 0 failures, 0 errors",
+        "**Full current result:** 3034/3034 passed, 0 failures, 0 errors",
         "**M96A Design Boundary:** finalized / Git-durable / PM-accepted",
         "M96A design-boundary lock: 12 passed",
         "M96B Goal-first foundation: 24 passed",
@@ -450,7 +461,7 @@ def test_full_suite_and_canonical_counts_match_header():
         "OpenAPI family:** 653 passed",
         "95B contract-lock:** 10 passed",
         "95C consumer-proof lock:** 10 passed",
-        "Full current result:** 3024/3024 passed, 0 failures, 0 errors",
+        "Full current result:** 3034/3034 passed, 0 failures, 0 errors",
     ):
         assert token in current_section7
     assert "Historical full suite:** 2499" in historical_section7
@@ -472,12 +483,14 @@ def test_92a_vs_functional_92_terminology_contract():
         "\n---\n", 1
     )[0]
 
-    assert "M96B Goal-First In-Memory Foundation BUILD COMPLETE LOCALLY" in active
+    assert "M96 Parent Contract Authority CONTENT ESTABLISHED" in active
+    assert "M96 OPEN" in active
+    assert "M96B FINALIZED / GIT-DURABLE / PM-ACCEPTED" in active
     assert "M96A FINALIZED / GIT-DURABLE / PM-ACCEPTED" in active
     assert "explicit context selection/switching" in active
     assert "selected model B" in active
     assert "Goal -> accepted Goal -> Task -> initial authoritative TaskContext" in status
-    assert "Model B runtime foundation AUTHORIZED" in status
+    assert "M96 parent contract authority content ESTABLISHED" in status
     for token in (
         "process-local only",
         "immutable context snapshots YES",
@@ -492,7 +505,7 @@ def test_92a_vs_functional_92_terminology_contract():
         assert token in status
 
     for token in (
-        "M96B Goal-First In-Memory Foundation BUILD COMPLETE LOCALLY",
+        "M96 Parent Contract Authority content ESTABLISHED",
         "M96A FINALIZED / GIT-DURABLE / PM-ACCEPTED",
         "process-local and unintegrated",
         "M95D NOT AUTHORIZED",
@@ -500,6 +513,8 @@ def test_92a_vs_functional_92_terminology_contract():
         assert token in section10
     assert "At the Milestone 92C closure boundary" in section10
     assert "current Rule 4 physical ownership is Core Governance" in section10
+    assert "M96 parent contract authority" in section10
+    assert "M96 is OPEN" in section10
     assert "Milestone 94 OPEN" not in "\n".join((active, status, section10))
     assert "M95D NOT AUTHORIZED" in "\n".join((active, status, section10))
 
