@@ -170,30 +170,33 @@ def test_current_92a_local_state_is_consistent_across_header():
     fields = _get_all_current_work_fields(header)
 
     identity_tokens = {
-        "Last updated": "M96 Parent Contract Authority CONTENT ESTABLISHED; Git determines commit/tag/publication state; PM acceptance is external",
-        "Current completed local milestone": "M96 Parent Contract Authority CONTENT ESTABLISHED; Git determines commit/tag/publication state; PM acceptance is external",
-        "Current active milestone/module": "M96 Parent Contract Authority CONTENT ESTABLISHED; Git determines commit/tag/publication state; PM acceptance is external",
-        "Current status": "M96 Parent Contract Authority CONTENT ESTABLISHED; Git determines commit/tag/publication state; PM acceptance is external",
-        "Next milestone": "No subsequent M96 submilestone is authorized by this parent-authority record",
+        "Last updated": "M96C Canonical Plan / PlanStep Process-Local Foundation BUILD COMPLETE LOCALLY",
+        "Current completed local milestone": "M96C Canonical Plan / PlanStep Process-Local Foundation BUILD COMPLETE LOCALLY",
+        "Current active milestone/module": "M96C Canonical Plan / PlanStep Process-Local Foundation BUILD COMPLETE LOCALLY",
+        "Current status": "M96C Canonical Plan / PlanStep Process-Local Foundation BUILD COMPLETE LOCALLY",
+        "Next milestone": "M96C Build content ESTABLISHED; Git determines commit/tag/publication state; PM acceptance is external; human/project-manager M96C Build review",
         "Test baseline": "2571 pre-93A full-suite baseline",
     }
     assert all(token in fields[name] for name, token in identity_tokens.items())
     assert fields["Current completed local milestone"].startswith(
-        "M96 Parent Contract Authority CONTENT ESTABLISHED"
+        "M96C Canonical Plan / PlanStep Process-Local Foundation BUILD COMPLETE LOCALLY"
     )
-    assert "M96 Parent Contract Authority CONTENT ESTABLISHED" in fields[
+    assert "M96C Canonical Plan / PlanStep Process-Local Foundation BUILD COMPLETE LOCALLY" in fields[
         "Current completed local milestone"
     ]
     assert "M96 OPEN" in fields["Current status"]
-    assert "Git determines commit/tag/publication state" in fields["Current status"]
-    assert "PM acceptance is external" in fields["Current status"]
-    assert "M96C NOT AUTHORIZED" in fields["Current status"]
-    assert "No subsequent M96 submilestone is authorized by this parent-authority record" in fields[
+    assert "M96 Parent Contract Authority FINALIZED / GIT-DURABLE / PM-ACCEPTED externally" in fields[
+        "Current status"
+    ]
+    assert "M96C Build complete locally" in fields["Current status"]
+    assert "Canonical Plan runtime SATISFIED" in fields["Current status"]
+    assert "Canonical PlanStep runtime SATISFIED" in fields["Current status"]
+    assert "Think -> Plan consumer NOT YET SATISFIED" in fields["Current status"]
+    assert "Governance-before-generic-Act runtime NOT YET SATISFIED" in fields["Current status"]
+    assert "No subsequent M96 submilestone is authorized" not in fields[
         "Next milestone"
     ]
     assert "Goal admission SATISFIED" in fields["Current status"]
-    assert "Canonical Plan runtime NOT YET SATISFIED" in fields["Current status"]
-    assert "Canonical PlanStep runtime NOT YET SATISFIED" in fields["Current status"]
     assert "Think -> Plan consumer NOT YET SATISFIED" in fields["Current status"]
     assert "Governance-before-generic-Act runtime NOT YET SATISFIED" in fields["Current status"]
     assert "Goal -> accepted Goal -> Task -> initial authoritative TaskContext" in fields["Current status"]
@@ -447,7 +450,7 @@ def test_full_suite_and_canonical_counts_match_header():
         "**Selected model:** MODEL_B_JUSTIFIED",
         "**Current proven durable consumer:** NONE",
         "**95C consumer-proof lock:** 10 passed",
-        "**Full current result:** 3034/3034 passed, 0 failures, 0 errors",
+        "**Full current result:** 3056/3056 passed, 0 failures, 0 errors",
         "**M96A Design Boundary:** finalized / Git-durable / PM-accepted",
         "M96A design-boundary lock: 12 passed",
         "M96B Goal-first foundation: 24 passed",
@@ -461,7 +464,7 @@ def test_full_suite_and_canonical_counts_match_header():
         "OpenAPI family:** 653 passed",
         "95B contract-lock:** 10 passed",
         "95C consumer-proof lock:** 10 passed",
-        "Full current result:** 3034/3034 passed, 0 failures, 0 errors",
+        "Full current result:** 3056/3056 passed, 0 failures, 0 errors",
     ):
         assert token in current_section7
     assert "Historical full suite:** 2499" in historical_section7
@@ -483,14 +486,14 @@ def test_92a_vs_functional_92_terminology_contract():
         "\n---\n", 1
     )[0]
 
-    assert "M96 Parent Contract Authority CONTENT ESTABLISHED" in active
+    assert "M96C Canonical Plan / PlanStep Process-Local Foundation BUILD COMPLETE LOCALLY" in active
     assert "M96 OPEN" in active
     assert "M96B FINALIZED / GIT-DURABLE / PM-ACCEPTED" in active
     assert "M96A FINALIZED / GIT-DURABLE / PM-ACCEPTED" in active
     assert "explicit context selection/switching" in active
     assert "selected model B" in active
     assert "Goal -> accepted Goal -> Task -> initial authoritative TaskContext" in status
-    assert "M96 parent contract authority content ESTABLISHED" in status
+    assert "M96C Build complete locally" in status
     for token in (
         "process-local only",
         "immutable context snapshots YES",
@@ -499,13 +502,14 @@ def test_92a_vs_functional_92_terminology_contract():
         "no API",
         "no persistence",
         "no loop wiring",
-        "no Plan/PlanStep runtime",
-        "no Act",
+        "Canonical Plan runtime SATISFIED",
+        "Canonical PlanStep runtime SATISFIED",
+        "no generic Act",
     ):
         assert token in status
 
     for token in (
-        "M96 Parent Contract Authority content ESTABLISHED",
+        "M96 Parent Contract Authority FINALIZED / GIT-DURABLE / PM-ACCEPTED externally",
         "M96A FINALIZED / GIT-DURABLE / PM-ACCEPTED",
         "process-local and unintegrated",
         "M95D NOT AUTHORIZED",
@@ -513,7 +517,7 @@ def test_92a_vs_functional_92_terminology_contract():
         assert token in section10
     assert "At the Milestone 92C closure boundary" in section10
     assert "current Rule 4 physical ownership is Core Governance" in section10
-    assert "M96 parent contract authority" in section10
+    assert "M96 parent authority" in section10
     assert "M96 is OPEN" in section10
     assert "Milestone 94 OPEN" not in "\n".join((active, status, section10))
     assert "M95D NOT AUTHORIZED" in "\n".join((active, status, section10))
