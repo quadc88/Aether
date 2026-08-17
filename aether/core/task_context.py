@@ -635,6 +635,112 @@ class CoreCoordination:
         with self._lock:
             return self._resolve_current_plan(plan)
 
+    def evaluate_canonical_plan_governance(
+        self,
+        plan: Plan | str,
+        selected_plan_step: PlanStep | str | None = None,
+    ):
+        """Pass one current Plan/PlanStep binding to Core Governance."""
+        from aether.core.governance import (
+            CanonicalPlanGovernanceEvaluationRequest,
+            evaluate_canonical_plan_governance,
+        )
+
+        with self._lock:
+            binding_errors: list[str] = []
+            try:
+                current_plan = self._resolve_current_plan(plan)
+            except ValueError:
+                if not isinstance(plan, Plan) or plan.plan_id not in self._plans:
+                    raise
+                current_plan = self._plans[plan.plan_id]
+                binding_errors.append("stale_plan_snapshot")
+            current_goal = self._goals.get(current_plan.goal_id)
+            current_task = self._tasks[current_plan.task_id]
+            current_context = self._contexts[current_plan.task_context_id]
+
+            if isinstance(plan, Plan) and plan != current_plan and "stale_plan_snapshot" not in binding_errors:
+                binding_errors.append("stale_plan_snapshot")
+            if current_goal.goal_id != current_plan.goal_id:
+                binding_errors.append("invalid_plan_goal_binding")
+            if current_task.goal_id != current_goal.goal_id:
+                binding_errors.append("invalid_plan_task_goal_binding")
+            if current_context.task_id != current_task.task_id or current_context.goal_id != current_goal.goal_id:
+                binding_errors.append("invalid_task_context_parent_binding")
+            if self._selected_context_id != current_context.task_context_id:
+                binding_errors.append("selected_context_is_not_current")
+            if current_task.current_plan_id != current_plan.plan_id or current_context.current_plan_id != current_plan.plan_id:
+                binding_errors.append("invalid_current_plan_binding")
+
+            context_snapshot = current_plan.task_context_snapshot
+            ignored_context_fields = {
+                "context_revision",
+                "updated_at",
+                "current_plan_id",
+                "current_plan_step_id",
+            }
+            current_context_payload = current_context.to_dict()
+            def normalized(value: Any) -> Any:
+                if isinstance(value, Mapping):
+                    return {key: normalized(item) for key, item in value.items()}
+                if isinstance(value, (list, tuple)):
+                    return tuple(normalized(item) for item in value)
+                return value
+
+            if any(
+                normalized(context_snapshot.get(key)) != normalized(value)
+                for key, value in current_context_payload.items()
+                if key not in ignored_context_fields
+            ):
+                binding_errors.append("stale_task_context_snapshot")
+
+            current_step = None
+            selected_step_snapshot = None
+            if selected_plan_step is None:
+                binding_errors.append("missing_selected_plan_step")
+            else:
+                try:
+                    current_step = self._resolve_current_plan_step(selected_plan_step)
+                except ValueError:
+                    if not isinstance(selected_plan_step, PlanStep) or selected_plan_step.plan_step_id not in self._plan_steps:
+                        raise
+                    current_step = self._plan_steps[selected_plan_step.plan_step_id]
+                    binding_errors.append("stale_plan_step_snapshot")
+                selected_step_snapshot = current_step.to_dict()
+                if isinstance(selected_plan_step, PlanStep) and selected_plan_step != current_step and "stale_plan_step_snapshot" not in binding_errors:
+                    binding_errors.append("stale_plan_step_snapshot")
+                if current_step.plan_id != current_plan.plan_id:
+                    binding_errors.append("selected_plan_step_has_wrong_plan_parent")
+                if current_step.plan_step_id not in current_plan.plan_step_ids:
+                    binding_errors.append("selected_plan_step_is_not_in_plan")
+                if current_context.current_plan_step_id != current_step.plan_step_id:
+                    binding_errors.append("selected_plan_step_is_not_current")
+
+            request = CanonicalPlanGovernanceEvaluationRequest(
+                goal_id=current_goal.goal_id,
+                task_id=current_task.task_id,
+                task_context_id=current_context.task_context_id,
+                task_context_revision=current_plan.task_context_revision,
+                selected_context_id=self._selected_context_id,
+                plan_id=current_plan.plan_id,
+                plan_revision=current_plan.plan_revision,
+                plan_step_id=current_step.plan_step_id if current_step else None,
+                plan_step_revision=current_step.step_revision if current_step else None,
+                plan_snapshot=current_plan.to_dict(),
+                current_plan_snapshot=current_plan.to_dict(),
+                plan_step_snapshot=selected_step_snapshot,
+                current_plan_step_snapshot=selected_step_snapshot,
+                task_context_snapshot=current_context_payload,
+                proposal_provenance=current_plan.proposal_provenance,
+                binding_errors=tuple(binding_errors),
+                hard_constraints={
+                    "goal_constraints": current_goal.to_dict()["goal_constraints"],
+                    "task_constraints": current_task.to_dict()["task_constraints"],
+                },
+                soft_signals={},
+            )
+            return evaluate_canonical_plan_governance(request)
+
     def transition_plan(self, plan: Plan | str, new_status: str) -> Plan:
         with self._lock:
             current = self._resolve_current_plan(plan)

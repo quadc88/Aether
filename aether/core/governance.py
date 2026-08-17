@@ -16,10 +16,12 @@ after Milestone 89B. Thinking proposes only Rules 3 through 9.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 import threading
-from typing import Callable, Literal, Mapping
+from types import MappingProxyType
+from typing import Any, Callable, Literal, Mapping
+import copy
 
 from aether.core.config import get_restricted_file_read_approved_roots
 
@@ -29,6 +31,386 @@ _SECRET_RISK_TERMS = {
     "credential", "secret_key", "access_key",
 }
 _MISSING_RULE4_RISK_TERMS = object()
+
+CANONICAL_PLAN_EVALUATION_STATES = frozenset(
+    {
+        "EVALUATED",
+        "BLOCKED",
+        "INVALID_CONTEXT",
+        "STALE_CONTEXT",
+        "INVALID_PLAN",
+        "NOT_EVALUABLE",
+    }
+)
+
+
+def _freeze_evaluation_value(value: Any) -> Any:
+    if isinstance(value, Mapping):
+        return MappingProxyType(
+            {key: _freeze_evaluation_value(item) for key, item in value.items()}
+        )
+    if isinstance(value, (list, tuple)):
+        return tuple(_freeze_evaluation_value(item) for item in value)
+    if isinstance(value, (set, frozenset)):
+        raise ValueError("evaluation values must be immutable JSON-like data")
+    if value is None or isinstance(value, (str, int, float, bool)):
+        return copy.deepcopy(value)
+    raise ValueError("evaluation values must be immutable JSON-like data")
+
+
+def _thaw_evaluation_value(value: Any) -> Any:
+    if isinstance(value, Mapping):
+        return {key: _thaw_evaluation_value(item) for key, item in value.items()}
+    if isinstance(value, tuple):
+        return [_thaw_evaluation_value(item) for item in value]
+    return copy.deepcopy(value)
+
+
+def _require_evaluation_text(value: Any, field_name: str) -> str:
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(f"{field_name} must be a non-empty string")
+    return value
+
+
+def _require_evaluation_revision(value: Any, field_name: str) -> int:
+    if not isinstance(value, int) or isinstance(value, bool) or value < 1:
+        raise ValueError(f"{field_name} must be a positive integer")
+    return value
+
+
+@dataclass(frozen=True)
+class CanonicalPlanGovernanceEvaluationRequest:
+    """Immutable, non-authorizing input to canonical Plan Governance."""
+
+    goal_id: str
+    task_id: str
+    task_context_id: str
+    task_context_revision: int
+    selected_context_id: str | None
+    plan_id: str
+    plan_revision: int
+    plan_step_id: str | None
+    plan_step_revision: int | None
+    plan_snapshot: Mapping[str, Any]
+    current_plan_snapshot: Mapping[str, Any] | None
+    plan_step_snapshot: Mapping[str, Any] | None
+    current_plan_step_snapshot: Mapping[str, Any] | None
+    task_context_snapshot: Mapping[str, Any] | None
+    proposal_provenance: Mapping[str, Any]
+    binding_errors: tuple[str, ...] = ()
+    hard_constraints: Mapping[str, Any] = field(default_factory=dict)
+    soft_signals: Mapping[str, Any] = field(default_factory=dict)
+    evaluation_boundary: Literal["before_generic_act"] = "before_generic_act"
+
+    def __post_init__(self) -> None:
+        for name in ("goal_id", "task_id", "task_context_id", "plan_id"):
+            _require_evaluation_text(getattr(self, name), name)
+        _require_evaluation_revision(self.task_context_revision, "task_context_revision")
+        _require_evaluation_revision(self.plan_revision, "plan_revision")
+        if self.selected_context_id is not None:
+            _require_evaluation_text(self.selected_context_id, "selected_context_id")
+        if self.plan_step_id is not None:
+            _require_evaluation_text(self.plan_step_id, "plan_step_id")
+        if self.plan_step_revision is not None:
+            _require_evaluation_revision(self.plan_step_revision, "plan_step_revision")
+        if self.evaluation_boundary != "before_generic_act":
+            raise ValueError("unsupported evaluation_boundary")
+        if not isinstance(self.plan_snapshot, Mapping):
+            raise ValueError("plan_snapshot must be a mapping")
+        for name in (
+            "current_plan_snapshot",
+            "plan_step_snapshot",
+            "current_plan_step_snapshot",
+            "task_context_snapshot",
+        ):
+            value = getattr(self, name)
+            if value is not None and not isinstance(value, Mapping):
+                raise ValueError(f"{name} must be a mapping or None")
+        for name in ("proposal_provenance", "hard_constraints", "soft_signals"):
+            if not isinstance(getattr(self, name), Mapping):
+                raise ValueError(f"{name} must be a mapping")
+        if not isinstance(self.binding_errors, tuple) or any(
+            not isinstance(item, str) or not item.strip() for item in self.binding_errors
+        ):
+            raise ValueError("binding_errors must be a tuple of non-empty strings")
+        for name in (
+            "plan_snapshot",
+            "current_plan_snapshot",
+            "plan_step_snapshot",
+            "current_plan_step_snapshot",
+            "task_context_snapshot",
+            "proposal_provenance",
+            "hard_constraints",
+            "soft_signals",
+        ):
+            value = getattr(self, name)
+            if value is not None:
+                object.__setattr__(self, name, _freeze_evaluation_value(value))
+        object.__setattr__(self, "binding_errors", tuple(self.binding_errors))
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "goal_id": self.goal_id,
+            "task_id": self.task_id,
+            "task_context_id": self.task_context_id,
+            "task_context_revision": self.task_context_revision,
+            "selected_context_id": self.selected_context_id,
+            "plan_id": self.plan_id,
+            "plan_revision": self.plan_revision,
+            "plan_step_id": self.plan_step_id,
+            "plan_step_revision": self.plan_step_revision,
+            "plan_snapshot": _thaw_evaluation_value(self.plan_snapshot),
+            "current_plan_snapshot": _thaw_evaluation_value(self.current_plan_snapshot),
+            "plan_step_snapshot": _thaw_evaluation_value(self.plan_step_snapshot),
+            "current_plan_step_snapshot": _thaw_evaluation_value(self.current_plan_step_snapshot),
+            "task_context_snapshot": _thaw_evaluation_value(self.task_context_snapshot),
+            "proposal_provenance": _thaw_evaluation_value(self.proposal_provenance),
+            "binding_errors": list(self.binding_errors),
+            "hard_constraints": _thaw_evaluation_value(self.hard_constraints),
+            "soft_signals": _thaw_evaluation_value(self.soft_signals),
+            "evaluation_boundary": self.evaluation_boundary,
+        }
+
+
+@dataclass(frozen=True)
+class CanonicalPlanGovernanceEvaluation:
+    """Immutable, non-executing Governance result for one Plan/PlanStep pair."""
+
+    evaluation_status: Literal[
+        "EVALUATED",
+        "BLOCKED",
+        "INVALID_CONTEXT",
+        "STALE_CONTEXT",
+        "INVALID_PLAN",
+        "NOT_EVALUABLE",
+    ]
+    reason: str
+    goal_id: str | None = None
+    task_id: str | None = None
+    task_context_id: str | None = None
+    task_context_revision: int | None = None
+    plan_id: str | None = None
+    plan_revision: int | None = None
+    plan_step_id: str | None = None
+    plan_step_revision: int | None = None
+    governance_decision: str | None = None
+    proposal_provenance: Mapping[str, Any] = field(default_factory=dict)
+    consumer_boundary: Literal["before_generic_act"] = "before_generic_act"
+    authorization_granted: bool = False
+    execution_allowed: bool = False
+    action_dispatch_allowed: bool = False
+
+    def __post_init__(self) -> None:
+        if self.evaluation_status not in CANONICAL_PLAN_EVALUATION_STATES:
+            raise ValueError(f"unsupported evaluation_status: {self.evaluation_status}")
+        _require_evaluation_text(self.reason, "reason")
+        for name in ("goal_id", "task_id", "task_context_id", "plan_id", "plan_step_id"):
+            value = getattr(self, name)
+            if value is not None:
+                _require_evaluation_text(value, name)
+        for name in (
+            "task_context_revision",
+            "plan_revision",
+            "plan_step_revision",
+        ):
+            value = getattr(self, name)
+            if value is not None:
+                _require_evaluation_revision(value, name)
+        if not isinstance(self.proposal_provenance, Mapping):
+            raise ValueError("proposal_provenance must be a mapping")
+        if self.consumer_boundary != "before_generic_act":
+            raise ValueError("unsupported consumer_boundary")
+        object.__setattr__(
+            self,
+            "proposal_provenance",
+            _freeze_evaluation_value(self.proposal_provenance),
+        )
+        for name in ("authorization_granted", "execution_allowed", "action_dispatch_allowed"):
+            if getattr(self, name) is not False:
+                raise ValueError(f"{name} must remain False")
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "evaluation_status": self.evaluation_status,
+            "reason": self.reason,
+            "goal_id": self.goal_id,
+            "task_id": self.task_id,
+            "task_context_id": self.task_context_id,
+            "task_context_revision": self.task_context_revision,
+            "plan_id": self.plan_id,
+            "plan_revision": self.plan_revision,
+            "plan_step_id": self.plan_step_id,
+            "plan_step_revision": self.plan_step_revision,
+            "governance_decision": self.governance_decision,
+            "proposal_provenance": _thaw_evaluation_value(self.proposal_provenance),
+            "consumer_boundary": self.consumer_boundary,
+            "authorization_granted": False,
+            "execution_allowed": False,
+            "action_dispatch_allowed": False,
+        }
+
+
+def _evaluation_result(
+    request: CanonicalPlanGovernanceEvaluationRequest | None,
+    *,
+    status: str,
+    reason: str,
+    governance_decision: str | None = None,
+) -> CanonicalPlanGovernanceEvaluation:
+    return CanonicalPlanGovernanceEvaluation(
+        evaluation_status=status,
+        reason=reason,
+        goal_id=request.goal_id if request else None,
+        task_id=request.task_id if request else None,
+        task_context_id=request.task_context_id if request else None,
+        task_context_revision=request.task_context_revision if request else None,
+        plan_id=request.plan_id if request else None,
+        plan_revision=request.plan_revision if request else None,
+        plan_step_id=request.plan_step_id if request else None,
+        plan_step_revision=request.plan_step_revision if request else None,
+        governance_decision=governance_decision,
+        proposal_provenance=request.proposal_provenance if request else {},
+        consumer_boundary="before_generic_act",
+    )
+
+
+def _snapshot_matches_identity(
+    snapshot: Mapping[str, Any] | None,
+    *,
+    identity_field: str,
+    object_id: str,
+    goal_id: str,
+    task_id: str,
+    task_context_id: str,
+    plan_id: str | None = None,
+) -> bool:
+    if snapshot is None:
+        return False
+    expected = {
+        "goal_id": goal_id,
+        "task_id": task_id,
+        "task_context_id": task_context_id,
+    }
+    if plan_id is not None:
+        expected["plan_id"] = plan_id
+    if snapshot.get(identity_field) != object_id:
+        return False
+    return all(snapshot.get(key) == value for key, value in expected.items())
+
+
+def evaluate_canonical_plan_governance(
+    request: CanonicalPlanGovernanceEvaluationRequest,
+) -> CanonicalPlanGovernanceEvaluation:
+    """Evaluate one bound Plan/PlanStep pair without authorizing execution."""
+    if not isinstance(request, CanonicalPlanGovernanceEvaluationRequest):
+        return _evaluation_result(
+            None,
+            status="NOT_EVALUABLE",
+            reason="Canonical Plan Governance requires an immutable evaluation request.",
+        )
+    if request.binding_errors:
+        if any("task_context" in error or "selected_context" in error for error in request.binding_errors):
+            status = "STALE_CONTEXT" if any("stale" in error for error in request.binding_errors) else "INVALID_CONTEXT"
+        elif any("missing_selected_plan_step" in error for error in request.binding_errors):
+            status = "NOT_EVALUABLE"
+        else:
+            status = "INVALID_PLAN"
+        return _evaluation_result(
+            request,
+            status=status,
+            reason="; ".join(request.binding_errors),
+        )
+    plan = request.plan_snapshot
+    step = request.plan_step_snapshot
+    context = request.task_context_snapshot
+    if request.selected_context_id != request.task_context_id:
+        return _evaluation_result(
+            request,
+            status="INVALID_CONTEXT",
+            reason="selected TaskContext does not match the evaluated TaskContext",
+        )
+    if not _snapshot_matches_identity(
+        plan,
+        identity_field="plan_id",
+        object_id=request.plan_id,
+        goal_id=request.goal_id,
+        task_id=request.task_id,
+        task_context_id=request.task_context_id,
+    ):
+        return _evaluation_result(
+            request,
+            status="INVALID_PLAN",
+            reason="canonical Plan identity or parent binding is invalid",
+        )
+    if plan.get("plan_step_ids") is not None and request.plan_step_id not in plan.get("plan_step_ids", ()):
+        return _evaluation_result(
+            request,
+            status="INVALID_PLAN",
+            reason="selected PlanStep is not a member of the canonical Plan",
+        )
+    if not _snapshot_matches_identity(
+        step,
+        identity_field="plan_step_id",
+        object_id=request.plan_step_id or "",
+        goal_id=request.goal_id,
+        task_id=request.task_id,
+        task_context_id=request.task_context_id,
+        plan_id=request.plan_id,
+    ):
+        return _evaluation_result(
+            request,
+            status="INVALID_PLAN",
+            reason="selected PlanStep identity or Plan parent binding is invalid",
+        )
+    if not _snapshot_matches_identity(
+        context,
+        identity_field="task_context_id",
+        object_id=request.task_context_id,
+        goal_id=request.goal_id,
+        task_id=request.task_id,
+        task_context_id=request.task_context_id,
+    ):
+        return _evaluation_result(
+            request,
+            status="INVALID_CONTEXT",
+            reason="authoritative TaskContext identity or parent binding is invalid",
+        )
+    if plan.get("plan_revision") != request.plan_revision or step.get("step_revision") != request.plan_step_revision:
+        return _evaluation_result(
+            request,
+            status="INVALID_PLAN",
+            reason="Plan or selected PlanStep revision is stale",
+        )
+    if plan.get("plan_status") in {"completed", "failed", "cancelled"} or step.get("step_status") in {
+        "completed",
+        "failed",
+        "cancelled",
+    }:
+        return _evaluation_result(
+            request,
+            status="INVALID_PLAN",
+            reason="terminal Plan or selected PlanStep cannot be evaluated",
+        )
+    if plan.get("plan_status") == "blocked" or step.get("step_status") == "blocked":
+        return _evaluation_result(
+            request,
+            status="BLOCKED",
+            reason="canonical Plan or selected PlanStep is blocked",
+            governance_decision="block",
+        )
+    if request.hard_constraints.get("blocked") is True or request.hard_constraints.get("violations"):
+        return _evaluation_result(
+            request,
+            status="BLOCKED",
+            reason="hard Governance constraints block the canonical Plan",
+            governance_decision="block",
+        )
+    return _evaluation_result(
+        request,
+        status="EVALUATED",
+        reason="canonical Plan and selected current PlanStep evaluated",
+        governance_decision="evaluate",
+    )
 
 
 class _ScopeDispatchState:
