@@ -170,38 +170,39 @@ def test_current_92a_local_state_is_consistent_across_header():
     fields = _get_all_current_work_fields(header)
 
     identity_tokens = {
-        "Last updated": "M96E Structured Thinking Proposal Contract Boundary BUILD COMPLETE LOCALLY",
-        "Current completed local milestone": "M96E Structured Thinking Proposal Contract Boundary BUILD COMPLETE LOCALLY",
-        "Current active milestone/module": "M96E Structured Thinking Proposal Contract Boundary BUILD COMPLETE LOCALLY",
-        "Current status": "M96E Structured Thinking Proposal Contract Boundary BUILD COMPLETE LOCALLY",
-        "Next milestone": "M96E contract content ESTABLISHED LOCALLY; Structured Thinking Proposal prerequisite ESTABLISHED LOCALLY; Git determines commit/tag/publication state and PM acceptance remains external; M96 remains OPEN",
+        "Last updated": "M96G Canonical Plan Governance Evaluation FINALIZED / GIT-DURABLE / PM ACCEPTANCE PENDING EXTERNALLY",
+        "Current completed local milestone": "M96G Canonical Plan Governance Evaluation FINALIZED / GIT-DURABLE / PM ACCEPTANCE PENDING EXTERNALLY",
+        "Current active milestone/module": "M96G Canonical Plan Governance Evaluation FINALIZED / GIT-DURABLE / PM ACCEPTANCE PENDING EXTERNALLY",
+        "Current status": "M96G: FINALIZED / GIT-DURABLE / PM ACCEPTANCE PENDING EXTERNALLY",
+        "Next milestone": "human/project-manager M96G durable acceptance review; M96G is FINALIZED / GIT-DURABLE / PM ACCEPTANCE PENDING EXTERNALLY; M96 remains OPEN",
         "Test baseline": "2571 pre-93A full-suite baseline",
     }
     assert all(token in fields[name] for name, token in identity_tokens.items())
     assert fields["Current completed local milestone"].startswith(
-        "M96E Structured Thinking Proposal Contract Boundary BUILD COMPLETE LOCALLY"
+        "M96G Canonical Plan Governance Evaluation FINALIZED / GIT-DURABLE / PM ACCEPTANCE PENDING EXTERNALLY"
     )
-    assert "M96E Structured Thinking Proposal Contract Boundary BUILD COMPLETE LOCALLY" in fields[
+    assert "M96G Canonical Plan Governance Evaluation FINALIZED / GIT-DURABLE / PM ACCEPTANCE PENDING EXTERNALLY" in fields[
         "Current completed local milestone"
     ]
     assert "M96 OPEN" in fields["Current status"]
-    assert "M96 Parent Contract Authority FINALIZED / GIT-DURABLE / PM-ACCEPTED externally" in fields[
-        "Current status"
-    ]
-    assert "M96E Build complete locally" in fields["Current status"]
+    assert "M96G: FINALIZED / GIT-DURABLE / PM ACCEPTANCE PENDING EXTERNALLY" in fields["Current status"]
+    assert "CanonicalPlanGovernanceEvaluationRequest: IMMUTABLE" in fields["Current status"]
+    assert "CanonicalPlanGovernanceEvaluation: IMMUTABLE" in fields["Current status"]
     assert "Canonical Plan runtime SATISFIED" in fields["Current status"]
     assert "Canonical PlanStep runtime SATISFIED" in fields["Current status"]
     assert "Think -> Plan consumer NOT YET SATISFIED" in fields["Current status"]
-    assert "Governance-before-generic-Act runtime NOT YET SATISFIED" in fields["Current status"]
+    assert "Governance evaluation before generic Act: SATISFIED PROCESS-LOCALLY" in fields["Current status"]
+    assert "Generic Act integration: NOT IMPLEMENTED" in fields["Current status"]
+    assert "Generic Act integration: NOT AUTHORIZED" in fields["Current status"]
     assert "No subsequent M96 submilestone is authorized" not in fields[
         "Next milestone"
     ]
     assert "Goal admission SATISFIED" in fields["Current status"]
     assert "Think -> Plan consumer NOT YET SATISFIED" in fields["Current status"]
-    assert "Governance-before-generic-Act runtime NOT YET SATISFIED" in fields["Current status"]
+    assert "Governance evaluation before generic Act: SATISFIED PROCESS-LOCALLY" in fields["Current status"]
     assert "Goal -> accepted Goal -> Task -> initial authoritative TaskContext" in fields["Current status"]
     assert "process-local contract boundary" in fields["Current status"]
-    assert "selected model B-S" in fields["Current status"]
+    assert "selected model MODEL_D_IMMUTABLE_GOVERNANCE_EVALUATION_REQUEST_RESULT" in fields["Current status"]
     assert "immutable proposal semantics defined" in fields["Current status"]
     assert "authoritative context binding defined" in fields["Current status"]
     assert "PROPOSAL_NOT_READY" in fields["Current status"]
@@ -246,7 +247,7 @@ def test_current_92a_local_state_is_consistent_across_header():
     active = fields["Current active milestone/module"]
     status = fields["Current status"]
     for token in (
-        "selected model B-S",
+        "selected model MODEL_D_IMMUTABLE_GOVERNANCE_EVALUATION_REQUEST_RESULT",
         "M96 OPEN",
         "process-local contract boundary",
         "governed capability count 1",
@@ -450,7 +451,8 @@ def test_full_suite_and_canonical_counts_match_header():
         "**Selected model:** MODEL_B_JUSTIFIED",
         "**Current proven durable consumer:** NONE",
         "**95C consumer-proof lock:** 10 passed",
-        "**Full current result:** 3070/3070 passed, 0 failures, 0 errors",
+        "**Historical M96E-era baseline:** 3070/3070 passed, 0 failures, 0 errors",
+        "Full current result: 3115/3115 passed, 0 failures, 0 errors",
         "**M96A Design Boundary:** finalized / Git-durable / PM-accepted",
         "M96A design-boundary lock: 12 passed",
         "M96B Goal-first foundation: 24 passed",
@@ -464,7 +466,7 @@ def test_full_suite_and_canonical_counts_match_header():
         "OpenAPI family:** 653 passed",
         "95B contract-lock:** 10 passed",
         "95C consumer-proof lock:** 10 passed",
-        "Full current result:** 3070/3070 passed, 0 failures, 0 errors",
+        "Historical M96E-era baseline:** 3070/3070 passed, 0 failures, 0 errors",
     ):
         assert token in current_section7
     assert "Historical full suite:** 2499" in historical_section7
@@ -486,14 +488,14 @@ def test_92a_vs_functional_92_terminology_contract():
         "\n---\n", 1
     )[0]
 
-    assert "M96E Structured Thinking Proposal Contract Boundary BUILD COMPLETE LOCALLY" in active
+    assert "M96G Canonical Plan Governance Evaluation FINALIZED / GIT-DURABLE / PM ACCEPTANCE PENDING EXTERNALLY" in active
     assert "M96 OPEN" in active
     assert "M96B FINALIZED / GIT-DURABLE / PM-ACCEPTED" in active
     assert "M96A FINALIZED / GIT-DURABLE / PM-ACCEPTED" in active
     assert "authoritative context binding defined" in status
-    assert "selected model B-S" in active
+    assert "selected model MODEL_D_IMMUTABLE_GOVERNANCE_EVALUATION_REQUEST_RESULT" in active
     assert "Goal -> accepted Goal -> Task -> initial authoritative TaskContext" in status
-    assert "M96E Build complete locally" in status
+    assert "M96G: FINALIZED / GIT-DURABLE / PM ACCEPTANCE PENDING EXTERNALLY" in status
     for token in (
         "process-local contract boundary",
         "immutable proposal semantics defined",
@@ -505,25 +507,23 @@ def test_92a_vs_functional_92_terminology_contract():
         "no loop wiring",
         "Canonical Plan runtime SATISFIED",
         "Canonical PlanStep runtime SATISFIED",
-        "no generic Act",
+        "Generic Act: NOT_IMPLEMENTED",
     ):
         assert token in status
 
     for token in (
-        "M96 Parent Contract Authority FINALIZED / GIT-DURABLE / PM-ACCEPTED externally",
-        "M96A FINALIZED / GIT-DURABLE / PM-ACCEPTED",
-        "M96C FINALIZED / GIT-DURABLE / PM-ACCEPTED externally",
-        "M96E contract content is established",
-        "Structured Thinking Proposal prerequisite ESTABLISHED",
-        "B_THINK_OUTPUT_NOT_YET_PLAN_COMPATIBLE",
-        "MODEL_E_NO_RUNTIME_INTEGRATION_YET",
-        "process-local and unintegrated",
-        "M95D NOT AUTHORIZED",
+        "M96G:** FINALIZED / GIT-DURABLE / PM ACCEPTANCE PENDING EXTERNALLY",
+        "Governance evaluation before generic Act: SATISFIED PROCESS-LOCALLY",
+        "Generic Act integration: NOT IMPLEMENTED",
+        "Generic Act integration: NOT AUTHORIZED",
+        "human/project-manager M96G durable acceptance review",
+        "M96 remains OPEN",
+        "no successor milestone is authorized",
     ):
         assert token in section10
     assert "At the Milestone 92C closure boundary" in section10
     assert "current Rule 4 physical ownership is Core Governance" in section10
-    assert "M96 parent authority" in section10
+    assert "M96G" in section10
     assert "M96 remains OPEN" in section10
     assert "Milestone 94 OPEN" not in "\n".join((active, status, section10))
     assert "M95D NOT AUTHORIZED" in "\n".join((active, status, section10))
