@@ -229,7 +229,7 @@ Each recent milestone (67-74):
 
 ### 76A — Apply Executor Evidence Contract Record Store Core
 
-**Status:** M96G FINALIZED / GIT-DURABLE / PM ACCEPTANCE PENDING EXTERNALLY; Governance request and result are immutable; Core Coordination caller is evaluate_canonical_plan_governance; proposal provenance is evidence only; authorization_granted, execution_allowed, and action_dispatch_allowed are always false; M96 OPEN; no generic Act; no successor milestone.
+**Status:** Complete
 **Tests:** ~84 (50 queue unit tests + 34 API tests)
 **Storage path:** `/home/aether/data/private/apply_executor_evidence_contracts/`
 
