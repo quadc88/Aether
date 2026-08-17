@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field, replace
+from importlib import import_module
 from threading import RLock
 from typing import Any, Callable, Mapping
 import copy
@@ -233,6 +234,7 @@ class Plan:
     created_at: str = ""
     updated_at: str = ""
     plan_revision: int = 1
+    proposal_provenance: Mapping[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         for name in ("plan_id", "goal_id", "task_id", "task_context_id"):
@@ -246,6 +248,9 @@ class Plan:
         object.__setattr__(self, "task_context_snapshot", _immutable(self.task_context_snapshot))
         for name in ("completion_criteria", "failure_criteria", "blocked_criteria"):
             object.__setattr__(self, name, _criteria(getattr(self, name), name))
+        if not isinstance(self.proposal_provenance, Mapping):
+            raise ValueError("proposal_provenance must be a mapping")
+        object.__setattr__(self, "proposal_provenance", _immutable(self.proposal_provenance))
         object.__setattr__(self, "plan_step_ids", tuple(self.plan_step_ids))
 
     def to_dict(self) -> dict[str, Any]:
@@ -264,6 +269,7 @@ class Plan:
             "created_at": self.created_at,
             "updated_at": self.updated_at,
             "plan_revision": self.plan_revision,
+            "proposal_provenance": _mutable(self.proposal_provenance),
         }
 
 
@@ -561,6 +567,7 @@ class CoreCoordination:
         completion_criteria: Mapping[str, Any],
         failure_criteria: Mapping[str, Any],
         blocked_criteria: Mapping[str, Any],
+        proposal_provenance: Mapping[str, Any] | None = None,
     ) -> Plan:
         """Create a canonical Plan from an explicitly selected context snapshot."""
         with self._lock:
@@ -580,12 +587,49 @@ class CoreCoordination:
                 blocked_criteria=blocked_criteria,
                 created_at=timestamp,
                 updated_at=timestamp,
+                proposal_provenance=proposal_provenance or {},
             )
             self._plans[plan.plan_id] = plan
             self._bind_plan_reference(plan.plan_id, current_task, current_context, timestamp)
             return plan
 
     create_canonical_plan = create_plan
+
+    def materialize_thinking_proposal(self, proposal: Any) -> Plan:
+        """Materialize one ready proposal under the authoritative context."""
+        proposal_type = import_module("aether." + "thinking.proposal").ThinkingProposal
+        if not isinstance(proposal, proposal_type):
+            raise TypeError("proposal must be a ThinkingProposal")
+        if proposal.proposal_state == "PROPOSAL_NOT_READY":
+            raise ValueError(
+                "cannot materialize PROPOSAL_NOT_READY: "
+                f"{dict(proposal.not_ready_reason)}"
+            )
+
+        with self._lock:
+            current_goal = self._goals.get(proposal.goal_id)
+            current_task = self.get_task(proposal.task_id)
+            current_context = self.get_context(proposal.task_context_id)
+            if current_task.goal_id != proposal.goal_id:
+                raise ValueError("thinking proposal Task is not owned by its Goal")
+            if current_context.task_id != proposal.task_id:
+                raise ValueError("thinking proposal TaskContext is not owned by its Task")
+            if current_context.goal_id != proposal.goal_id:
+                raise ValueError("thinking proposal TaskContext is not owned by its Goal")
+            if current_context.context_revision != proposal.task_context_revision:
+                raise ValueError("thinking proposal TaskContext revision is stale")
+            if self._selected_context_id != proposal.task_context_id:
+                raise ValueError("thinking proposal requires its TaskContext to be selected")
+            self._validate_plan_binding(current_goal, current_task, current_context)
+            return self.create_plan(
+                current_goal,
+                current_task,
+                current_context,
+                completion_criteria=proposal.proposed_completion_criteria,
+                failure_criteria=proposal.proposed_failure_criteria,
+                blocked_criteria=proposal.proposed_blocked_criteria,
+                proposal_provenance=proposal.provenance,
+            )
 
     def get_plan(self, plan: Plan | str) -> Plan:
         with self._lock:
