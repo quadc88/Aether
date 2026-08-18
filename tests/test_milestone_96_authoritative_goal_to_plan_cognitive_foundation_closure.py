@@ -176,9 +176,9 @@ def test_architecture_and_lifecycle_lock_are_locked():
         "Thinking proposes; Governance authorizes; Verification supplies evidence",
         "canonical global Execution Loop remains unchanged",
         "M96 substantive parent work is COMPLETE",
-        "M96 closure record is COMPLETE LOCALLY",
-        "M96 durable closure is PENDING GIT FINALIZATION AND PM ACCEPTANCE",
-        "M96 remains OPEN / NOT DURABLY CLOSED YET",
+        "M96 closure record is GIT-DURABLE",
+        "M96 durable closure is CLOSED / GIT-DURABLE / PM-ACCEPTED",
+        "milestone-96-authoritative-goal-to-plan-cognitive-foundation-closure",
         "No M96H, M97, Generic Act implementation, or successor milestone",
     ):
         assert marker in text

@@ -2,7 +2,7 @@
 
 Classification: PARENT MILESTONE CLOSURE RECORD
 
-Status: COMPLETE LOCALLY / GIT DURABLE CLOSURE PENDING / PM DURABLE ACCEPTANCE PENDING
+Status: CLOSED / GIT-DURABLE / PM-ACCEPTED
 
 ## 1. Authority and Objective
 
@@ -218,14 +218,13 @@ The following remain NOT REQUIRED FOR M96 PARENT CLOSURE:
 
 M96 substantive parent work is COMPLETE.
 
-M96 closure record is COMPLETE LOCALLY.
+M96 closure record is GIT-DURABLE.
 
-M96 durable closure is PENDING GIT FINALIZATION AND PM ACCEPTANCE.
+M96 durable closure is CLOSED / GIT-DURABLE / PM-ACCEPTED.
 
-M96 remains OPEN / NOT DURABLY CLOSED YET. This record does not claim a future
-closure commit SHA, tag, push, or PM durable closure acceptance. The content is
-truthful under a future commit, tag/push, and separate PM review without a
-publication-only follow-up ledger commit.
+The externally accepted closure identity is the existing
+`milestone-96-authoritative-goal-to-plan-cognitive-foundation-closure` tag.
+This reconciliation invents no new closure commit SHA, tag, or push.
 
 No M96H, M97, Generic Act implementation, or successor milestone is authorized
 by this record.
