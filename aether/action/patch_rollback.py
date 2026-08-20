@@ -45,7 +45,11 @@ def rollback_patch_apply(apply_id,dry_run=True,metadata=None):
  if any(a["normalized_path"].replace("\\","/").lower().endswith(x) for x in GOV):r["status"]="blocked";r["warnings"].append("Critical identity/governance files cannot be rolled back by Milestone 22.");return done()
  access=read_restricted_file(a["target_path"],65536,{"source":"patch_rollback"});check=is_backup_path_allowed(a["backup_path"])
  if access["status"]!="success" or not check["allowed"]:r["status"]="blocked";r["warnings"].append(access["reason"] if access["status"]!="success" else "Patch backup path is not allowed.");return done()
- current=access["content"];backup=Path(check["path"]).read_text(encoding="utf-8");r["current_hash_before"]=sha256_text(current);r["backup_hash"]=sha256_text(backup);r["hash_after"]=r["backup_hash"];r["changed"]=current!=backup;r["checks"].append({"name":"apply_record_eligible","passed":True,"details":"Patch apply record was successful and has backup."})
+ current=access["content"];r["current_hash_before"]=sha256_text(current)
+ expected=a.get("original_hash_after")
+ if not isinstance(expected,str) or len(expected)!=64 or any(c not in "0123456789abcdef" for c in expected):r["status"]="blocked";r["warnings"].append("Patch apply record has no valid expected post-write hash.");return done()
+ if r["current_hash_before"]!=expected:r["status"]="blocked";r["warnings"].append("Current target state does not match the successful apply post-write state.");return done()
+ backup=Path(check["path"]).read_text(encoding="utf-8");r["backup_hash"]=sha256_text(backup);r["hash_after"]=r["backup_hash"];r["changed"]=current!=backup;r["checks"].append({"name":"apply_record_eligible","passed":True,"details":"Patch apply record was successful and has backup."});r["checks"].append({"name":"expected_current_state","passed":True,"details":"Current target hash matches the successful apply post-write hash."})
  if dry_run:r["status"]="dry_run";return done()
  try:r["pre_rollback_backup_path"]=create_pre_rollback_backup(access["normalized_path"],apply_id)["backup_path"];Path(access["normalized_path"]).write_text(backup,encoding="utf-8");r["hash_after"]=sha256_file(access["normalized_path"]);r["status"]="success";r["rolled_back"]=r["hash_after"]==r["backup_hash"]
  except OSError as e:r["status"]="failed";r["warnings"].append(str(e))
