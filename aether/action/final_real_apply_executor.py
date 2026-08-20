@@ -1,14 +1,16 @@
 """Final guarded executor for one approved real patch apply and no other action."""
 from pathlib import Path
 import json
+import re
 import uuid
 
 import yaml
 
 from aether.action.approval_queue import get_approval_item
 from aether.action.real_apply_approval_gate import get_real_apply_approval_gate_record
-from aether.action.patch_apply import apply_patch_proposal, get_patch_apply
+from aether.action.patch_apply import apply_patch_proposal, get_patch_apply, sha256_text
 from aether.action.patch_proposal import get_patch_proposal
+from aether.action.restricted_file_reader import normalize_path, read_restricted_file
 from aether.action.mutation_log import record_mutation
 from aether.memory.timeline.recorder import record_event
 from aether.memory.graph.store import add_edge
@@ -89,6 +91,47 @@ def _has_applied_record(gate_id: str, exclude_record_id: str | None = None) -> b
     return any(record.get("real_apply_approval_gate_id") == gate_id and record.get("status") == "applied" and record.get("id") != exclude_record_id for record in load_final_real_apply_executor_records()["records"])
 
 
+def _reviewed_base_warnings(dry_run: dict | None, proposal: dict | None) -> list[str]:
+    warnings = []
+    if not dry_run:
+        return ["The exact linked dry-run apply record was not found."]
+    if dry_run.get("dry_run") is not True:
+        warnings.append("The linked apply record is not a dry-run.")
+    if dry_run.get("status") != "dry_run":
+        warnings.append("The linked dry-run apply record is not completed.")
+
+    expected_hash = dry_run.get("original_hash_before")
+    if not isinstance(expected_hash, str) or not re.fullmatch(r"[0-9a-f]{64}", expected_hash):
+        warnings.append("The linked dry-run reviewed-base hash is missing or malformed.")
+
+    dry_run_target = dry_run.get("normalized_path")
+    proposal_target = (proposal or {}).get("normalized_path")
+    if not dry_run_target or not proposal_target:
+        warnings.append("The linked dry-run and approved final targets are incomplete.")
+    else:
+        try:
+            if normalize_path(dry_run_target) != normalize_path(proposal_target):
+                warnings.append("The linked dry-run target does not match the approved final target.")
+        except (OSError, TypeError, ValueError):
+            warnings.append("The linked dry-run and approved final targets could not be normalized safely.")
+
+    if warnings:
+        return warnings
+
+    target_path = (proposal or {}).get("target_path")
+    access = read_restricted_file(
+        target_path,
+        65536,
+        {"source": "final_real_apply_executor_reviewed_base_guard"},
+    )
+    if access.get("status") != "success" or not isinstance(access.get("content"), str):
+        warnings.append("The approved final target could not be read safely for reviewed-base validation.")
+        return warnings
+    if sha256_text(access["content"]) != expected_hash:
+        warnings.append("The current final target does not match the linked dry-run reviewed base.")
+    return warnings
+
+
 def _refresh_readiness(record: dict) -> tuple[bool, list[str]]:
     warnings = []
     gate = get_real_apply_approval_gate_record(record.get("real_apply_approval_gate_id"))
@@ -111,6 +154,7 @@ def _refresh_readiness(record: dict) -> tuple[bool, list[str]]:
         warnings.append("A completed dry-run apply record is required.")
     if not proposal or proposal.get("status") != "approved":
         warnings.append("Proposal is not currently approved for patch apply.")
+    warnings += _reviewed_base_warnings(dry_run, proposal)
     if _has_applied_record(record.get("real_apply_approval_gate_id"), record.get("id")):
         warnings.append("Real apply already executed for this gate.")
     return not warnings, warnings
