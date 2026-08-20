@@ -7,6 +7,10 @@ from pathlib import Path
 
 from aether.action.approval_decision_gate import validate_restricted_read_approval
 from aether.action.approval_queue import claim_approval_for_execution
+from aether.action.services.restricted_file_read_authority_binding import (
+    RestrictedReadAuthorityBindingError,
+    bind_restricted_read_authority,
+)
 from aether.action.services.restricted_file_read_bridge import dispatch_restricted_read
 from aether.action.tool_planner import parse_restricted_read_command, normalize_restricted_read_target
 from aether.perception.text import perceive_text_input
@@ -90,14 +94,33 @@ def execute_approved_restricted_read(request) -> dict:
             verification_status="DENIED", reason=decision.safe_reason,
             warnings=list(decision.warnings),
         )
-    claim = claim_approval_for_execution(request.approval_id, attempt_id)
+    try:
+        authority_binding = bind_restricted_read_authority(
+            approval_id=request.approval_id,
+            requested_action=requested_action,
+            session_id=request.session_id,
+            execution_attempt_id=attempt_id,
+            approval_binding=binding,
+            authorization_decision=decision,
+        )
+    except RestrictedReadAuthorityBindingError as error:
+        return _response(
+            approval_id=request.approval_id, status="denied", attempt_status="REJECTED",
+            verification_status="DENIED", reason=str(error),
+        )
+    claim = claim_approval_for_execution(
+        authority_binding.approval_id, authority_binding.execution_attempt_id,
+    )
     if not claim.get("claimed"):
         return _response(
             approval_id=request.approval_id, status="denied", attempt_status="REJECTED",
             verification_status="DENIED", reason="Approval could not be claimed.",
         )
     try:
-        result = dispatch_restricted_read(decision.scope, execution_attempt_id=attempt_id)
+        result = dispatch_restricted_read(
+            authority_binding.scope,
+            execution_attempt_id=authority_binding.execution_attempt_id,
+        )
         observation = result.pop("observation", None)
         verification = verify_restricted_file_read(
             authorized=True, reader_result=result, observation=observation,
