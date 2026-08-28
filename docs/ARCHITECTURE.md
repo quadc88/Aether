@@ -1788,3 +1788,42 @@ This revision is the explicitly authorized architecture evolution for Milestone 
 - Critic/Repair-proof gate: no critic or repair triggering may be wired without a separately authorized plan.
 - Milestone 86 is not considered closed until 86A Finalization is accepted. The local 86A Build does not close Milestone 86 and does not start Milestone 87. Milestone 87 may not start automatically.
 
+---
+
+## 19. Security and Authority Architecture
+
+The authority precedence for Aether is:
+
+```text
+CONSTITUTION
+    >
+ARCHITECTURE
+    >
+SECURITY_ARCHITECTURE
+    >
+CURRENT IMPLEMENTATION
+```
+
+`docs/CONSTITUTION.md` is the highest technology-independent authority.
+This document governs the overall Aether system architecture.
+[`docs/architecture/SECURITY_ARCHITECTURE.md`](architecture/SECURITY_ARCHITECTURE.md)
+is the canonical living architecture for the security and authority domain, but
+is subordinate to the Constitution and this overall Architecture. Current
+implementation must conform to all three higher authorities and cannot silently
+rewrite architecture.
+
+Aether remains one persistent digital mind. The Owner is the human authority
+boundary; the Owner Authority Service (OAS) is a non-cognitive security boundary;
+ordinary runtime is not an Owner-evidence issuer; and Core Coordination owns
+canonical cognitive Goal state within the one mind. Authentication is not intent
+interpretation. Goal acceptance is not Action authorization. Action success is not
+completion. Observation plus Verification is the completion boundary.
+
+Security decision, design, implementation, and verification status are separate
+dimensions. Detailed current security architecture and status are maintained in
+`SECURITY_ARCHITECTURE.md`.
+
+Milestone architecture documents remain immutable historical evidence, decision
+provenance, and traceability records. They are not another level in the authority
+precedence chain. `PROGRESS.md` is a project-status ledger, not an architecture
+authority source.
