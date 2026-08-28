@@ -16,7 +16,7 @@ and the status of their current design and implementation.
 This document must conform to `docs/CONSTITUTION.md` and
 `docs/ARCHITECTURE.md`. It must not override either document, rewrite milestone
 history, claim unimplemented security, or treat static tests as deployment proof.
-It does not broaden M118A or authorize its start. It introduces no Generic Act
+It does not authorize a successor milestone. It introduces no Generic Act
 authority and no generalized Tool-Operation-Capability security architecture.
 Existing bounded governance, policy, approval, restricted-read, and action-control
 mechanisms remain current implementation facts; they are not the future Tool
@@ -118,9 +118,10 @@ that target is not a deployed trust boundary. LAN location, hostname, OS account
 session identifier, IP address, process placement, caller convention, or static
 documentation is not by itself Owner authority.
 
-The current repository has no authenticated Owner source, production OAS,
-WebAuthn, live TLS Owner channel, deployed OS-principal boundary, live recovery
-ceremony, AuthenticatedSourceEvent issuance, or Core receipt integration.
+The current repository has no authenticated Owner source, authentication-facing
+OAS boundary, WebAuthn, live TLS Owner channel, deployed OS-principal boundary,
+live recovery ceremony, AuthenticatedSourceEvent issuance, or Core receipt
+integration.
 
 ## 5. Security and Authority Taxonomy
 
@@ -225,8 +226,28 @@ and Owner security audit. Private credentials, recovery plaintext, raw session
 handles, Claim Token plaintext, and signing keys remain inside the protected OAS
 boundary.
 
-This is a design contract. No production OAS durable security store or audit
-transaction has been implemented.
+M118A implements the bounded OAS security-kernel store and its canonical state
+plus audit transaction using SQLite. The corrective pass binds the complete
+transaction request and committed audit event, validates paired evidence before
+retry, validates the v1 store structure and SQLite integrity, and applies
+deterministic resource bounds to canonical JSON. This establishes durable state,
+not Owner authentication, a separate OS principal, or deployment verification.
+The authentication-facing OAS remains unimplemented.
+
+The request digest is SHA-256 over canonical JSON containing the domain
+`aether.oas.security-kernel.request`, contract version, `transaction_id`,
+`idempotency_key`, `aether_instance_id`, `expected_trust_generation`,
+`exact_operation`, and payload. The audit-evidence digest is SHA-256 over
+canonical JSON containing the domain `aether.oas.security-kernel.audit-evidence`,
+evidence version, audit and transaction IDs, both generations, exact operation,
+canonical request digest, idempotency key, committed result digest, event kind,
+affected state reference, committed result classification, result marker, and
+timestamp. Both representations are non-secret and deterministic.
+
+The v1 canonical JSON limits are maximum depth `16`, encoded size `16384`
+bytes, `128` collection items, `128` UTF-8 key bytes, `4096` UTF-8 string bytes,
+and `128` integer digits. Unsupported values, non-finite numbers, and
+secret-bearing fields are rejected.
 
 ## 10. Authenticated Source Evidence Boundary
 
@@ -311,12 +332,13 @@ does not promote that target to implementation or deployment verification.
 | hybrid bootstrap plus authenticated channel | CURRENT | DESIGN_PROVEN | NOT_IMPLEMENTED | NOT_VERIFIED | M117A design record; target only |
 | OS-attested local-console bootstrap | CURRENT | DESIGN_PROVEN | NOT_IMPLEMENTED | NOT_VERIFIED | M117A design record; no live OS evidence |
 | OS-attested recovery plus offline material | CURRENT | DESIGN_PROVEN | NOT_IMPLEMENTED | NOT_VERIFIED | M117A design record; no live ceremony |
-| separate-principal OAS boundary | CURRENT | DESIGN_PROVEN | NOT_IMPLEMENTED | NOT_VERIFIED | M117A design record; no production OAS |
+| separate-principal OAS boundary | CURRENT | DESIGN_PROVEN | NOT_IMPLEMENTED | NOT_VERIFIED | M117A design record; no authentication-facing OAS boundary |
 | direct TLS and exact origin/RP ID | CURRENT | DESIGN_PROVEN | NOT_IMPLEMENTED | NOT_VERIFIED | M117A design record; current API is loopback |
 | WebAuthn registration/authentication separation | CURRENT | DESIGN_PROVEN | NOT_IMPLEMENTED | NOT_VERIFIED | M117A design record; no WebAuthn |
 | server-side revocable Owner sessions | CURRENT | DESIGN_PROVEN | NOT_IMPLEMENTED | NOT_VERIFIED | M117A design record; no live session issuer |
 | CSRF/origin and proxy-boundary controls | CURRENT | DESIGN_PROVEN | NOT_IMPLEMENTED | NOT_VERIFIED | M117A design record; no live Owner channel |
-| canonical security state plus audit atomicity | CURRENT | DESIGN_PROVEN | NOT_IMPLEMENTED | NOT_VERIFIED | M117A design record; no OAS store |
+| canonical security state plus audit atomicity | CURRENT | DESIGN_PROVEN | NOT_IMPLEMENTED | NOT_VERIFIED | full target includes authentication-facing OAS record families; bounded M118A subset is separate below |
+| bounded canonical OAS security-kernel state plus audit atomicity | CURRENT | DESIGN_PROVEN | IMPLEMENTED | TEST_VERIFIED | bounded M118A SQLite state-plus-audit transaction; no authentication or deployment claim |
 | OAS AuthenticatedSourceEvent issuance | CURRENT | DESIGN_PROVEN | NOT_IMPLEMENTED | NOT_VERIFIED | M117A design record; no issuer |
 | Core receipt and Goal operation transactions | CURRENT | DESIGN_PROVEN | NOT_IMPLEMENTED | NOT_VERIFIED | M117A design record; no integration |
 | recovery separate from ordinary sessions | CURRENT | DESIGN_PROVEN | NOT_IMPLEMENTED | NOT_VERIFIED | M117A design record; no recovery service |
@@ -326,6 +348,11 @@ does not promote that target to implementation or deployment verification.
 | bounded governance, policy, approval, restricted-read, and action controls | CURRENT | PARTIAL | IMPLEMENTED | TEST_VERIFIED | `aether/core/governance.py`, `aether/action/policy_gate.py`; `tests/test_core_loop.py`, `tests/test_policy_gate.py`, `tests/test_chat_api.py`; not Owner authentication or generalized Tool authority |
 | current `/chat` policy and default-deny execution surface | CURRENT | PARTIAL | IMPLEMENTED | TEST_VERIFIED | `aether/core/governance.py`, `aether/action/policy_gate.py`; pending review and default-deny behavior only |
 | generalized Tool-Operation-Capability security architecture | CURRENT | UNDEFINED | NOT_IMPLEMENTED | NOT_VERIFIED | Separate future Tool Security frontier; bounded controls above do not establish it |
+| immutable `aether_instance_id` and trust-generation binding | CURRENT | DESIGN_PROVEN | IMPLEMENTED | TEST_VERIFIED | bounded M118A store constraint and stale-generation checks; no live Owner source |
+| Owner lifecycle-state foundation | CURRENT | DESIGN_PROVEN | IMPLEMENTED | TEST_VERIFIED | bounded four-state transition machine; test-only callers do not prove Owner authorization |
+| security transaction identity and replay/conflict/idempotency primitives | CURRENT | DESIGN_PROVEN | IMPLEMENTED | TEST_VERIFIED | unique transaction/idempotency identities and complete versioned request digest binding |
+| schema and migration foundation | CURRENT | DESIGN_PROVEN | IMPLEMENTED | TEST_VERIFIED | deterministic SQLite schema v1 initialization, validation, and idempotent migration |
+| ordinary-runtime direct OAS mutation boundary | CURRENT | PARTIAL | IMPLEMENTED | TEST_VERIFIED | repository-wide AST lock, empty public package surface, explicit store path, and stdlib-only kernel imports; code/dependency boundary is not OS or process isolation |
 
 ## 15. Current Implemented Security Surface
 
@@ -338,10 +365,38 @@ Direct repository inspection identifies only lower-level safeguards:
 - The current chat loop keeps tool execution disabled and returns pending review
   structures rather than performing automatic tool execution.
 - Existing tests cover these bounded primitives and current API behavior.
+- The bounded M118A OAS security kernel persists instance trust, lifecycle state,
+  security transactions, and canonical audit events in a SQLite store under the
+  explicitly supplied private store path.
+- The M118A kernel requires exact transaction identity, instance and generation
+  binding, operation/digest binding including the idempotency identity, and
+  commits canonical state plus audit as one SQLite transaction.
+- The request digest includes a versioned OAS domain separator, transaction ID,
+  idempotency key, instance ID, expected generation, exact operation, and
+  canonical payload.
+- The audit evidence digest includes a versioned OAS audit domain, audit and
+  transaction IDs, both generations, operation, request digest, idempotency key,
+  result digest, event kind, state reference, result classification, result
+  marker, and timestamp.
+- A recorded retry is returned only after canonical result, result digest,
+  transaction status/bindings, and exactly one consistent audit event are
+  verified. Inconsistent evidence fails closed.
+- The M118A module is not imported by any production module outside `aether/oas`;
+  `aether.oas` has an empty public package surface and exposes no mutation API;
+  the kernel requires an explicit store path. This is a static code/dependency boundary only, not OS, process,
+  deployment, credential, or malicious same-process isolation.
+- The repository-wide AST lock covers the production source tree, while the
+  reverse kernel dependency lock permits only standard-library imports.
+- The complete transaction request and complete versioned non-secret audit-evidence
+  digest are independently bound; exactly one consistent audit event
+  is required for a committed retry.
+- Canonical JSON rejects secret-bearing fields and unsupported/non-finite values,
+  and enforces fixed depth, encoded-size, collection, key, string, and integer
+  limits defined by the kernel.
 
-The current implementation truth is also explicit: no production OAS; no live
-authenticated Owner source; no WebAuthn; no live TLS Owner channel; no deployed
-OS-principal boundary; no live recovery ceremony; no AuthenticatedSourceEvent
+The current implementation truth is also explicit: no authenticated or
+deployment-verified OAS boundary; no live authenticated Owner source; no WebAuthn;
+no live TLS Owner channel; no deployed OS-principal boundary; no live recovery ceremony; no AuthenticatedSourceEvent
 issuance; no Core receipt integration; HA1 remains incomplete; GI2 remains
 incomplete; no Generic Act authority; no generalized Tool-Operation-Capability
 security architecture; no unrestricted Action authority; existing bounded
@@ -349,7 +404,9 @@ governance, policy, approval, restricted-read, and action-control mechanisms
 remain current implementation facts; no public Internet; no multi-instance
 runtime; and no multi-agent runtime expansion. Owner authentication does not grant
 authority to tools, operations, capabilities, or Generic Act.
-No M118A artifact is created by this gate.
+The preceding canonization gate created no M118A implementation artifact; the
+separately authorized corrective M118A artifacts are finalized by the Git
+closure recorded below.
 
 These primitives do not establish a truthful human source, OAS, WebAuthn, TLS
 Owner channel, OS-principal boundary, recovery root, source-event issuer, Core
@@ -357,15 +414,15 @@ receipt, or deployment-verifiable security architecture.
 
 ## 16. Future and Unproven Security Frontiers
 
-The following remain future or unproven: live Owner trust-root enrollment; OAS
-implementation; WebAuthn; TLS/DNS/certificate/LAN listener deployment; OS
+The following remain future or unproven: live Owner trust-root enrollment;
+authentication-facing OAS implementation; WebAuthn; TLS/DNS/certificate/LAN listener deployment; OS
 attestation; Claim Token human delivery; recovery ceremonies; live sessions; real
 signing keys; AuthenticatedSourceEvent issuance; Core receipt and Goal Intake
 integration; deployment verification; global split-brain coordination; and any
 security expansion beyond the one-mind Owner boundary.
 
-M118A is the next separately authorized bounded foundation Build, but this gate
-does not start it.
+M118A is a separately authorized bounded foundation Build recorded below as
+started and finalized; this finalization does not authorize a successor.
 
 ## 17. Security Architecture Evolution Rules
 
@@ -414,12 +471,13 @@ M117A evidence is immutable historical evidence, decision provenance, and
 traceability. It does not prove live security. The current implementation truth
 is recorded in sections 4, 14, and 15 rather than inferred from milestone status.
 
-The next authorized boundary is:
+The M118A implementation boundary is:
 
 ```text
 M118A - Owner Authority Service Durable Security Kernel Foundation Build
-M118A_AUTHORIZED: YES_NOT_STARTED
-M118A_STARTED: NO
+M118A_AUTHORIZED: YES
+M118A_STARTED: YES
+M118A_FINALIZED: YES
 ```
 
 M118A in scope:
@@ -430,10 +488,13 @@ M118A in scope:
 - Owner lifecycle-state foundation;
 - security transaction identity;
 - replay/conflict/idempotency primitives;
+- complete versioned request-digest binding;
+- complete versioned non-secret audit-evidence digest binding;
 - atomic canonical state plus `OwnerSecurityAuditEvent` commit;
 - crash, rollback, retry, concurrency, and fault-injection proof;
-- code boundary preventing ordinary-runtime direct mutation;
-- required schema/migration foundation.
+- code/dependency boundary preventing ordinary-runtime direct mutation;
+- required schema/migration and SQLite integrity foundation;
+- deterministic bounded canonical JSON serialization.
 
 M118A out of scope:
 
@@ -454,6 +515,7 @@ M118A out of scope:
 - multi-instance runtime;
 - multi-agent runtime.
 
-This canonization gate does not start M118A. The three future constitutional
-principles identified for governance review are not accepted constitutional text
-and belong only in the external Phase 1 summary.
+The preceding canonization gate did not start M118A. This separately authorized
+implementation pass has started and finalized M118A. The three future
+constitutional principles identified for governance review are not accepted
+constitutional text and belong only in the external Phase 1 summary.

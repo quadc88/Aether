@@ -1,4 +1,4 @@
-"""Documentation-only lock for the pre-M118A security architecture gate."""
+"""Documentation and finalization lock for the M118A security architecture."""
 
 from hashlib import sha256
 from pathlib import Path
@@ -15,14 +15,12 @@ M117A = ROOT / (
 M117A_LOCK = ROOT / "tests/test_milestone_117a_single_owner_lan_trust_root_contract_proof.py"
 README = ROOT / "README.md"
 CONSTITUTION = ROOT / "docs/CONSTITUTION.md"
-PROGRESS = ROOT / "PROGRESS.md"
 
 APPROVED_M117A_HASH = "a56d3d433cd787f7ee902c0861953b604fd20861d3e9adabcd5adcaefee9673b"
 APPROVED_M117A_LOCK_HASH = "b6c150821b9d996fe2f6982c2062b937d3c5bcc9381a152598d0446c88e19d85"
 BASELINE_PROTECTED_HASHES = {
     README: "5357e53635c7467332129048155b39ac9282d6aff268f5f910594a5b26d72cad",
     CONSTITUTION: "0055748f683bf753b3471a0317b68677752c312d4030b12fbc71684fd3af3ee1",
-    PROGRESS: "3ecbeae560f00fde4d1eb2ef51e64d4a1ab839d036a522445a94b252d40b999c",
 }
 
 PRECEDENCE = """CONSTITUTION
@@ -148,7 +146,7 @@ def test_m117a_target_statuses_remain_design_only():
     rows = [line for line in matrix.splitlines() if line.startswith("| ")]
     assert len(rows) >= 17
     target_rows = [line for line in rows if "| CURRENT | DESIGN_PROVEN | NOT_IMPLEMENTED | NOT_VERIFIED |" in line]
-    assert len(target_rows) >= 14
+    assert len(target_rows) >= 13
     _assert_required(
         matrix,
         "one Owner per Aether Instance",
@@ -159,6 +157,61 @@ def test_m117a_target_statuses_remain_design_only():
         "absolute global split-brain prevention",
         "| CURRENT | PARTIAL | NOT_IMPLEMENTED | NOT_VERIFIED |",
     )
+
+
+def test_m118a_status_rows_and_boundary_claims_are_distinct():
+    text = _text(SECURITY)
+    matrix = _section(
+        text,
+        "## 14. Current Security Status Matrix",
+        "## 15. Current Implemented Security Surface",
+    )
+
+    def row_for(capability: str) -> list[str]:
+        row = next(
+            line for line in matrix.splitlines()
+            if line.startswith(f"| {capability} |")
+        )
+        return [part.strip() for part in row.split("|")[1:-1]]
+
+    full_target = row_for("canonical security state plus audit atomicity")
+    bounded_kernel = row_for(
+        "bounded canonical OAS security-kernel state plus audit atomicity"
+    )
+    code_boundary = row_for("ordinary-runtime direct OAS mutation boundary")
+    assert full_target[3:5] == ["NOT_IMPLEMENTED", "NOT_VERIFIED"]
+    assert bounded_kernel[3:5] == ["IMPLEMENTED", "TEST_VERIFIED"]
+    assert code_boundary[2:5] == ["PARTIAL", "IMPLEMENTED", "TEST_VERIFIED"]
+    assert "DEPLOYMENT_VERIFIED" not in matrix
+
+    implementation = _section(
+        text,
+        "## 15. Current Implemented Security Surface",
+        "## 16. Future and Unproven Security Frontiers",
+    )
+    _assert_required(
+        _normalized(implementation),
+        "repository-wide AST lock",
+        "empty public package surface",
+        "explicit store path",
+        "static code/dependency boundary only",
+        "not OS, process, deployment, credential, or malicious same-process isolation",
+        "complete transaction request",
+        "complete versioned non-secret audit-evidence digest",
+        "exactly one consistent audit event",
+        "fixed depth",
+        "encoded-size",
+        "collection",
+        "key",
+        "string",
+        "integer limits",
+    )
+
+    traceability = text[text.index("## 18. Milestone and Evidence Traceability"):]
+    status_block = traceability[traceability.index("M118A - Owner Authority Service"):]
+    assert "M118A_AUTHORIZED: YES" in status_block
+    assert "M118A_STARTED: YES" in status_block
+    assert "M118A_FINALIZED: YES" in status_block
 
 
 def test_current_implementation_truth_is_not_promoted():
@@ -172,7 +225,7 @@ def test_current_implementation_truth_is_not_promoted():
     _assert_required(
         normalized_text,
         "no authenticated Owner source",
-        "no production OAS",
+        "no authenticated or deployment-verified OAS boundary",
         "no WebAuthn",
         "no live TLS Owner channel",
         "no deployed OS-principal boundary",
@@ -188,6 +241,7 @@ def test_current_implementation_truth_is_not_promoted():
         "no public Internet",
         "no multi-instance runtime",
         "no multi-agent runtime expansion",
+        "not OS, process, deployment, credential, or malicious same-process isolation",
     )
     _assert_required(
         _normalized(implementation),
@@ -223,8 +277,9 @@ def test_targeted_correction_preserves_evidence_precedence_and_tool_boundary():
     )
     _assert_required(
         traceability,
-        "M118A_AUTHORIZED: YES_NOT_STARTED",
-        "M118A_STARTED: NO",
+        "M118A_AUTHORIZED: YES",
+        "M118A_STARTED: YES",
+        "M118A_FINALIZED: YES",
         "generalized Tool-Operation-Capability authority",
     )
     assert "PHASE 1 DOCUMENTATION PASS" not in text
@@ -234,14 +289,15 @@ def test_targeted_correction_preserves_evidence_precedence_and_tool_boundary():
     assert "M117A is the frozen design authority" not in text
 
 
-def test_m118a_boundary_is_explicit_and_not_started():
+def test_m118a_boundary_is_explicit_and_finalized():
     text = _text(SECURITY)
     traceability = text[text.index("## 18. Milestone and Evidence Traceability"):]
     _assert_required(
         traceability,
         "M118A - Owner Authority Service Durable Security Kernel Foundation Build",
-        "M118A_AUTHORIZED: YES_NOT_STARTED",
-        "M118A_STARTED: NO",
+        "M118A_AUTHORIZED: YES",
+        "M118A_STARTED: YES",
+        "M118A_FINALIZED: YES",
         "M118A in scope:",
         "M118A out of scope:",
         "canonical durable OAS security-state foundation",
@@ -254,7 +310,7 @@ def test_m118a_boundary_is_explicit_and_not_started():
         "public Internet;",
         "multi-instance runtime;",
         "multi-agent runtime.",
-        "This canonization gate does not start M118A.",
+        "preceding canonization gate did not start M118A",
     )
 
 
@@ -301,11 +357,12 @@ def test_gate_is_documentation_only_and_has_no_unapproved_security_claims():
         text,
         "not a production security implementation",
         "not a deployed trust boundary",
-        "No production OAS durable security store",
+        "authentication-facing OAS remains unimplemented",
         "Static M117A tests verify documentation structure only",
-        "No M118A artifact",
+        "implementation pass has started and finalized M118A",
     )
     assert "DEPLOYMENT_STATUS" not in text
     assert "PROPOSAL_ONLY" not in text
-    assert "M118A_STARTED: YES" not in text
+    assert "M118A_STARTED: NO" not in text
+    assert "M118A_FINALIZED: YES" in text
     assert "M117A_FINALIZED: YES_DESIGN_ONLY" not in text
