@@ -314,6 +314,47 @@ def test_m118a_boundary_is_explicit_and_finalized():
     )
 
 
+def test_m118a_post_finalization_correction_state_is_distinct():
+    text = _text(SECURITY)
+    normalized = _normalized(text)
+    _assert_required(
+        text,
+        "The original finalized M118A commit and annotated tag remain immutable historical",
+        "M118A_FINAL_COMMIT: a5188ae7e3aa1454bac1c21e5c5081e441687397",
+        "M118A_FINAL_TAG: milestone-118A-oas-durable-security-kernel-foundation",
+        "M118A_FINAL_TAG_OBJECT: 297a3620664eb025f8aeb1516fd435a94a85bea7",
+        "M118A_FINAL_TAG_PEELED_TARGET: a5188ae7e3aa1454bac1c21e5c5081e441687397",
+        "The bounded corrective pass was PM-accepted and is finalized by the corrective\nGit closure.",
+        "M118A_CONCURRENCY_CORRECTION_PENDING_PM_REVIEW: NO",
+    )
+    _assert_required(
+        normalized,
+        "PM acceptance was initially held after a reproducible concurrent first-open",
+        "WAL negotiation is not itself a canonical security-state transaction.",
+        "Transient SQLite contention is not store corruption.",
+        "The code/dependency separation remains a static boundary only; it is not OS/process isolation.",
+        "Deployment verification remains `NO`.",
+    )
+    correction = text[text.index("The post-finalization correction state is explicit:"):]
+    _assert_required(
+        correction,
+        "M118A_GIT_FINALIZED: YES",
+        "M118A_PM_ACCEPTED: YES",
+        "M118A_CONCURRENCY_DEFECT_CONFIRMED: YES",
+        "M118A_CONCURRENCY_CORRECTION_IMPLEMENTED_LOCALLY: YES",
+        "M118A_CONCURRENCY_CORRECTION_TEST_VERIFIED: YES",
+        "M118A_CONCURRENCY_CORRECTION_GIT_DURABLE: YES",
+        "DEPLOYMENT_VERIFIED: NO",
+        "PROGRESS_UPDATED: YES",
+        "COMMIT_CREATED: YES",
+        "TAG_CREATED: YES",
+        "PUSH_PERFORMED: YES",
+        "SUCCESSOR_MILESTONE_AUTHORIZED: NO",
+    )
+    assert "M118A_PM_ACCEPTED: NO" not in correction
+    assert "M118A_CONCURRENCY_CORRECTION_GIT_DURABLE: NO" not in correction
+
+
 def test_architecture_integration_is_minimal_and_milestone_is_unchanged():
     architecture = _text(ARCHITECTURE)
     integration = architecture[architecture.index("## 19. Security and Authority Architecture"):]
@@ -354,12 +395,12 @@ def test_gate_is_documentation_only_and_has_no_unapproved_security_claims():
     assert "sub" + "process" not in source
     text = _text(SECURITY)
     _assert_required(
-        text,
+        _normalized(text),
         "not a production security implementation",
         "not a deployed trust boundary",
         "authentication-facing OAS remains unimplemented",
         "Static M117A tests verify documentation structure only",
-        "implementation pass has started and finalized M118A",
+        "separately authorized M118A implementation was historically finalized by the Git closure",
     )
     assert "DEPLOYMENT_STATUS" not in text
     assert "PROPOSAL_ONLY" not in text

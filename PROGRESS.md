@@ -4214,3 +4214,33 @@ Extracted 18 endpoint handlers (6 proposal-review-console, 6 proposal-revision-c
     - OpenAPI remains 304 paths / 108 schemas; api_server remains 8 direct @app routes / 23 include_router / 0 direct /action/*.
     - Observation remains BLOCKED / deferred; Candidate A-F remain DEFERRED; capability expansion is none.
     - Git remains authoritative for commit, tag, and publication state; this historical entry does not self-assert its own commit SHA, tag existence, or remote publication state.
+
+  - Milestone 118A — Post-Finalization WAL First-Open Concurrency Correction
+    (FINALIZED; committed; tagged; pushed; M118A CLOSED)
+    - PM accepted the bounded corrective pass for the reproducible SQLite
+      first-open WAL negotiation contention defect; no successor milestone was
+      authorized.
+    - The original M118A commit and annotated tag remain immutable historical
+      provenance: `a5188ae7e3aa1454bac1c21e5c5081e441687397` and
+      `milestone-118A-oas-durable-security-kernel-foundation`.
+    - Corrected connection setup reads the current journal mode, skips repeated
+      WAL negotiation for existing WAL stores, retries only primary
+      `SQLITE_BUSY`/`SQLITE_LOCKED` within a monotonic 2.0-second deadline, and
+      fails exhausted contention as `DatabaseUnavailableError`.
+    - WAL bootstrap remains separate from `BEGIN IMMEDIATE` migration and
+      canonical security-state transactions; contention remains distinct from
+      corruption, with no weaker journal-mode fallback.
+    - Corrective implementation and tests remain bounded to
+      `aether/oas/security_kernel.py`, `tests/test_m118a_security_kernel.py`,
+      `docs/architecture/SECURITY_ARCHITECTURE.md`, and
+      `tests/test_security_architecture_canonization.py`, plus this ledger
+      entry.
+    - Validation: 100/100 independent concurrency-test invocations; thread
+      matrix 5800/5800; process matrix 700/700; targeted 74 passed in five
+      runs; full suite 3358 passed with 9 existing warnings in three runs;
+      M117A 10 passed; relevant regressions 547 passed.
+    - Corrective Git closure commit, annotated tag
+      `milestone-118A-oas-durable-security-kernel-foundation-corrected`, and
+      remote publication are recorded by Git and the external finalization
+      summary. Deployment remains unverified; no authentication-facing OAS,
+      OS-principal boundary, or generalized Tool authority is claimed.

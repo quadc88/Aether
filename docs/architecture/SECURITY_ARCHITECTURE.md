@@ -227,12 +227,53 @@ handles, Claim Token plaintext, and signing keys remain inside the protected OAS
 boundary.
 
 M118A implements the bounded OAS security-kernel store and its canonical state
-plus audit transaction using SQLite. The corrective pass binds the complete
+plus audit transaction using SQLite. The implementation binds the complete
 transaction request and committed audit event, validates paired evidence before
 retry, validates the v1 store structure and SQLite integrity, and applies
 deterministic resource bounds to canonical JSON. This establishes durable state,
 not Owner authentication, a separate OS principal, or deployment verification.
 The authentication-facing OAS remains unimplemented.
+
+The original finalized M118A commit and annotated tag remain immutable historical
+provenance:
+
+```text
+M118A_FINAL_COMMIT: a5188ae7e3aa1454bac1c21e5c5081e441687397
+M118A_FINAL_TAG: milestone-118A-oas-durable-security-kernel-foundation
+M118A_FINAL_TAG_OBJECT: 297a3620664eb025f8aeb1516fd435a94a85bea7
+M118A_FINAL_TAG_PEELED_TARGET: a5188ae7e3aa1454bac1c21e5c5081e441687397
+```
+
+PM acceptance was initially held after a reproducible concurrent first-open
+SQLite defect was confirmed: first-time WAL negotiation could return
+`SQLITE_BUSY` before migration acquired `BEGIN IMMEDIATE`, and the old setup
+path incorrectly translated that contention into `CorruptSchemaError`.
+
+The bounded corrective pass was PM-accepted and is finalized by the corrective
+Git closure. The connection boundary is explicit:
+
+1. Open SQLite, enable foreign keys, and establish a bounded monotonic retry
+   deadline of `2.0` seconds for first-open WAL setup.
+2. Read the current journal mode. If it is already `WAL`, do not negotiate WAL
+   again. Otherwise execute `PRAGMA journal_mode = WAL` with retries only for
+   SQLite primary result codes `SQLITE_BUSY` or `SQLITE_LOCKED`.
+3. Use exponential backoff beginning at `0.005` seconds and capped at `0.05`
+   seconds. Exhaustion raises `DatabaseUnavailableError` with the original
+   SQLite exception as its cause; there is no indefinite retry and no fallback
+   to a weaker journal mode.
+4. Verify the effective journal mode is exactly `WAL`, restore the normal
+   `10000` millisecond busy timeout, set `PRAGMA synchronous = FULL`, and verify
+   both synchronous `FULL` and foreign-key enforcement before returning a
+   connection.
+5. Only after connection setup succeeds does `migrate()` acquire `BEGIN
+   IMMEDIATE`, create or validate the schema, and commit. WAL negotiation is
+   not itself a canonical security-state transaction.
+
+Transient SQLite contention is not store corruption. Actual malformed SQLite,
+unsupported schema versions, and structural or integrity violations remain
+separately classified as `CorruptSchemaError`. The code/dependency separation
+remains a static boundary only; it is not OS/process isolation. Deployment
+verification remains `NO`.
 
 The request digest is SHA-256 over canonical JSON containing the domain
 `aether.oas.security-kernel.request`, contract version, `transaction_id`,
@@ -405,8 +446,10 @@ remain current implementation facts; no public Internet; no multi-instance
 runtime; and no multi-agent runtime expansion. Owner authentication does not grant
 authority to tools, operations, capabilities, or Generic Act.
 The preceding canonization gate created no M118A implementation artifact; the
-separately authorized corrective M118A artifacts are finalized by the Git
-closure recorded below.
+separately authorized M118A implementation was historically finalized by the
+Git closure recorded below. The post-finalization concurrency correction is
+PM-accepted and durable in the corrective Git closure; it does not alter that
+historical closure.
 
 These primitives do not establish a truthful human source, OAS, WebAuthn, TLS
 Owner channel, OS-principal boundary, recovery root, source-event issuer, Core
@@ -422,7 +465,26 @@ integration; deployment verification; global split-brain coordination; and any
 security expansion beyond the one-mind Owner boundary.
 
 M118A is a separately authorized bounded foundation Build recorded below as
-started and finalized; this finalization does not authorize a successor.
+started and historically finalized; this finalization does not authorize a
+successor. Its PM acceptance is distinct from Git finalization.
+
+The post-finalization correction state is explicit:
+
+```text
+M118A_GIT_FINALIZED: YES
+M118A_PM_ACCEPTED: YES
+M118A_CONCURRENCY_DEFECT_CONFIRMED: YES
+M118A_CONCURRENCY_CORRECTION_IMPLEMENTED_LOCALLY: YES
+M118A_CONCURRENCY_CORRECTION_PENDING_PM_REVIEW: NO
+M118A_CONCURRENCY_CORRECTION_TEST_VERIFIED: YES
+M118A_CONCURRENCY_CORRECTION_GIT_DURABLE: YES
+DEPLOYMENT_VERIFIED: NO
+PROGRESS_UPDATED: YES
+COMMIT_CREATED: YES
+TAG_CREATED: YES
+PUSH_PERFORMED: YES
+SUCCESSOR_MILESTONE_AUTHORIZED: NO
+```
 
 ## 17. Security Architecture Evolution Rules
 

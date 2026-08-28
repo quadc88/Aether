@@ -11,7 +11,9 @@ import ast
 
 import pytest
 
+import aether.oas.security_kernel as security_kernel_module
 from aether.oas.security_kernel import (
+    DatabaseUnavailableError,
     FIELD_CLASSIFICATION,
     AetherInstanceTrust,
     CorruptSchemaError,
@@ -110,6 +112,38 @@ def kernel(store_path: Path) -> SecurityKernel:
     return SecurityKernel(store_path)
 
 
+class _TrackedConnection:
+    def __init__(self, connection: sqlite3.Connection, statements: list[str]):
+        object.__setattr__(self, "_connection", connection)
+        object.__setattr__(self, "_statements", statements)
+
+    def __setattr__(self, name: str, value: object) -> None:
+        setattr(self._connection, name, value)
+
+    def __getattr__(self, name: str) -> object:
+        return getattr(self._connection, name)
+
+    def execute(self, sql: str, *parameters):
+        self._statements.append(" ".join(sql.split()).upper())
+        return self._connection.execute(sql, *parameters)
+
+
+def _busy_error(code: int) -> sqlite3.OperationalError:
+    error = sqlite3.OperationalError("database is locked")
+    error.sqlite_errorcode = code
+    error.sqlite_errorname = (
+        "SQLITE_BUSY" if code == sqlite3.SQLITE_BUSY else "SQLITE_LOCKED"
+    )
+    return error
+
+
+def _uninitialized_kernel(store_path: Path) -> SecurityKernel:
+    kernel = object.__new__(SecurityKernel)
+    kernel.store_path = store_path
+    kernel.fault_injector = None
+    return kernel
+
+
 def test_empty_store_initialization_and_schema_version(store_path: Path):
     assert not store_path.exists()
     kernel = SecurityKernel(store_path)
@@ -193,6 +227,155 @@ def test_concurrent_first_open_initializes_schema_once(store_path: Path):
         results = list(pool.map(invoke, range(8)))
     assert all(result == results[0] for result in results)
     assert len(SecurityKernel(store_path).list_audit_events()) == 1
+
+
+def test_already_wal_store_skips_mode_negotiation_and_keeps_connection_settings(
+    store_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    SecurityKernel(store_path)
+    statements: list[str] = []
+    real_connect = security_kernel_module.sqlite3.connect
+
+    def tracked_connect(*args, **kwargs):
+        return _TrackedConnection(real_connect(*args, **kwargs), statements)
+
+    monkeypatch.setattr(security_kernel_module.sqlite3, "connect", tracked_connect)
+    connection = _uninitialized_kernel(store_path)._connect()
+    setup_statements = list(statements)
+    assert "PRAGMA JOURNAL_MODE = WAL" not in setup_statements
+    assert connection.execute("PRAGMA journal_mode").fetchone()[0].lower() == "wal"
+    assert connection.execute("PRAGMA busy_timeout").fetchone()[0] == 10000
+    assert connection.execute("PRAGMA synchronous").fetchone()[0] == 2
+    assert connection.execute("PRAGMA foreign_keys").fetchone()[0] == 1
+    connection.close()
+
+
+@pytest.mark.parametrize("contention_code", [sqlite3.SQLITE_BUSY, sqlite3.SQLITE_LOCKED])
+def test_wal_negotiation_retries_bounded_contention_then_succeeds(
+    store_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    contention_code: int,
+):
+    real_connect = security_kernel_module.sqlite3.connect
+    created: list[_TrackedConnection] = []
+    remaining_failures = 2
+
+    class ControlledConnection(_TrackedConnection):
+        def execute(self, sql: str, *parameters):
+            nonlocal remaining_failures
+            normalized = " ".join(sql.split()).upper()
+            if normalized == "PRAGMA JOURNAL_MODE = WAL" and remaining_failures:
+                remaining_failures -= 1
+                raise _busy_error(contention_code)
+            return super().execute(sql, *parameters)
+
+    def controlled_connect(*args, **kwargs):
+        connection = ControlledConnection(real_connect(*args, **kwargs), [])
+        created.append(connection)
+        return connection
+
+    monkeypatch.setattr(security_kernel_module.sqlite3, "connect", controlled_connect)
+    connection = _uninitialized_kernel(store_path)._connect()
+    assert len(created) == 3
+    for item in created[:2]:
+        with pytest.raises(sqlite3.ProgrammingError):
+            item._connection.execute("SELECT 1")
+    assert connection.execute("PRAGMA journal_mode").fetchone()[0].lower() == "wal"
+    connection.close()
+
+
+def test_wal_negotiation_exhaustion_is_bounded_and_not_corruption(
+    store_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    real_connect = security_kernel_module.sqlite3.connect
+    created: list[_TrackedConnection] = []
+
+    class AlwaysBusyConnection(_TrackedConnection):
+        def execute(self, sql: str, *parameters):
+            normalized = " ".join(sql.split()).upper()
+            if normalized == "PRAGMA JOURNAL_MODE = WAL":
+                raise _busy_error(sqlite3.SQLITE_BUSY)
+            return super().execute(sql, *parameters)
+
+    def always_busy_connect(*args, **kwargs):
+        connection = AlwaysBusyConnection(real_connect(*args, **kwargs), [])
+        created.append(connection)
+        return connection
+
+    monkeypatch.setattr(security_kernel_module.sqlite3, "connect", always_busy_connect)
+    monkeypatch.setattr(security_kernel_module, "_WAL_INIT_MAX_RETRY_SECONDS", 0.03)
+    monkeypatch.setattr(security_kernel_module, "_WAL_INIT_BACKOFF_INITIAL_SECONDS", 0.001)
+    monkeypatch.setattr(security_kernel_module, "_WAL_INIT_BACKOFF_MAX_SECONDS", 0.002)
+
+    started = security_kernel_module.time.monotonic()
+    with pytest.raises(DatabaseUnavailableError) as raised:
+        _uninitialized_kernel(store_path)._connect()
+    assert security_kernel_module.time.monotonic() - started < 0.5
+    assert not isinstance(raised.value, CorruptSchemaError)
+    assert isinstance(raised.value.__cause__, sqlite3.OperationalError)
+    assert raised.value.__cause__.sqlite_errorname == "SQLITE_BUSY"
+    assert created
+    for item in created:
+        with pytest.raises(sqlite3.ProgrammingError):
+            item._connection.execute("SELECT 1")
+
+
+def test_unexpected_sqlite_setup_error_fails_closed_as_corruption(
+    store_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    real_connect = security_kernel_module.sqlite3.connect
+    created: list[_TrackedConnection] = []
+
+    class UnexpectedConnection(_TrackedConnection):
+        def execute(self, sql: str, *parameters):
+            normalized = " ".join(sql.split()).upper()
+            if normalized == "PRAGMA JOURNAL_MODE = WAL":
+                raise sqlite3.DatabaseError("unexpected database failure")
+            return super().execute(sql, *parameters)
+
+    def unexpected_connect(*args, **kwargs):
+        connection = UnexpectedConnection(real_connect(*args, **kwargs), [])
+        created.append(connection)
+        return connection
+
+    monkeypatch.setattr(security_kernel_module.sqlite3, "connect", unexpected_connect)
+    with pytest.raises(CorruptSchemaError) as raised:
+        _uninitialized_kernel(store_path)._connect()
+    assert isinstance(raised.value.__cause__, sqlite3.DatabaseError)
+    assert created
+    for item in created:
+        with pytest.raises(sqlite3.ProgrammingError):
+            item._connection.execute("SELECT 1")
+
+
+def test_migration_contention_is_temporary_unavailability_not_corruption(
+    store_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    real_connect = security_kernel_module.sqlite3.connect
+    created: list[_TrackedConnection] = []
+
+    class MigrationBusyConnection(_TrackedConnection):
+        def execute(self, sql: str, *parameters):
+            normalized = " ".join(sql.split()).upper()
+            if normalized == "BEGIN IMMEDIATE":
+                raise _busy_error(sqlite3.SQLITE_BUSY)
+            return super().execute(sql, *parameters)
+
+    def migration_busy_connect(*args, **kwargs):
+        connection = MigrationBusyConnection(real_connect(*args, **kwargs), [])
+        created.append(connection)
+        return connection
+
+    monkeypatch.setattr(
+        security_kernel_module.sqlite3, "connect", migration_busy_connect
+    )
+    with pytest.raises(DatabaseUnavailableError) as raised:
+        SecurityKernel(store_path)
+    assert not isinstance(raised.value, CorruptSchemaError)
+    assert isinstance(raised.value.__cause__, sqlite3.OperationalError)
+    assert raised.value.__cause__.sqlite_errorname == "SQLITE_BUSY"
+    with pytest.raises(sqlite3.ProgrammingError):
+        created[0]._connection.execute("SELECT 1")
 
 
 def test_newer_schema_is_rejected_without_recreation(store_path: Path):

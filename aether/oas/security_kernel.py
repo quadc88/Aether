@@ -17,6 +17,7 @@ import json
 from pathlib import Path
 import re
 import sqlite3
+import time
 from types import MappingProxyType
 from typing import Any, Callable, Mapping
 
@@ -33,6 +34,10 @@ MAX_JSON_COLLECTION_ITEMS = 128
 MAX_JSON_KEY_BYTES = 128
 MAX_JSON_STRING_BYTES = 4096
 MAX_JSON_INTEGER_DIGITS = 128
+_SQLITE_BUSY_TIMEOUT_MS = 10_000
+_WAL_INIT_MAX_RETRY_SECONDS = 2.0
+_WAL_INIT_BACKOFF_INITIAL_SECONDS = 0.005
+_WAL_INIT_BACKOFF_MAX_SECONDS = 0.05
 _HEX64 = re.compile(r"^[0-9a-f]{64}$")
 _IDENTITY = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$")
 _OPERATION = re.compile(r"^[a-z][a-z0-9_]{0,63}$")
@@ -60,6 +65,10 @@ class SchemaVersionError(SecurityKernelError):
 
 class CorruptSchemaError(SecurityKernelError):
     """Raised when an existing store is incomplete or malformed."""
+
+
+class DatabaseUnavailableError(SecurityKernelError):
+    """Raised when bounded SQLite contention prevents store availability."""
 
 
 class SecurityKernelIntegrityError(SecurityKernelError):
@@ -613,6 +622,25 @@ def _audit_event_id(transaction_id: str) -> str:
     return "audit_" + hashlib.sha256(transaction_id.encode("utf-8")).hexdigest()
 
 
+def _is_transient_sqlite_contention(exc: sqlite3.DatabaseError) -> bool:
+    """Recognize SQLite primary BUSY/LOCKED result codes only."""
+
+    code = getattr(exc, "sqlite_errorcode", None)
+    if not isinstance(code, int):
+        return False
+    return (code & 0xFF) in {sqlite3.SQLITE_BUSY, sqlite3.SQLITE_LOCKED}
+
+
+def _close_failed_connection(connection: sqlite3.Connection | None) -> None:
+    if connection is None:
+        return
+    try:
+        connection.close()
+    except Exception:
+        # Preserve the setup failure; cleanup must not mask its cause.
+        pass
+
+
 class SecurityKernel:
     """Explicitly bounded durable store for OAS security-state foundation."""
 
@@ -630,21 +658,73 @@ class SecurityKernel:
 
     def _connect(self) -> sqlite3.Connection:
         self.store_path.parent.mkdir(parents=True, exist_ok=True)
-        try:
-            connection = sqlite3.connect(
-                self.store_path,
-                timeout=10.0,
-                isolation_level=None,
-                check_same_thread=False,
-            )
-            connection.row_factory = sqlite3.Row
-            connection.execute("PRAGMA foreign_keys = ON")
-            connection.execute("PRAGMA busy_timeout = 10000")
-            connection.execute("PRAGMA journal_mode = WAL")
-            connection.execute("PRAGMA synchronous = FULL")
-            return connection
-        except sqlite3.DatabaseError as exc:
-            raise CorruptSchemaError("security-kernel store is not valid SQLite") from exc
+        deadline = time.monotonic() + _WAL_INIT_MAX_RETRY_SECONDS
+        backoff = _WAL_INIT_BACKOFF_INITIAL_SECONDS
+        while True:
+            connection: sqlite3.Connection | None = None
+            try:
+                connection = sqlite3.connect(
+                    self.store_path,
+                    timeout=10.0,
+                    isolation_level=None,
+                    check_same_thread=False,
+                )
+                connection.row_factory = sqlite3.Row
+                connection.execute("PRAGMA foreign_keys = ON")
+
+                # Keep mode discovery and first-time WAL negotiation inside the
+                # same bounded contention window, then restore the normal
+                # connection busy timeout before returning the connection.
+                remaining_ms = max(0, int((deadline - time.monotonic()) * 1000))
+                connection.execute(f"PRAGMA busy_timeout = {remaining_ms}")
+                journal_mode_row = connection.execute(
+                    "PRAGMA journal_mode"
+                ).fetchone()
+                if journal_mode_row is None or not isinstance(journal_mode_row[0], str):
+                    raise CorruptSchemaError("SQLite journal mode is invalid")
+                if journal_mode_row[0].upper() != "WAL":
+                    remaining_ms = max(0, int((deadline - time.monotonic()) * 1000))
+                    connection.execute(f"PRAGMA busy_timeout = {remaining_ms}")
+                    connection.execute("PRAGMA journal_mode = WAL")
+
+                effective_mode_row = connection.execute(
+                    "PRAGMA journal_mode"
+                ).fetchone()
+                if (
+                    effective_mode_row is None
+                    or not isinstance(effective_mode_row[0], str)
+                    or effective_mode_row[0].upper() != "WAL"
+                ):
+                    raise DatabaseUnavailableError(
+                        "SQLite WAL mode could not be established"
+                    )
+                connection.execute(f"PRAGMA busy_timeout = {_SQLITE_BUSY_TIMEOUT_MS}")
+                connection.execute("PRAGMA synchronous = FULL")
+
+                foreign_keys = connection.execute("PRAGMA foreign_keys").fetchone()
+                synchronous = connection.execute("PRAGMA synchronous").fetchone()
+                if foreign_keys is None or int(foreign_keys[0]) != 1:
+                    raise CorruptSchemaError("SQLite foreign-key enforcement is disabled")
+                if synchronous is None or int(synchronous[0]) != 2:
+                    raise CorruptSchemaError("SQLite synchronous mode is not FULL")
+                return connection
+            except sqlite3.DatabaseError as exc:
+                _close_failed_connection(connection)
+                connection = None
+                if not _is_transient_sqlite_contention(exc):
+                    raise CorruptSchemaError(
+                        "security-kernel store is not valid SQLite"
+                    ) from exc
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    raise DatabaseUnavailableError(
+                        "SQLite WAL initialization contention deadline exhausted"
+                    ) from exc
+                time.sleep(min(backoff, remaining))
+                backoff = min(backoff * 2, _WAL_INIT_BACKOFF_MAX_SECONDS)
+            except Exception:
+                _close_failed_connection(connection)
+                raise
 
     @staticmethod
     def _table_names(connection: sqlite3.Connection) -> set[str]:
@@ -905,6 +985,10 @@ class SecurityKernel:
         except sqlite3.DatabaseError as exc:
             if connection.in_transaction:
                 connection.rollback()
+            if _is_transient_sqlite_contention(exc):
+                raise DatabaseUnavailableError(
+                    "SQLite migration contention deadline exhausted"
+                ) from exc
             raise CorruptSchemaError("security-kernel schema validation failed") from exc
         except Exception:
             if connection.in_transaction:
