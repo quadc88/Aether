@@ -1,4 +1,4 @@
-"""Documentation and finalization lock for the M118A security architecture."""
+"""Documentation and finalization lock for the canonical security architecture."""
 
 from hashlib import sha256
 from pathlib import Path
@@ -13,11 +13,20 @@ M117A = ROOT / (
     "MILESTONE_117A_SINGLE_OWNER_LAN_TRUST_ROOT_CONTRACT_PROOF.md"
 )
 M117A_LOCK = ROOT / "tests/test_milestone_117a_single_owner_lan_trust_root_contract_proof.py"
+M119A = ROOT / (
+    "docs/architecture/"
+    "MILESTONE_119A_OAS_SEPARATE_PRINCIPAL_RUNTIME_AND_PRIVILEGED_IPC_BOUNDARY_PROOF.md"
+)
+M119A_LOCK = ROOT / (
+    "tests/test_milestone_119a_oas_separate_principal_runtime_and_privileged_ipc_boundary_proof.py"
+)
 README = ROOT / "README.md"
 CONSTITUTION = ROOT / "docs/CONSTITUTION.md"
 
 APPROVED_M117A_HASH = "a56d3d433cd787f7ee902c0861953b604fd20861d3e9adabcd5adcaefee9673b"
 APPROVED_M117A_LOCK_HASH = "b6c150821b9d996fe2f6982c2062b937d3c5bcc9381a152598d0446c88e19d85"
+APPROVED_M119A_HASH = "2f6d36d503a41aec1513605cfc26bd77755aa0d0fd821683b2a783513193646b"
+APPROVED_M119A_LOCK_HASH = "780dd0da75733f8443abe4817f90d95526dbddc477c1e420bd843357b0a17e50"
 BASELINE_PROTECTED_HASHES = {
     README: "5357e53635c7467332129048155b39ac9282d6aff268f5f910594a5b26d72cad",
     CONSTITUTION: "0055748f683bf753b3471a0317b68677752c312d4030b12fbc71684fd3af3ee1",
@@ -212,6 +221,50 @@ def test_m118a_status_rows_and_boundary_claims_are_distinct():
     assert "M118A_AUTHORIZED: YES" in status_block
     assert "M118A_STARTED: YES" in status_block
     assert "M118A_FINALIZED: YES" in status_block
+
+
+def test_m119a_integration_preserves_unimplemented_boundary_and_final_traceability():
+    text = _text(SECURITY)
+    normalized = _normalized(text)
+    _assert_required(
+        normalized,
+        "M119A is the current, PM-accepted design decision",
+        "selected overall model is Model D",
+        "root-owned, systemd-activated AF_UNIX owner broker",
+        "`aether-owner`, `aether-runtime`, `aether-oas`, `aether-bootstrap`, and `root`",
+        "SO_PEERCRED",
+        "fresh PAM authentication",
+        "one-use confirmation nonce",
+        "instance/generation-bound authorization context",
+        "Systemd owns and activates the runtime, bootstrap, broker, and owner-broker sockets",
+        "bounded allowlisted operations",
+        "M119A remains design proof only",
+        "IMPLEMENTATION_STATUS: NOT_IMPLEMENTED",
+        "VERIFICATION_STATUS: TEST_VERIFIED",
+        "DEPLOYMENT_VERIFIED: NO",
+        "A future Build remains separately authorized only for PM review",
+    )
+    traceability = text[text.index("The M119A evidence reference is:"):]
+    _assert_required(
+        traceability,
+        "MILESTONE_119A_OAS_SEPARATE_PRINCIPAL_RUNTIME_AND_PRIVILEGED_IPC_BOUNDARY_PROOF.md",
+        APPROVED_M119A_HASH,
+        "test_milestone_119a_oas_separate_principal_runtime_and_privileged_ipc_boundary_proof.py",
+        APPROVED_M119A_LOCK_HASH,
+        "Selected exit: EXIT_A",
+        "M119A_FINALIZED: YES",
+        "DECISION_STATUS: CURRENT",
+        "PM_ACCEPTED: YES",
+        "BUILD_AUTHORIZED: NO",
+        "SUCCESSOR_NUMBER_ASSIGNED: NO",
+    )
+    assert "M119A_FINALIZED: NO" not in traceability
+    assert "IMPLEMENTATION_STATUS: IMPLEMENTED" not in traceability
+
+
+def test_m119a_finalized_artifact_hashes_and_protected_evidence_are_stable():
+    assert _sha256(M119A) == APPROVED_M119A_HASH
+    assert _sha256(M119A_LOCK) == APPROVED_M119A_LOCK_HASH
 
 
 def test_current_implementation_truth_is_not_promoted():

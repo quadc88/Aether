@@ -371,9 +371,9 @@ does not promote that target to implementation or deployment verification.
 | --- | --- | --- | --- | --- | --- |
 | one Owner per Aether Instance | CURRENT | DESIGN_PROVEN | NOT_IMPLEMENTED | NOT_VERIFIED | M117A design record; no live trust root |
 | hybrid bootstrap plus authenticated channel | CURRENT | DESIGN_PROVEN | NOT_IMPLEMENTED | NOT_VERIFIED | M117A design record; target only |
-| OS-attested local-console bootstrap | CURRENT | DESIGN_PROVEN | NOT_IMPLEMENTED | NOT_VERIFIED | M117A design record; no live OS evidence |
+| OS-attested local-console bootstrap | CURRENT | DESIGN_PROVEN | NOT_IMPLEMENTED | NOT_VERIFIED | M117A/M119A design records; no live OS evidence |
 | OS-attested recovery plus offline material | CURRENT | DESIGN_PROVEN | NOT_IMPLEMENTED | NOT_VERIFIED | M117A design record; no live ceremony |
-| separate-principal OAS boundary | CURRENT | DESIGN_PROVEN | NOT_IMPLEMENTED | NOT_VERIFIED | M117A design record; no authentication-facing OAS boundary |
+| separate-principal OAS boundary | CURRENT | DESIGN_PROVEN | NOT_IMPLEMENTED | NOT_VERIFIED | M117A/M119A design records; no authentication-facing OAS boundary |
 | direct TLS and exact origin/RP ID | CURRENT | DESIGN_PROVEN | NOT_IMPLEMENTED | NOT_VERIFIED | M117A design record; current API is loopback |
 | WebAuthn registration/authentication separation | CURRENT | DESIGN_PROVEN | NOT_IMPLEMENTED | NOT_VERIFIED | M117A design record; no WebAuthn |
 | server-side revocable Owner sessions | CURRENT | DESIGN_PROVEN | NOT_IMPLEMENTED | NOT_VERIFIED | M117A design record; no live session issuer |
@@ -486,6 +486,31 @@ PUSH_PERFORMED: YES
 SUCCESSOR_MILESTONE_AUTHORIZED: NO
 ```
 
+M119A is the current, PM-accepted design decision extending the separate-principal
+OAS boundary from a design direction into an internally executable host-security
+contract. The selected overall model is Model D: a dedicated OAS boundary plus a
+bounded helper/broker mechanism. The selected launcher is a root-owned,
+systemd-activated AF_UNIX owner broker. The target principals are distinct
+`aether-owner`, `aether-runtime`, `aether-oas`, `aether-bootstrap`, and `root`
+roles; the ordinary runtime never shares the Owner uid or inherits Owner session,
+TTY, sudo, polkit, group, environment, or credential authority.
+
+The owner broker authenticates the kernel peer with `SO_PEERCRED`, requires an
+active local non-remote TTY logind session, performs fresh PAM authentication,
+and requires a same-TTY one-use confirmation nonce. It retains a one-use,
+instance/generation-bound authorization context in memory and launches only the
+fixed helper as `aether-bootstrap` over an inherited private descriptor. Systemd
+owns and activates the runtime, bootstrap, broker, and owner-broker sockets;
+OAS validates exact descriptor identity and accepts only bounded allowlisted
+operations. This contract does not authorize arbitrary commands, paths, SQL,
+Generic Act, or generalized Tool-Operation-Capability authority.
+
+M119A remains design proof only: `IMPLEMENTATION_STATUS: NOT_IMPLEMENTED`,
+`VERIFICATION_STATUS: TEST_VERIFIED`, and `DEPLOYMENT_VERIFIED: NO`. The current
+host has no selected principals, units, sockets, or deployed boundary. A future
+Build remains separately authorized only for PM review; no Build or successor is
+authorized by M119A.
+
 ## 17. Security Architecture Evolution Rules
 
 Every future security-affecting milestone must classify its effect as exactly one
@@ -532,6 +557,36 @@ M117A_FINALIZED: YES
 M117A evidence is immutable historical evidence, decision provenance, and
 traceability. It does not prove live security. The current implementation truth
 is recorded in sections 4, 14, and 15 rather than inferred from milestone status.
+
+The M119A evidence reference is:
+
+```text
+Evidence:
+docs/architecture/MILESTONE_119A_OAS_SEPARATE_PRINCIPAL_RUNTIME_AND_PRIVILEGED_IPC_BOUNDARY_PROOF.md
+Finalized artifact SHA-256:
+2f6d36d503a41aec1513605cfc26bd77755aa0d0fd821683b2a783513193646b
+Static-lock:
+tests/test_milestone_119a_oas_separate_principal_runtime_and_privileged_ipc_boundary_proof.py
+Finalized static-lock SHA-256:
+780dd0da75733f8443abe4817f90d95526dbddc477c1e420bd843357b0a17e50
+Selected exit: EXIT_A
+M119A_AUTHORIZED: YES
+M119A_STARTED: YES
+M119A_FINALIZED: YES
+DECISION_STATUS: CURRENT
+DESIGN_STATUS: DESIGN_PROVEN
+IMPLEMENTATION_STATUS: NOT_IMPLEMENTED
+VERIFICATION_STATUS: TEST_VERIFIED
+DEPLOYMENT_VERIFIED: NO
+BUILD_JUSTIFIED_FOR_PM_REVIEW: YES
+BUILD_AUTHORIZED: NO
+PM_ACCEPTED: YES
+SUCCESSOR_NUMBER_ASSIGNED: NO
+```
+
+M119A is finalized design evidence and current security-domain traceability. It
+does not prove live authentication, OS separation, deployment, or production
+security, and it does not authorize a successor milestone.
 
 The M118A implementation boundary is:
 
