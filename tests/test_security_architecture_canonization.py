@@ -20,16 +20,37 @@ M119A = ROOT / (
 M119A_LOCK = ROOT / (
     "tests/test_milestone_119a_oas_separate_principal_runtime_and_privileged_ipc_boundary_proof.py"
 )
+M120A_PROTOCOL = ROOT / "aether/oas/ipc_protocol.py"
+M120A_ACTIVATION = ROOT / "aether/oas/socket_activation.py"
+M120A_SERVICE = ROOT / "aether/oas/service.py"
+M120A_LOCK = ROOT / (
+    "tests/test_m120a_oas_socket_activated_service_bounded_ipc_foundation.py"
+)
 README = ROOT / "README.md"
 CONSTITUTION = ROOT / "docs/CONSTITUTION.md"
+OAS_INIT = ROOT / "aether/oas/__init__.py"
+M118A_KERNEL = ROOT / "aether/oas/security_kernel.py"
+M118A_LOCK = ROOT / "tests/test_m118a_security_kernel.py"
+PROGRESS = ROOT / "PROGRESS.md"
 
 APPROVED_M117A_HASH = "a56d3d433cd787f7ee902c0861953b604fd20861d3e9adabcd5adcaefee9673b"
 APPROVED_M117A_LOCK_HASH = "b6c150821b9d996fe2f6982c2062b937d3c5bcc9381a152598d0446c88e19d85"
 APPROVED_M119A_HASH = "2f6d36d503a41aec1513605cfc26bd77755aa0d0fd821683b2a783513193646b"
 APPROVED_M119A_LOCK_HASH = "780dd0da75733f8443abe4817f90d95526dbddc477c1e420bd843357b0a17e50"
+APPROVED_M120A_PROTOCOL_HASH = "81f1d99304831270179ca809e45b58cb96fb5b28b771f6ed00f2dbcc7843e923"
+APPROVED_M120A_ACTIVATION_HASH = "dbbe229118bfa2b54f32ad24537acc62ca57843fa0fb6230ba23a9cd57985709"
+APPROVED_M120A_SERVICE_HASH = "da654853f2a0177d5d219afd8ff2279b05b598d07beeb143286f85ad052bb771"
+APPROVED_M120A_LOCK_HASH = "a98e0947ca7466d485e53c14e8560bbee6876277fcc9c27911bee1e225e6c6a9"
 BASELINE_PROTECTED_HASHES = {
     README: "5357e53635c7467332129048155b39ac9282d6aff268f5f910594a5b26d72cad",
     CONSTITUTION: "0055748f683bf753b3471a0317b68677752c312d4030b12fbc71684fd3af3ee1",
+    ARCHITECTURE: "49d98d7530bfc88a9070aa620115af99fd0414f36de67910719f496844347065",
+    M117A: "a56d3d433cd787f7ee902c0861953b604fd20861d3e9adabcd5adcaefee9673b",
+    M117A_LOCK: "b6c150821b9d996fe2f6982c2062b937d3c5bcc9381a152598d0446c88e19d85",
+    OAS_INIT: "a4cb03845a5676f48f5328392ccbf2637fd98052be84b9e5213448e91947dd54",
+    M118A_KERNEL: "ef02d191d11ad6acf7f93710bc02deea284f336237310822655f6988451d8589",
+    M118A_LOCK: "89ccd391f0270df07b7173307ab25d31ab7787448cd001ddeef2d0732c5e7117",
+    PROGRESS: "724690366d25bf1824a8c7d5140f843feefd05e5373344aaf5e6f74667aea958",
 }
 
 PRECEDENCE = """CONSTITUTION
@@ -244,7 +265,10 @@ def test_m119a_integration_preserves_unimplemented_boundary_and_final_traceabili
         "DEPLOYMENT_VERIFIED: NO",
         "A future Build remains separately authorized only for PM review",
     )
-    traceability = text[text.index("The M119A evidence reference is:"):]
+    traceability = text[
+        text.index("The M119A evidence reference is:"):
+        text.index("The M118A implementation boundary is:")
+    ]
     _assert_required(
         traceability,
         "MILESTONE_119A_OAS_SEPARATE_PRINCIPAL_RUNTIME_AND_PRIVILEGED_IPC_BOUNDARY_PROOF.md",
@@ -265,6 +289,83 @@ def test_m119a_integration_preserves_unimplemented_boundary_and_final_traceabili
 def test_m119a_finalized_artifact_hashes_and_protected_evidence_are_stable():
     assert _sha256(M119A) == APPROVED_M119A_HASH
     assert _sha256(M119A_LOCK) == APPROVED_M119A_LOCK_HASH
+
+
+def test_m120a_status_rows_and_scope_are_bounded():
+    text = _text(SECURITY)
+    matrix = _section(
+        text,
+        "## 14. Current Security Status Matrix",
+        "## 15. Current Implemented Security Surface",
+    )
+
+    def row_for(capability: str) -> list[str]:
+        row = next(
+            line for line in matrix.splitlines()
+            if line.startswith(f"| {capability} |")
+        )
+        return [part.strip() for part in row.split("|")[1:-1]]
+
+    for capability in (
+        "bounded canonical OAS IPC framing",
+        "exact systemd socket-activation descriptor intake",
+        "bounded OAS runtime service foundation",
+        "bootstrap and broker fail-closed operation boundary",
+    ):
+        statuses = row_for(capability)
+        assert statuses[1:5] == [
+            "CURRENT",
+            "DESIGN_PROVEN",
+            "IMPLEMENTED",
+            "TEST_VERIFIED",
+        ]
+        assert "DEPLOYMENT_VERIFIED" not in statuses
+
+    implementation = _normalized(
+        _section(
+            text,
+            "## 15. Current Implemented Security Surface",
+            "## 16. Future and Unproven Security Frontiers",
+        )
+    )
+    _assert_required(
+        implementation,
+        "fails closed when Linux `/proc/net/unix` identity evidence is unavailable, malformed, oversized, or non-matching",
+        "portable pathname checks are not treated as equivalent Linux kernel proof",
+        "32-active/64-queued request admission",
+        "Shutdown cancels queued work",
+        "executor's non-waiting cancellation API",
+        "A worker that cannot be interrupted remains explicitly outstanding",
+        "Known receive and response I/O use the remaining budget",
+        "typed deadline failures are classified without exception-string matching",
+        "never reports a successful status after expiry",
+        "slow underlying read may remain an outstanding worker beyond a bounded shutdown call",
+    )
+
+    traceability = _normalized(
+        text[text.index("The M120A implementation boundary is:"):]
+    )
+    _assert_required(
+        traceability,
+        "M120A_AUTHORIZED: YES",
+        "M120A_STARTED: YES",
+        "M120A_FINALIZED: YES",
+        "IMPLEMENTATION_STATUS: IMPLEMENTED",
+        "VERIFICATION_STATUS: TEST_VERIFIED",
+        "DEPLOYMENT_VERIFIED: NO",
+        "M120A is limited to bounded IPC/service mechanics",
+        "Owner authentication",
+        "live systemd or OS principal deployment",
+        "Core receipt integration",
+        "generalized Tool-Operation-Capability authority",
+    )
+
+
+def test_m120a_artifact_hashes_are_stable():
+    assert _sha256(M120A_PROTOCOL) == APPROVED_M120A_PROTOCOL_HASH
+    assert _sha256(M120A_ACTIVATION) == APPROVED_M120A_ACTIVATION_HASH
+    assert _sha256(M120A_SERVICE) == APPROVED_M120A_SERVICE_HASH
+    assert _sha256(M120A_LOCK) == APPROVED_M120A_LOCK_HASH
 
 
 def test_current_implementation_truth_is_not_promoted():

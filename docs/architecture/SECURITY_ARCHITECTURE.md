@@ -394,6 +394,10 @@ does not promote that target to implementation or deployment verification.
 | security transaction identity and replay/conflict/idempotency primitives | CURRENT | DESIGN_PROVEN | IMPLEMENTED | TEST_VERIFIED | unique transaction/idempotency identities and complete versioned request digest binding |
 | schema and migration foundation | CURRENT | DESIGN_PROVEN | IMPLEMENTED | TEST_VERIFIED | deterministic SQLite schema v1 initialization, validation, and idempotent migration |
 | ordinary-runtime direct OAS mutation boundary | CURRENT | PARTIAL | IMPLEMENTED | TEST_VERIFIED | repository-wide AST lock, empty public package surface, explicit store path, and stdlib-only kernel imports; code/dependency boundary is not OS or process isolation |
+| bounded canonical OAS IPC framing | CURRENT | DESIGN_PROVEN | IMPLEMENTED | TEST_VERIFIED | M120A versioned canonical JSON, digest binding, endpoint vocabularies, duplicate/unknown rejection, and resource bounds; no authentication claim |
+| exact systemd socket-activation descriptor intake | CURRENT | DESIGN_PROVEN | IMPLEMENTED | TEST_VERIFIED | M120A exact runtime/bootstrap/broker descriptors, AF_UNIX/SOCK_SEQPACKET/path/owner/group/mode and fail-closed Linux kernel identity checks; no deployed unit or socket claim |
+| bounded OAS runtime service foundation | CURRENT | DESIGN_PROVEN | IMPLEMENTED | TEST_VERIFIED | M120A real AF_UNIX service, SO_PEERCRED uid/gid/pid intake, 32-active/64-queued admission, bounded I/O and shutdown polling, and redacted status read; outstanding handlers are not forcibly terminated |
+| bootstrap and broker fail-closed operation boundary | CURRENT | DESIGN_PROVEN | IMPLEMENTED | TEST_VERIFIED | M120A endpoint-specific allowlists return NOT_IMPLEMENTED without canonical mutation; authentication and authorization remain unimplemented |
 
 ## 15. Current Implemented Security Surface
 
@@ -434,6 +438,32 @@ Direct repository inspection identifies only lower-level safeguards:
 - Canonical JSON rejects secret-bearing fields and unsupported/non-finite values,
   and enforces fixed depth, encoded-size, collection, key, string, and integer
   limits defined by the kernel.
+- M120A adds a standalone bounded OAS IPC foundation under `aether/oas`: canonical
+  versioned request/response framing, payload digest binding, exact endpoint
+  vocabularies, strict systemd socket-activation intake, kernel peer credentials,
+  bounded 32-active/64-queued request admission, deadline-aware receive/response
+  I/O, bounded shutdown polling, and a redacted runtime status read. Bootstrap and
+  broker operations fail closed and do not mutate canonical security state.
+- M120A is a repository-tested service foundation only. It does not provide Owner
+  authentication, WebAuthn, TLS, live OS-principal deployment, authenticated source
+  evidence, Core receipt integration, or deployment verification. Socket activation
+  and principal expectations remain explicit deployment-contract inputs rather than
+  host evidence.
+- The corrective M120A proof fails closed when Linux `/proc/net/unix` identity
+  evidence is unavailable, malformed, oversized, or non-matching; portable
+  pathname checks are not treated as equivalent Linux kernel proof. Lifecycle
+  admission and reservation accounting are condition-guarded and future-backed.
+  Shutdown cancels queued work, closes tracked client connections, calls the
+  executor's non-waiting cancellation API, and polls tracked completion only until
+  the caller's timeout. A worker that cannot be interrupted remains explicitly
+  outstanding rather than being represented as stopped.
+- Request deadlines are absolute caller values. Known receive and response I/O use
+  the remaining budget, expiry is checked before dispatch and before returning a
+  result, and typed deadline failures are classified without exception-string
+  matching. The M118A status read itself is not forcibly interruptible by M120A;
+  the service therefore never reports a successful status after expiry, but a slow
+  underlying read may remain an outstanding worker beyond a bounded shutdown call.
+  This is a documented M120A limitation and remains deployment-unverified.
 
 The current implementation truth is also explicit: no authenticated or
 deployment-verified OAS boundary; no live authenticated Owner source; no WebAuthn;
@@ -510,6 +540,12 @@ M119A remains design proof only: `IMPLEMENTATION_STATUS: NOT_IMPLEMENTED`,
 host has no selected principals, units, sockets, or deployed boundary. A future
 Build remains separately authorized only for PM review; no Build or successor is
 authorized by M119A.
+
+M120A is the separately authorized bounded implementation pass for the executable
+OAS IPC/service foundation. Its production code and named adversarial tests are
+implemented and test-verified, but no host deployment is claimed. The M120A
+implementation does not promote the authentication-facing OAS boundary or any
+Owner authority path to live security.
 
 ## 17. Security Architecture Evolution Rules
 
@@ -636,3 +672,36 @@ The preceding canonization gate did not start M118A. This separately authorized
 implementation pass has started and finalized M118A. The three future
 constitutional principles identified for governance review are not accepted
 constitutional text and belong only in the external Phase 1 summary.
+
+The M120A implementation boundary is:
+
+```text
+M120A - OAS Socket-Activated Service and Bounded IPC Foundation
+M120A_AUTHORIZED: YES
+M120A_STARTED: YES
+M120A_FINALIZED: YES
+DECISION_STATUS: CURRENT
+DESIGN_STATUS: DESIGN_PROVEN
+IMPLEMENTATION_STATUS: IMPLEMENTED
+VERIFICATION_STATUS: TEST_VERIFIED
+DEPLOYMENT_VERIFIED: NO
+BUILD_AUTHORIZED: YES
+SUCCESSOR_NUMBER_ASSIGNED: NO
+```
+
+M120A evidence reference:
+
+```text
+Production:
+aether/oas/ipc_protocol.py
+aether/oas/socket_activation.py
+aether/oas/service.py
+Static and AF_UNIX test lock:
+tests/test_m120a_oas_socket_activated_service_bounded_ipc_foundation.py
+```
+
+M120A is limited to bounded IPC/service mechanics and fail-closed endpoint
+scaffolding. It excludes Owner authentication, WebAuthn, TLS, live systemd or OS
+principal deployment, credential issuance, authenticated source events, Core
+receipt integration, Generic Act, generalized Tool-Operation-Capability authority,
+public Internet, multi-instance runtime, and multi-agent runtime.
