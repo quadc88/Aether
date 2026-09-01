@@ -398,6 +398,7 @@ does not promote that target to implementation or deployment verification.
 | exact systemd socket-activation descriptor intake | CURRENT | DESIGN_PROVEN | IMPLEMENTED | TEST_VERIFIED | M120A exact runtime/bootstrap/broker descriptors, AF_UNIX/SOCK_SEQPACKET/path/owner/group/mode and fail-closed Linux kernel identity checks; no deployed unit or socket claim |
 | bounded OAS runtime service foundation | CURRENT | DESIGN_PROVEN | IMPLEMENTED | TEST_VERIFIED | M120A real AF_UNIX service, SO_PEERCRED uid/gid/pid intake, 32-active/64-queued admission, bounded I/O and shutdown polling, and redacted status read; outstanding handlers are not forcibly terminated |
 | bootstrap and broker fail-closed operation boundary | CURRENT | DESIGN_PROVEN | IMPLEMENTED | TEST_VERIFIED | M120A endpoint-specific allowlists return NOT_IMPLEMENTED without canonical mutation; authentication and authorization remain unimplemented |
+| repository-to-host activation and rollback contract | CURRENT | DESIGN_PROVEN | NOT_IMPLEMENTED | TEST_VERIFIED | M121A design-only root-owned release identity, activation, quiesce, generation, signing, and rollback contract; no Build or host deployment |
 
 ## 15. Current Implemented Security Surface
 
@@ -462,8 +463,18 @@ Direct repository inspection identifies only lower-level safeguards:
   result, and typed deadline failures are classified without exception-string
   matching. The M118A status read itself is not forcibly interruptible by M120A;
   the service therefore never reports a successful status after expiry, but a slow
-  underlying read may remain an outstanding worker beyond a bounded shutdown call.
-  This is a documented M120A limitation and remains deployment-unverified.
+   underlying read may remain an outstanding worker beyond a bounded shutdown call.
+   This is a documented M120A limitation and remains deployment-unverified.
+
+M121A canonizes a repository-to-host deployment and rollback contract as design and
+discovery evidence only. The contract uses one root-owned authoritative activation
+record, a versioned and signed release identity, explicit candidate/activation/
+commit/rollback states, pre-replacement quiescence, generation-specific gates,
+bounded monotonic activation deadlines, and fail-closed readiness and smoke checks.
+The future repository Build inventory and isolated proof stage remain separate from
+target deployment and deployment review. No M121A production entrypoint, manifest,
+verifier, unit bundle, installer, lifecycle tool, host artifact, or deployment has
+been implemented or verified.
 
 The current implementation truth is also explicit: no authenticated or
 deployment-verified OAS boundary; no live authenticated Owner source; no WebAuthn;
@@ -705,3 +716,42 @@ scaffolding. It excludes Owner authentication, WebAuthn, TLS, live systemd or OS
 principal deployment, credential issuance, authenticated source events, Core
 receipt integration, Generic Act, generalized Tool-Operation-Capability authority,
 public Internet, multi-instance runtime, and multi-agent runtime.
+
+The M121A evidence reference is:
+
+```text
+Evidence:
+docs/architecture/MILESTONE_121A_OAS_REPOSITORY_TO_HOST_DEPLOYMENT_AND_ROLLBACK_CONTRACT_PROOF.md
+Approved artifact SHA-256:
+0c3f81f9f8486f912ba28546fd6e23457a88ef4e75f2d9c66628e24f05ff48eb
+Static-lock:
+tests/test_milestone_121a_oas_repository_to_host_deployment_and_rollback_contract_proof.py
+Approved static-lock SHA-256:
+6f670e78a3eec5c4ac386822f120c0a24ac557ba09ae946d9d33614dabd39d5c
+PM disposition: APPROVE_M121A_FINALIZATION
+M121A_AUTHORIZED: YES
+M121A_STARTED: YES
+M121A_FINALIZED: YES
+DECISION_STATUS: CURRENT
+DESIGN_STATUS: DESIGN_PROVEN
+IMPLEMENTATION_STATUS: NOT_IMPLEMENTED
+VERIFICATION_STATUS: TEST_VERIFIED
+DEPLOYMENT_VERIFIED: NO
+SELECTED_EXIT: EXIT_A
+BUILD_AUTHORIZED: NO
+HOST_MUTATION_PERFORMED: NO
+PM_ACCEPTED: YES
+PROGRESS_UPDATED: YES
+SECURITY_ARCHITECTURE_UPDATED: YES
+COMMIT_CREATED: YES
+TAG_CREATED: YES
+PUSH_PERFORMED: YES
+SUCCESSOR_AUTHORIZED: NO
+SUCCESSOR_NUMBER_ASSIGNED: NO
+```
+
+M121A remains design/discovery and security-contract proof only. Its two source
+artifacts are immutable evidence and remain byte-for-byte unchanged; the future
+repository deployment-artifact Build, isolated proof, target deployment, and
+deployment review are separate authorization boundaries. `EXIT_A` does not
+authorize implementation, host mutation, readiness, or deployment verification.

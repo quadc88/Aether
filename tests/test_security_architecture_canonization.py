@@ -26,6 +26,13 @@ M120A_SERVICE = ROOT / "aether/oas/service.py"
 M120A_LOCK = ROOT / (
     "tests/test_m120a_oas_socket_activated_service_bounded_ipc_foundation.py"
 )
+M121A = ROOT / (
+    "docs/architecture/"
+    "MILESTONE_121A_OAS_REPOSITORY_TO_HOST_DEPLOYMENT_AND_ROLLBACK_CONTRACT_PROOF.md"
+)
+M121A_LOCK = ROOT / (
+    "tests/test_milestone_121a_oas_repository_to_host_deployment_and_rollback_contract_proof.py"
+)
 README = ROOT / "README.md"
 CONSTITUTION = ROOT / "docs/CONSTITUTION.md"
 OAS_INIT = ROOT / "aether/oas/__init__.py"
@@ -41,6 +48,8 @@ APPROVED_M120A_PROTOCOL_HASH = "81f1d99304831270179ca809e45b58cb96fb5b28b771f6ed
 APPROVED_M120A_ACTIVATION_HASH = "dbbe229118bfa2b54f32ad24537acc62ca57843fa0fb6230ba23a9cd57985709"
 APPROVED_M120A_SERVICE_HASH = "da654853f2a0177d5d219afd8ff2279b05b598d07beeb143286f85ad052bb771"
 APPROVED_M120A_LOCK_HASH = "a98e0947ca7466d485e53c14e8560bbee6876277fcc9c27911bee1e225e6c6a9"
+APPROVED_M121A_HASH = "0c3f81f9f8486f912ba28546fd6e23457a88ef4e75f2d9c66628e24f05ff48eb"
+APPROVED_M121A_LOCK_HASH = "6f670e78a3eec5c4ac386822f120c0a24ac557ba09ae946d9d33614dabd39d5c"
 BASELINE_PROTECTED_HASHES = {
     README: "5357e53635c7467332129048155b39ac9282d6aff268f5f910594a5b26d72cad",
     CONSTITUTION: "0055748f683bf753b3471a0317b68677752c312d4030b12fbc71684fd3af3ee1",
@@ -50,7 +59,6 @@ BASELINE_PROTECTED_HASHES = {
     OAS_INIT: "a4cb03845a5676f48f5328392ccbf2637fd98052be84b9e5213448e91947dd54",
     M118A_KERNEL: "ef02d191d11ad6acf7f93710bc02deea284f336237310822655f6988451d8589",
     M118A_LOCK: "89ccd391f0270df07b7173307ab25d31ab7787448cd001ddeef2d0732c5e7117",
-    PROGRESS: "724690366d25bf1824a8c7d5140f843feefd05e5373344aaf5e6f74667aea958",
 }
 
 PRECEDENCE = """CONSTITUTION
@@ -366,6 +374,62 @@ def test_m120a_artifact_hashes_are_stable():
     assert _sha256(M120A_ACTIVATION) == APPROVED_M120A_ACTIVATION_HASH
     assert _sha256(M120A_SERVICE) == APPROVED_M120A_SERVICE_HASH
     assert _sha256(M120A_LOCK) == APPROVED_M120A_LOCK_HASH
+
+
+def test_m121a_contract_is_canonized_without_promoting_implementation_or_deployment():
+    text = _text(SECURITY)
+    normalized = _normalized(text)
+    matrix = _section(
+        text,
+        "## 14. Current Security Status Matrix",
+        "## 15. Current Implemented Security Surface",
+    )
+    row = next(
+        line for line in matrix.splitlines()
+        if line.startswith("| repository-to-host activation and rollback contract |")
+    )
+    assert [part.strip() for part in row.split("|")[1:-1]][1:5] == [
+        "CURRENT",
+        "DESIGN_PROVEN",
+        "NOT_IMPLEMENTED",
+        "TEST_VERIFIED",
+    ]
+    _assert_required(
+        normalized,
+        "M121A canonizes a repository-to-host deployment and rollback contract as design and discovery evidence only.",
+        "one root-owned authoritative activation record",
+        "versioned and signed release identity",
+        "pre-replacement quiescence",
+        "generation-specific gates",
+        "bounded monotonic activation deadlines",
+        "fail-closed readiness and smoke checks",
+        "No M121A production entrypoint, manifest, verifier, unit bundle, installer, lifecycle tool, host artifact, or deployment has been implemented or verified.",
+        "`EXIT_A` does not authorize implementation, host mutation, readiness, or deployment verification.",
+    )
+    traceability = text[text.index("The M121A evidence reference is:") :]
+    _assert_required(
+        traceability,
+        "MILESTONE_121A_OAS_REPOSITORY_TO_HOST_DEPLOYMENT_AND_ROLLBACK_CONTRACT_PROOF.md",
+        APPROVED_M121A_HASH,
+        "test_milestone_121a_oas_repository_to_host_deployment_and_rollback_contract_proof.py",
+        APPROVED_M121A_LOCK_HASH,
+        "PM disposition: APPROVE_M121A_FINALIZATION",
+        "M121A_AUTHORIZED: YES",
+        "M121A_STARTED: YES",
+        "M121A_FINALIZED: YES",
+        "SELECTED_EXIT: EXIT_A",
+        "IMPLEMENTATION_STATUS: NOT_IMPLEMENTED",
+        "VERIFICATION_STATUS: TEST_VERIFIED",
+        "DEPLOYMENT_VERIFIED: NO",
+        "BUILD_AUTHORIZED: NO",
+        "PM_ACCEPTED: YES",
+        "SUCCESSOR_AUTHORIZED: NO",
+    )
+
+
+def test_m121a_artifacts_are_byte_stable():
+    assert _sha256(M121A) == APPROVED_M121A_HASH
+    assert _sha256(M121A_LOCK) == APPROVED_M121A_LOCK_HASH
 
 
 def test_current_implementation_truth_is_not_promoted():
