@@ -1,0 +1,59 @@
+[Unit]
+Description=Aether bounded OAS service
+Requires=aether-oas-runtime.socket aether-oas-bootstrap.socket aether-oas-broker.socket
+After=local-fs.target aether-oas-runtime.socket aether-oas-bootstrap.socket aether-oas-broker.socket
+ConditionPathExists=/var/lib/aether/activation/activation-record.json
+ConditionPathExists=/var/lib/aether/activation/unit-generations/g-45393132b1a0ab8a0415c7d964f800b983155bbd4ebe13bb2764bf94548ea652.ready
+AssertPathExists=/opt/aether/current
+StartLimitIntervalSec=60s
+StartLimitBurst=5
+StartLimitAction=none
+
+[Service]
+Sockets=aether-oas-runtime.socket aether-oas-bootstrap.socket aether-oas-broker.socket
+User=aether-oas
+Group=aether-oas
+SupplementaryGroups=
+ExecStart=/opt/aether/current/runtime/bin/python -I -B -S -c 'import sys; sys.path.insert(0,"/opt/aether/current/runtime/lib/python3.11/site-packages"); from aether.oas.host_entrypoint import main; raise SystemExit(main())'
+WorkingDirectory=/opt/aether/current
+Environment=LANG=C.UTF-8
+Environment=LC_ALL=C.UTF-8
+Environment=TZ=UTC
+Environment=HOME=/var/empty
+UMask=0077
+Type=notify
+NotifyAccess=main
+NoNewPrivileges=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadOnlyPaths=/opt/aether /etc/aether/release-trust-anchor.pub
+ReadWritePaths=/var/lib/aether/oas
+RestrictAddressFamilies=AF_UNIX
+RestrictSUIDSGID=yes
+CapabilityBoundingSet=
+AmbientCapabilities=
+LockPersonality=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+RestrictNamespaces=yes
+RestrictRealtime=yes
+SystemCallArchitectures=native
+LimitCORE=0
+LimitNOFILE=512
+FileDescriptorStoreMax=0
+TasksMax=128
+MemoryMax=512M
+CPUQuota=100%
+Restart=on-failure
+RestartSec=2s
+TimeoutStartSec=30s
+TimeoutStopSec=10s
+StandardOutput=journal
+StandardError=journal
+
+[Install]

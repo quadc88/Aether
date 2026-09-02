@@ -827,14 +827,9 @@ def test_status_exclusions_and_unimplemented_boundary_are_exact():
         "authorize or number a successor milestone",
         "another PM hard-gate review",
     )
-    for relative in (
-        "aether/oas/host_entrypoint.py",
-        "aether/deployment/installer.py",
-        "aether/deployment/lifecycle.py",
-        "deployment/systemd/aether-oas.service",
-        "deployment/requirements.lock.json",
-    ):
-        assert not (ROOT / relative).exists(), relative
+    # M122A is the separately authorized successor Build.  The predecessor
+    # document remains unchanged; this lock only stops asserting that its
+    # successor's artifact paths must be absent.
     assert text.count("M121A_FINALIZED: NO") == 1
     assert "/opt/aether/active-release" not in text
     assert "InaccessiblePaths=/home /root /var/log/aether" not in text

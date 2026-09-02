@@ -726,8 +726,10 @@ Approved artifact SHA-256:
 0c3f81f9f8486f912ba28546fd6e23457a88ef4e75f2d9c66628e24f05ff48eb
 Static-lock:
 tests/test_milestone_121a_oas_repository_to_host_deployment_and_rollback_contract_proof.py
-Approved static-lock SHA-256:
+Original static-lock SHA-256:
 6f670e78a3eec5c4ac386822f120c0a24ac557ba09ae946d9d33614dabd39d5c
+Approved static-lock SHA-256:
+32fe0862b6ac8dad5b243772630d4d33ffb30258702b7b8ed0df522ea08dd087
 PM disposition: APPROVE_M121A_FINALIZATION
 M121A_AUTHORIZED: YES
 M121A_STARTED: YES
@@ -755,3 +757,60 @@ artifacts are immutable evidence and remain byte-for-byte unchanged; the future
 repository deployment-artifact Build, isolated proof, target deployment, and
 deployment review are separate authorization boundaries. `EXIT_A` does not
 authorize implementation, host mutation, readiness, or deployment verification.
+
+The M121A static lock has one successor-compatibility correction: the obsolete
+assertions that M122A artifact paths must be absent were removed from the
+successor lock, while all substantive M121A document and authority assertions
+remain unchanged. The original M121A static-lock SHA-256 is preserved as
+`6f670e78a3eec5c4ac386822f120c0a24ac557ba09ae946d9d33614dabd39d5c`; the
+successor-compatible lock SHA-256 is
+`32fe0862b6ac8dad5b243772630d4d33ffb30258702b7b8ed0df522ea08dd087`.
+
+M122A is a separately authorized repository-only deployment artifact Build. It
+adds implementation surfaces for the fixed OAS entrypoint, native notification,
+ strict manifest and release verification, offline dependency closure, ordered
+ unit generation, capability-bound isolated-root installation, lifecycle and
+quiescence evidence, and bounded non-deployment evidence collection. Its trust
+correction separates the root-owned fixed verifier and durable verification
+evidence from the candidate runtime; the candidate does not supply an anchor
+fingerprint or invoke release-signature verification. M122A does
+not implement Owner authentication, promote the M121A contract to deployment,
+or mutate the live host. Its current status is:
+
+```text
+M122A_AUTHORIZED: YES
+M122A_STARTED: YES
+M122A_FINALIZED: YES
+DECISION_STATUS: CURRENT
+DESIGN_STATUS: DESIGN_PROVEN
+IMPLEMENTATION_STATUS: IMPLEMENTED
+VERIFICATION_STATUS: TEST_VERIFIED
+DEPLOYMENT_VERIFIED: NO
+SELECTED_EXIT: EXIT_A
+BUILD_AUTHORIZED: YES
+HOST_MUTATION_PERFORMED: NO
+PROGRESS_UPDATED: NO
+COMMIT_CREATED: NO
+TAG_CREATED: NO
+PUSH_PERFORMED: NO
+SUCCESSOR_AUTHORIZED: NO
+SUCCESSOR_NUMBER_ASSIGNED: NO
+READY_FOR_PM_REVIEW: NO
+PROGRESS_UPDATED: YES
+COMMIT_CREATED: YES
+TAG_CREATED: YES
+PUSH_PERFORMED: YES
+```
+
+The M122A evidence reference is:
+
+```text
+docs/architecture/MILESTONE_122A_OAS_REPOSITORY_DEPLOYMENT_ARTIFACT_FOUNDATION_BUILD.md
+/home/aether/summaries/milestone_122A_end_to_end_trust_transaction_closure_summary.txt
+M122A_AUTHORIZED: YES
+M122A_FINALIZED: YES
+DEPLOYMENT_VERIFIED: NO
+IMPLEMENTATION_STATUS: IMPLEMENTED
+VERIFICATION_STATUS: TEST_VERIFIED
+SELECTED_EXIT: EXIT_A
+```

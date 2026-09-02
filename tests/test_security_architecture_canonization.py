@@ -49,7 +49,8 @@ APPROVED_M120A_ACTIVATION_HASH = "dbbe229118bfa2b54f32ad24537acc62ca57843fa0fb62
 APPROVED_M120A_SERVICE_HASH = "da654853f2a0177d5d219afd8ff2279b05b598d07beeb143286f85ad052bb771"
 APPROVED_M120A_LOCK_HASH = "a98e0947ca7466d485e53c14e8560bbee6876277fcc9c27911bee1e225e6c6a9"
 APPROVED_M121A_HASH = "0c3f81f9f8486f912ba28546fd6e23457a88ef4e75f2d9c66628e24f05ff48eb"
-APPROVED_M121A_LOCK_HASH = "6f670e78a3eec5c4ac386822f120c0a24ac557ba09ae946d9d33614dabd39d5c"
+ORIGINAL_M121A_LOCK_HASH = "6f670e78a3eec5c4ac386822f120c0a24ac557ba09ae946d9d33614dabd39d5c"
+APPROVED_M121A_LOCK_HASH = "32fe0862b6ac8dad5b243772630d4d33ffb30258702b7b8ed0df522ea08dd087"
 BASELINE_PROTECTED_HASHES = {
     README: "5357e53635c7467332129048155b39ac9282d6aff268f5f910594a5b26d72cad",
     CONSTITUTION: "0055748f683bf753b3471a0317b68677752c312d4030b12fbc71684fd3af3ee1",
@@ -430,6 +431,25 @@ def test_m121a_contract_is_canonized_without_promoting_implementation_or_deploym
 def test_m121a_artifacts_are_byte_stable():
     assert _sha256(M121A) == APPROVED_M121A_HASH
     assert _sha256(M121A_LOCK) == APPROVED_M121A_LOCK_HASH
+
+
+def test_m122a_successor_artifact_boundary_is_distinct_and_non_deployed():
+    text = _text(SECURITY)
+    _assert_required(
+        text,
+        "M122A is a separately authorized repository-only deployment artifact Build",
+        "M122A_AUTHORIZED: YES",
+        "M122A_FINALIZED: YES",
+        "IMPLEMENTATION_STATUS: IMPLEMENTED",
+        "VERIFICATION_STATUS: TEST_VERIFIED",
+        "SELECTED_EXIT: EXIT_A",
+        "DEPLOYMENT_VERIFIED: NO",
+        "HOST_MUTATION_PERFORMED: NO",
+        "SUCCESSOR_AUTHORIZED: NO",
+        ORIGINAL_M121A_LOCK_HASH,
+        APPROVED_M121A_LOCK_HASH,
+        "MILESTONE_122A_OAS_REPOSITORY_DEPLOYMENT_ARTIFACT_FOUNDATION_BUILD.md",
+    )
 
 
 def test_current_implementation_truth_is_not_promoted():

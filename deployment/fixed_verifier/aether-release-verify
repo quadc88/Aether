@@ -1,0 +1,437 @@
+#!/usr/bin/python3.11
+"""Small, dependency-free release trust verifier.
+
+This file is installed as a fixed host artifact.  It deliberately imports no
+project package; all inputs arrive through explicit absolute paths.
+"""
+
+from __future__ import annotations
+
+import argparse
+import base64
+from datetime import datetime, timezone
+import hashlib
+import json
+import math
+import os
+from pathlib import Path
+import re
+import selectors
+import stat
+import subprocess
+import sys
+import tempfile
+import time
+
+
+MAX_BYTES = 4 * 1024 * 1024
+MAX_FILES = 10000
+MAX_DEPTH = 32
+MANIFEST_DOMAIN = "aether.m121a.release-manifest.v1"
+APPROVAL_DOMAIN = "aether.m121a.release-approval.v1"
+ANCHOR_DOMAIN = "aether.m121a.release-trust-anchor.v1"
+
+
+class VerificationError(ValueError):
+    pass
+
+
+def canonical(value: object) -> bytes:
+    validate_value(value)
+    try:
+        data = json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=True, allow_nan=False).encode()
+    except (TypeError, ValueError) as exc:
+        raise VerificationError("input is not canonical JSON") from exc
+    if len(data) > MAX_BYTES:
+        raise VerificationError("input exceeds the fixed bound")
+    return data
+
+
+def validate_value(value: object, depth: int = 0) -> None:
+    if depth > MAX_DEPTH:
+        raise VerificationError("JSON nesting is too deep")
+    if isinstance(value, dict):
+        if len(value) > 1024:
+            raise VerificationError("JSON object is too large")
+        for key, child in value.items():
+            if not isinstance(key, str) or len(key.encode("utf-8")) > 256:
+                raise VerificationError("JSON object key is invalid")
+            validate_value(child, depth + 1)
+    elif isinstance(value, list):
+        if len(value) > 4096:
+            raise VerificationError("JSON array is too large")
+        for child in value:
+            validate_value(child, depth + 1)
+    elif isinstance(value, float):
+        if not math.isfinite(value):
+            raise VerificationError("non-finite JSON value")
+    elif not isinstance(value, (str, int, bool)) and value is not None:
+        raise VerificationError("unsupported JSON value")
+
+
+def read_json(path: Path) -> tuple[object, bytes]:
+    try:
+        fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_CLOEXEC)
+    except OSError as exc:
+        raise VerificationError("JSON input file identity is invalid") from exc
+    try:
+        info = os.fstat(fd)
+        if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1 or info.st_size > MAX_BYTES:
+            raise VerificationError("JSON input file identity is invalid")
+        with os.fdopen(fd, "rb") as stream:
+            fd = -1
+            raw = stream.read(MAX_BYTES + 1)
+    finally:
+        if fd >= 0:
+            os.close(fd)
+    if len(raw) > MAX_BYTES or b"\x00" in raw:
+        raise VerificationError("JSON input is bounded")
+    try:
+        def pairs(items: list[tuple[str, object]]) -> dict[str, object]:
+            result: dict[str, object] = {}
+            for key, value in items:
+                if key in result:
+                    raise VerificationError("duplicate JSON field")
+                result[key] = value
+            return result
+        value = json.loads(raw.decode("utf-8"), object_pairs_hook=pairs)
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise VerificationError("JSON input is invalid") from exc
+    if canonical(value) != raw:
+        raise VerificationError("JSON input is not canonical")
+    return value, raw
+
+
+def exact(value: object, fields: tuple[str, ...], name: str) -> dict[str, object]:
+    if not isinstance(value, dict) or set(value) != set(fields):
+        raise VerificationError(f"{name} fields are not exact")
+    return value
+
+
+def digest(value: object, name: str) -> str:
+    if not isinstance(value, str) or len(value) != 64 or any(char not in "0123456789abcdef" for char in value):
+        raise VerificationError(f"{name} is invalid")
+    return value
+
+
+def safe_path(value: object) -> str:
+    if not isinstance(value, str) or not value or value.startswith("/") or "\\" in value or len(value.encode()) > 1024:
+        raise VerificationError("manifest path is invalid")
+    parts = value.split("/")
+    if any(not part or part in {".", ".."} or "\x00" in part for part in parts):
+        raise VerificationError("manifest path is invalid")
+    return value
+
+
+def validate_manifest(manifest: dict[str, object]) -> None:
+    exact(manifest, ("manifest_version", "release_id_format", "source", "runtime", "dependencies", "build", "files", "units", "schema_compatibility", "policy"), "manifest")
+    if manifest["manifest_version"] != 1 or manifest["release_id_format"] != "r1-<64 lowercase hexadecimal manifest digest>":
+        raise VerificationError("manifest identity policy is invalid")
+    source = exact(manifest["source"], ("commit", "tree", "root_digest"), "source")
+    for field in ("commit", "tree"):
+        if not isinstance(source[field], str) or len(source[field]) not in {40, 64} or any(char not in "0123456789abcdef" for char in source[field]):
+            raise VerificationError("source identity is invalid")
+    digest(source["root_digest"], "source root digest")
+    runtime = exact(manifest["runtime"], ("python", "python_version", "import_root"), "runtime")
+    if runtime["python"] != "/usr/bin/python3.11" or runtime["python_version"] not in {"3.11", "3.11.0"} or runtime["import_root"] != "/opt/aether/current/runtime/lib/python3.11/site-packages":
+        raise VerificationError("runtime identity is invalid")
+    dependencies = exact(manifest["dependencies"], ("closure_status", "artifacts", "direct_requirements", "interpreter", "platform", "format_version", "install_policy", "requirements_source", "lock_digest"), "dependencies")
+    if dependencies["closure_status"] not in {"COMPLETE", "INCOMPLETE"} or not isinstance(dependencies["artifacts"], list) or not isinstance(dependencies["direct_requirements"], list):
+        raise VerificationError("dependency closure is invalid")
+    artifact_fields = {"name", "normalized_name", "version", "filename", "sha256", "size", "provenance_url", "index_host", "classification", "parents", "requires_dist", "python_tag", "abi_tag", "platform_tag", "marker", "metadata_sha256", "wheel_metadata_sha256", "record_sha256"}
+    for artifact in dependencies["artifacts"]:
+        entry = exact(artifact, tuple(artifact_fields), "dependency artifact")
+        if not isinstance(entry["parents"], list) or not isinstance(entry["requires_dist"], list) or entry["classification"] not in {"direct", "transitive"}:
+            raise VerificationError("dependency artifact schema is invalid")
+        for field in ("sha256", "metadata_sha256", "wheel_metadata_sha256", "record_sha256"):
+            digest(entry[field], f"dependency {field}")
+    digest(dependencies["lock_digest"], "dependency lock digest")
+    if dependencies["interpreter"] != "cp311" or dependencies["platform"] != "linux_x86_64" or dependencies["format_version"] != 1 or dependencies["install_policy"] != "offline-only; refuse installation when closure_status is INCOMPLETE":
+        raise VerificationError("dependency policy is invalid")
+    build = exact(manifest["build"], ("builder", "reproducible", "unit_bundle_digest", "unit_generation_id", "dependency_lock_digest"), "build")
+    if not isinstance(build["builder"], str) or build["reproducible"] is not True or not isinstance(build["unit_generation_id"], str) or not re.fullmatch(r"g-[0-9a-f]{64}", build["unit_generation_id"]):
+        raise VerificationError("build identity is invalid")
+    digest(build["unit_bundle_digest"], "unit bundle digest")
+    digest(build["dependency_lock_digest"], "build dependency lock digest")
+    if build["dependency_lock_digest"] != dependencies["lock_digest"]:
+        raise VerificationError("dependency lock binding is invalid")
+    files = manifest["files"]
+    if not isinstance(files, list) or not files or len(files) > MAX_FILES:
+        raise VerificationError("file inventory is invalid")
+    paths: list[str] = []
+    for item in files:
+        entry = exact(item, ("path", "sha256", "size", "mode", "type"), "file entry")
+        paths.append(safe_path(entry["path"]))
+        digest(entry["sha256"], "file digest")
+        if not isinstance(entry["size"], int) or isinstance(entry["size"], bool) or entry["size"] < 0 or not isinstance(entry["mode"], str) or len(entry["mode"]) != 4 or any(char not in "01234567" for char in entry["mode"]) or entry["type"] != "regular":
+            raise VerificationError("file entry is invalid")
+    if paths != sorted(paths) or len({path.casefold() for path in paths}) != len(paths):
+        raise VerificationError("file inventory is not ordered and unique")
+    names = ("aether-oas.service", "aether-oas-runtime.socket", "aether-oas-bootstrap.socket", "aether-oas-broker.socket")
+    units = manifest["units"]
+    if not isinstance(units, list) or [item.get("name") for item in units if isinstance(item, dict)] != list(names):
+        raise VerificationError("unit inventory is invalid")
+    for item in units:
+        unit = exact(item, ("name", "sha256", "size"), "unit entry")
+        digest(unit["sha256"], "unit digest")
+        if not isinstance(unit["size"], int) or isinstance(unit["size"], bool) or unit["size"] < 0:
+            raise VerificationError("unit size is invalid")
+    compatibility = exact(manifest["schema_compatibility"], ("schema_before", "schema_after", "mode"), "schema compatibility")
+    if not all(isinstance(compatibility[field], int) and not isinstance(compatibility[field], bool) and compatibility[field] >= 0 for field in ("schema_before", "schema_after")) or compatibility["mode"] not in {"UNCHANGED", "CODE_UPGRADE", "SCHEMA_UPGRADE"}:
+        raise VerificationError("schema compatibility is invalid")
+    policy = exact(manifest["policy"], ("release_id", "max_retained_releases"), "policy")
+    if policy["release_id"] != "manifest-derived" or not isinstance(policy["max_retained_releases"], int) or policy["max_retained_releases"] < 0 or policy["max_retained_releases"] > 100:
+        raise VerificationError("release policy is invalid")
+
+
+def utc(value: object) -> datetime:
+    if not isinstance(value, str):
+        raise VerificationError("UTC value is invalid")
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise VerificationError("UTC value is invalid") from exc
+    if parsed.tzinfo is None or parsed.utcoffset() != timezone.utc.utcoffset(parsed):
+        raise VerificationError("UTC value must be UTC")
+    return parsed
+
+
+def signature_bytes(value: object) -> bytes:
+    if not isinstance(value, str) or len(value) != 86 or any(char not in "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-" for char in value):
+        raise VerificationError("signature encoding is invalid")
+    try:
+        decoded = base64.urlsafe_b64decode(value + "==")
+    except (ValueError, base64.binascii.Error) as exc:
+        raise VerificationError("signature encoding is invalid") from exc
+    if len(decoded) != 64:
+        raise VerificationError("signature length is invalid")
+    return decoded
+
+
+def anchor_fingerprint(anchor: dict[str, object]) -> str:
+    payload = {key: anchor[key] for key in ("anchor_version", "anchor_id", "keys", "rotation_policy", "revocations")}
+    return hashlib.sha256(ANCHOR_DOMAIN.encode() + b"\0" + canonical(payload)).hexdigest()
+
+
+def verify_signature(role: str, payload: bytes, signature: dict[str, object], key: dict[str, object], staging: Path, deadline: float | None = None) -> None:
+    if signature["role"] != role or signature["algorithm"] != "Ed25519" or signature["encoding"] != "base64url-no-padding-64-raw-bytes":
+        raise VerificationError("signature policy is invalid")
+    raw_signature = signature_bytes(signature["signature"])
+    try:
+        key_der = base64.b64decode(key["public_key"], validate=True)
+    except (ValueError, TypeError) as exc:
+        raise VerificationError("public key encoding is invalid") from exc
+    if not 1 <= len(key_der) <= 4096:
+        raise VerificationError("public key is outside the fixed bound")
+    staging.mkdir(mode=0o700, parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix="aether-verify-", dir=staging) as temporary:
+        directory = Path(temporary)
+        signed = directory / "signed"
+        sig = directory / "signature"
+        pub = directory / "public.der"
+        signed.write_bytes(payload)
+        sig.write_bytes(raw_signature)
+        pub.write_bytes(key_der)
+        for path in (signed, sig, pub):
+            os.chmod(path, 0o600)
+            with path.open("rb") as stream:
+                os.fsync(stream.fileno())
+        try:
+            returncode, stdout, stderr = bounded_openssl(
+                ["/usr/bin/openssl", "pkeyutl", "-verify", "-rawin", "-in", str(signed), "-sigfile", str(sig), "-inkey", str(pub), "-pubin", "-keyform", "DER"],
+                directory,
+                deadline,
+            )
+        except (OSError, subprocess.SubprocessError, VerificationError) as exc:
+            raise VerificationError("OpenSSL verification failed") from exc
+        if returncode != 0 or stdout != b"Signature Verified Successfully\n" or stderr != b"":
+            raise VerificationError("signature verification failed")
+
+
+def terminate_and_reap(process: subprocess.Popen[bytes]) -> None:
+    try:
+        process.terminate()
+    except OSError:
+        pass
+    try:
+        process.wait(timeout=0.2)
+    except subprocess.TimeoutExpired:
+        try:
+            process.kill()
+        except OSError:
+            pass
+        process.wait(timeout=1.0)
+
+
+def bounded_openssl(argv: list[str], cwd: Path, deadline: float | None = None) -> tuple[int, bytes, bytes]:
+    process = subprocess.Popen(
+        argv, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        env={"LC_ALL": "C", "PATH": "/usr/bin:/bin"}, cwd=str(cwd), close_fds=True,
+    )
+    selector = selectors.DefaultSelector()
+    output = {"stdout": bytearray(), "stderr": bytearray()}
+    deadline = time.monotonic() + 5 if deadline is None else deadline
+    try:
+        for name, stream in (("stdout", process.stdout), ("stderr", process.stderr)):
+            if stream is None:
+                raise VerificationError("OpenSSL pipe is unavailable")
+            os.set_blocking(stream.fileno(), False)
+            selector.register(stream, selectors.EVENT_READ, name)
+        while selector.get_map():
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                terminate_and_reap(process)
+                raise VerificationError("OpenSSL timed out")
+            for key, _mask in selector.select(min(remaining, 0.1)):
+                stream = key.fileobj
+                name = key.data
+                chunk = os.read(stream.fileno(), 4097)
+                if not chunk:
+                    selector.unregister(stream)
+                    stream.close()
+                    continue
+                output[name].extend(chunk)
+                if len(output[name]) > 4096:
+                    terminate_and_reap(process)
+                    raise VerificationError("OpenSSL output exceeded its bound")
+        return process.wait(timeout=max(0, deadline - time.monotonic())), bytes(output["stdout"]), bytes(output["stderr"])
+    finally:
+        selector.close()
+        if process.poll() is None:
+            terminate_and_reap(process)
+        for stream in (process.stdout, process.stderr):
+            if stream is not None and not stream.closed:
+                stream.close()
+
+
+def verify(args: argparse.Namespace) -> dict[str, str]:
+    manifest, manifest_raw = read_json(args.manifest)
+    envelope, _ = read_json(args.envelope)
+    anchor, _ = read_json(args.anchor)
+    manifest = exact(manifest, ("manifest_version", "release_id_format", "source", "runtime", "dependencies", "build", "files", "units", "schema_compatibility", "policy"), "manifest")
+    envelope = exact(envelope, ("envelope_version", "domain", "manifest_version", "manifest_sha256", "manifest_length", "release_id", "approval_payload", "release_signature", "approval_signature", "rotation_signatures"), "envelope")
+    anchor = exact(anchor, ("anchor_version", "anchor_id", "keys", "rotation_policy", "revocations", "anchor_fingerprint"), "anchor")
+    validate_manifest(manifest)
+    digest = hashlib.sha256(manifest_raw).hexdigest()
+    release_id = "r1-" + digest
+    if envelope["envelope_version"] != 1 or envelope["domain"] != MANIFEST_DOMAIN or envelope["manifest_version"] != manifest["manifest_version"]:
+        raise VerificationError("envelope version or domain is invalid")
+    if envelope["manifest_sha256"] != digest or envelope["manifest_length"] != len(manifest_raw) or envelope["release_id"] != release_id:
+        raise VerificationError("manifest binding is invalid")
+    approval = exact(envelope["approval_payload"], ("manifest_digest", "release_id", "source_commit", "test_evidence_digest", "approval_id", "activation_release_policy", "issued_at_utc", "expires_at_utc", "approver_policy"), "approval")
+    if (
+        approval["manifest_digest"] != digest
+        or approval["release_id"] != release_id
+        or approval["source_commit"] != args.expected_source_commit
+        or approval["source_commit"] != manifest["source"]["commit"]
+    ):
+        raise VerificationError("approval binding is invalid")
+    issued, expires = utc(approval["issued_at_utc"]), utc(approval["expires_at_utc"])
+    now = utc(args.now_utc) if args.now_utc else datetime.now(timezone.utc)
+    if expires <= issued or not issued <= now < expires:
+        raise VerificationError("approval is outside its validity window")
+    fingerprint = anchor_fingerprint(anchor)
+    if anchor["anchor_version"] != 1 or not isinstance(anchor["anchor_id"], str) or not anchor["anchor_id"] or anchor["anchor_fingerprint"] != fingerprint or fingerprint != args.approved_anchor_fingerprint:
+        raise VerificationError("anchor fingerprint is not independently approved")
+    if not isinstance(anchor["keys"], list) or not isinstance(anchor["revocations"], list):
+        raise VerificationError("anchor shape is invalid")
+    keys: dict[str, dict[str, object]] = {}
+    for item in anchor["keys"]:
+        key = exact(item, ("key_id", "role", "algorithm", "public_key_encoding", "public_key", "status", "not_before", "not_after"), "anchor key")
+        if not isinstance(key["key_id"], str) or not re.fullmatch(r"[A-Za-z0-9_.:-]{1,128}", key["key_id"]) or key["key_id"] in keys or key["role"] not in {"release", "approval"} or key["algorithm"] != "Ed25519" or key["public_key_encoding"] != "base64-der-spki" or key["status"] not in {"active", "retired"}:
+            raise VerificationError("anchor key policy is invalid")
+        if not isinstance(key["public_key"], str):
+            raise VerificationError("anchor public key is invalid")
+        try:
+            raw_key = base64.b64decode(key["public_key"], validate=True)
+        except (ValueError, base64.binascii.Error) as exc:
+            raise VerificationError("anchor public key is not base64") from exc
+        if not 1 <= len(raw_key) <= 4096:
+            raise VerificationError("anchor public key length is invalid")
+        utc(key["not_before"])
+        utc(key["not_after"])
+        if utc(key["not_after"]) <= utc(key["not_before"]):
+            raise VerificationError("anchor key validity window is invalid")
+        keys[key["key_id"]] = key
+    if len(keys) != len(anchor["keys"]):
+        raise VerificationError("anchor keys are not unique")
+    revocations: dict[str, datetime] = {}
+    for item in anchor["revocations"]:
+        revocation = exact(item, ("key_id", "revoked_at_utc"), "revocation")
+        if not isinstance(revocation["key_id"], str) or not re.fullmatch(r"[A-Za-z0-9_.:-]{1,128}", revocation["key_id"]) or revocation["key_id"] not in keys or revocation["key_id"] in revocations:
+            raise VerificationError("revocation is invalid")
+        revocations[revocation["key_id"]] = utc(revocation["revoked_at_utc"])
+    policy = exact(anchor["rotation_policy"], ("mode", "overlap_not_before_utc", "overlap_expires_at_utc"), "rotation policy")
+    if policy["mode"] not in {"NORMAL", "OVERLAP"}:
+        raise VerificationError("rotation policy is invalid")
+    start, end = policy["overlap_not_before_utc"], policy["overlap_expires_at_utc"]
+    in_overlap = policy["mode"] == "OVERLAP"
+    if in_overlap:
+        if not isinstance(start, str) or not isinstance(end, str) or utc(end) <= utc(start):
+            raise VerificationError("rotation overlap window is invalid")
+        in_overlap = utc(start) <= now < utc(end)
+        if not in_overlap:
+            raise VerificationError("rotation overlap is not active")
+    elif start is not None or end is not None:
+        raise VerificationError("normal rotation policy has a window")
+    rotation = envelope["rotation_signatures"]
+    verification_deadline = time.monotonic() + 10
+    signatures = [(envelope["release_signature"], "release", b"aether.m121a.release-manifest.v1\0" + manifest_raw), (envelope["approval_signature"], "approval", APPROVAL_DOMAIN.encode() + b"\0" + canonical(approval))]
+    if not isinstance(rotation, list) or len(rotation) > 2 or (rotation and not in_overlap):
+        raise VerificationError("rotation signatures are outside the overlap window")
+    if in_overlap:
+        if len(rotation) != 2 or {item.get("role") for item in rotation if isinstance(item, dict)} != {"release", "approval"}:
+            raise VerificationError("rotation overlap requires one old signature per role")
+        signatures.extend((item, item["role"], b"aether.m121a.release-manifest.v1\0" + manifest_raw if item["role"] == "release" else APPROVAL_DOMAIN.encode() + b"\0" + canonical(approval)) for item in rotation)
+    seen: set[str] = set()
+    results: list[dict[str, str]] = []
+    for signature, role, payload in signatures:
+        signature = exact(signature, ("role", "key_id", "algorithm", "encoding", "signature"), "signature")
+        key_id = signature["key_id"]
+        key = keys.get(key_id)
+        old_signature = len(results) >= 2 and in_overlap
+        if key_id in seen or not isinstance(key, dict) or key["role"] != role or (key["status"] != "retired" if old_signature else key["status"] != "active") or (key_id in revocations and now >= revocations[key_id]):
+            raise VerificationError("signing key is not approved")
+        if now < utc(key["not_before"]) or now >= utc(key["not_after"]):
+            raise VerificationError("signing key is outside its validity window")
+        verify_signature(role, payload, signature, key, args.staging, verification_deadline)
+        seen.add(key_id)
+        results.append({"role": role, "key_id": key_id, "status": "VERIFIED"})
+    version_code, version_out, version_err = bounded_openssl(["/usr/bin/openssl", "version"], args.staging, verification_deadline)
+    if version_code != 0 or version_err or not version_out.startswith(b"OpenSSL 3."):
+        raise VerificationError("OpenSSL identity or version is not approved")
+    return {
+        "release_id": release_id,
+        "manifest_sha256": digest,
+        "source_commit": str(manifest["source"]["commit"]),
+        "source_tree": str(manifest["source"]["tree"]),
+        "source_root_digest": str(manifest["source"]["root_digest"]),
+        "approval_id": str(approval["approval_id"]),
+        "approval_payload_digest": hashlib.sha256(canonical(approval)).hexdigest(),
+        "anchor_fingerprint": fingerprint,
+        "test_evidence_digest": str(approval["test_evidence_digest"]),
+        "openssl_identity": "/usr/bin/openssl",
+        "openssl_version": version_out.decode("ascii").strip(),
+        "accepted_key_ids": sorted(seen),
+        "signature_results": results,
+    }
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(prog="aether-release-verify")
+    parser.add_argument("--manifest", type=Path, required=True)
+    parser.add_argument("--envelope", type=Path, required=True)
+    parser.add_argument("--anchor", type=Path, required=True)
+    parser.add_argument("--approved-anchor-fingerprint", required=True)
+    parser.add_argument("--expected-source-commit", required=True)
+    parser.add_argument("--staging", type=Path, required=True)
+    parser.add_argument("--now-utc")
+    try:
+        sys.stdout.buffer.write(canonical(verify(parser.parse_args())))
+        return 0
+    except (OSError, subprocess.SubprocessError, VerificationError, KeyError, TypeError, ValueError):
+        return 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
