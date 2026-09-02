@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+import re
 import socket
 import threading
 from types import SimpleNamespace
@@ -30,6 +31,33 @@ from aether.oas.systemd_notify import NotificationError, notify_ready
 
 ROOT = Path(__file__).resolve().parents[1]
 UNIT_DIR = ROOT / "deployment/systemd"
+M122A_STATUS = {
+    "M122A_AUTHORIZED": "YES",
+    "M122A_STARTED": "YES",
+    "M122A_FINALIZED": "YES",
+    "DECISION_STATUS": "CURRENT",
+    "DESIGN_STATUS": "DESIGN_PROVEN",
+    "IMPLEMENTATION_STATUS": "IMPLEMENTED",
+    "VERIFICATION_STATUS": "TEST_VERIFIED",
+    "DEPLOYMENT_VERIFIED": "NO",
+    "SELECTED_EXIT": "EXIT_A",
+    "BUILD_AUTHORIZED": "YES",
+    "HOST_MUTATION_PERFORMED": "NO",
+    "PROGRESS_UPDATED": "YES",
+    "COMMIT_CREATED": "YES",
+    "TAG_CREATED": "YES",
+    "PUSH_PERFORMED": "YES",
+    "SUCCESSOR_AUTHORIZED": "NO",
+    "SUCCESSOR_NUMBER_ASSIGNED": "NO",
+    "READY_FOR_PM_REVIEW": "NO",
+}
+
+
+def _authoritative_m122a_status(document: str) -> str:
+    section = document[document.index("## 6. Authoritative Status") :]
+    match = re.search(r"```text\n(.*?)\n```", section, re.DOTALL)
+    assert match is not None
+    return match.group(1)
 
 
 def test_four_units_are_complete_ordered_and_generation_bound():
@@ -203,13 +231,11 @@ def test_fixed_verifier_is_the_only_authority_and_has_no_project_imports():
 
 def test_m122a_status_is_finalized_and_ready_for_summary_review_only():
     document = (ROOT / "docs/architecture/MILESTONE_122A_OAS_REPOSITORY_DEPLOYMENT_ARTIFACT_FOUNDATION_BUILD.md").read_text(encoding="utf-8")
-    for line in (
-        "M122A_AUTHORIZED: YES", "M122A_STARTED: YES", "M122A_FINALIZED: YES",
-        "DECISION_STATUS: CURRENT", "DESIGN_STATUS: DESIGN_PROVEN",
-        "IMPLEMENTATION_STATUS: IMPLEMENTED", "VERIFICATION_STATUS: TEST_VERIFIED",
-        "DEPLOYMENT_VERIFIED: NO", "SELECTED_EXIT: EXIT_A", "BUILD_AUTHORIZED: YES",
-        "READY_FOR_PM_REVIEW: NO", "PROGRESS_UPDATED: YES", "COMMIT_CREATED: YES",
-        "TAG_CREATED: YES", "PUSH_PERFORMED: YES", "SUCCESSOR_AUTHORIZED: NO",
-        "SUCCESSOR_NUMBER_ASSIGNED: NO",
-    ):
-        assert line in document
+    status = _authoritative_m122a_status(document)
+    for field, value in M122A_STATUS.items():
+        matches = re.findall(rf"^{re.escape(field)}: .*$", status, re.MULTILINE)
+        assert matches == [f"{field}: {value}"]
+    assert "76901b6fb619776e0fbc53c5a30995faa5bcf070" in document
+    assert "milestone-122A-oas-repository-deployment-artifact-foundation" in document
+    assert "metadata consistency only" in document
+    assert "no implementation or deployment state" in document

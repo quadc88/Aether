@@ -77,6 +77,27 @@ STATUS_VALUES = {
     "VERIFICATION_STATUS": "NOT_VERIFIED | TEST_VERIFIED | DEPLOYMENT_VERIFIED",
 }
 
+M122A_STATUS = {
+    "M122A_AUTHORIZED": "YES",
+    "M122A_STARTED": "YES",
+    "M122A_FINALIZED": "YES",
+    "DECISION_STATUS": "CURRENT",
+    "DESIGN_STATUS": "DESIGN_PROVEN",
+    "IMPLEMENTATION_STATUS": "IMPLEMENTED",
+    "VERIFICATION_STATUS": "TEST_VERIFIED",
+    "DEPLOYMENT_VERIFIED": "NO",
+    "SELECTED_EXIT": "EXIT_A",
+    "BUILD_AUTHORIZED": "YES",
+    "HOST_MUTATION_PERFORMED": "NO",
+    "PROGRESS_UPDATED": "YES",
+    "COMMIT_CREATED": "YES",
+    "TAG_CREATED": "YES",
+    "PUSH_PERFORMED": "YES",
+    "SUCCESSOR_AUTHORIZED": "NO",
+    "SUCCESSOR_NUMBER_ASSIGNED": "NO",
+    "READY_FOR_PM_REVIEW": "NO",
+}
+
 
 def _text(path: Path) -> str:
     return path.read_text(encoding="utf-8")
@@ -99,6 +120,13 @@ def _section(text: str, heading: str, next_heading: str) -> str:
     start = text.index(heading)
     end = text.index(next_heading, start)
     return text[start:end]
+
+
+def _authoritative_m122a_status(text: str) -> str:
+    start = text.index("M122A is a separately authorized repository-only deployment artifact Build")
+    fence_start = text.index("```text\n", start) + len("```text\n")
+    fence_end = text.index("\n```", fence_start)
+    return text[fence_start:fence_end]
 
 
 def test_security_architecture_exists_and_has_required_structure():
@@ -435,6 +463,10 @@ def test_m121a_artifacts_are_byte_stable():
 
 def test_m122a_successor_artifact_boundary_is_distinct_and_non_deployed():
     text = _text(SECURITY)
+    status = _authoritative_m122a_status(text)
+    for field, value in M122A_STATUS.items():
+        matches = re.findall(rf"^{re.escape(field)}: .*$", status, re.MULTILINE)
+        assert matches == [f"{field}: {value}"]
     _assert_required(
         text,
         "M122A is a separately authorized repository-only deployment artifact Build",
@@ -449,6 +481,10 @@ def test_m122a_successor_artifact_boundary_is_distinct_and_non_deployed():
         ORIGINAL_M121A_LOCK_HASH,
         APPROVED_M121A_LOCK_HASH,
         "MILESTONE_122A_OAS_REPOSITORY_DEPLOYMENT_ARTIFACT_FOUNDATION_BUILD.md",
+        "76901b6fb619776e0fbc53c5a30995faa5bcf070",
+        "milestone-122A-oas-repository-deployment-artifact-foundation",
+        "metadata consistency only",
+        "no implementation or deployment state",
     )
 
 

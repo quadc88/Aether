@@ -789,10 +789,6 @@ DEPLOYMENT_VERIFIED: NO
 SELECTED_EXIT: EXIT_A
 BUILD_AUTHORIZED: YES
 HOST_MUTATION_PERFORMED: NO
-PROGRESS_UPDATED: NO
-COMMIT_CREATED: NO
-TAG_CREATED: NO
-PUSH_PERFORMED: NO
 SUCCESSOR_AUTHORIZED: NO
 SUCCESSOR_NUMBER_ASSIGNED: NO
 READY_FOR_PM_REVIEW: NO
@@ -801,6 +797,12 @@ COMMIT_CREATED: YES
 TAG_CREATED: YES
 PUSH_PERFORMED: YES
 ```
+
+The original M122A finalization commit is
+`76901b6fb619776e0fbc53c5a30995faa5bcf070`, and the original milestone tag is
+`milestone-122A-oas-repository-deployment-artifact-foundation`. This correction
+is metadata consistency only: it removes contradictory duplicate completion
+markers and changes no implementation or deployment state.
 
 The M122A evidence reference is:
 
