@@ -399,6 +399,7 @@ does not promote that target to implementation or deployment verification.
 | bounded OAS runtime service foundation | CURRENT | DESIGN_PROVEN | IMPLEMENTED | TEST_VERIFIED | M120A real AF_UNIX service, SO_PEERCRED uid/gid/pid intake, 32-active/64-queued admission, bounded I/O and shutdown polling, and redacted status read; outstanding handlers are not forcibly terminated |
 | bootstrap and broker fail-closed operation boundary | CURRENT | DESIGN_PROVEN | IMPLEMENTED | TEST_VERIFIED | M120A endpoint-specific allowlists return NOT_IMPLEMENTED without canonical mutation; authentication and authorization remain unimplemented |
 | repository-to-host activation and rollback contract | CURRENT | DESIGN_PROVEN | NOT_IMPLEMENTED | TEST_VERIFIED | M121A design-only root-owned release identity, activation, quiesce, generation, signing, and rollback contract; no Build or host deployment |
+| production trust material and host trust-bootstrap authority contract | CURRENT | DESIGN_PROVEN | NOT_IMPLEMENTED | TEST_VERIFIED | M126A finalized design proof; selected offline signing plus separate OS/image-baselined local-console bootstrap authority; no production keys, host objects, implementation, or deployment |
 
 ## 15. Current Implemented Security Surface
 
@@ -758,6 +759,24 @@ repository deployment-artifact Build, isolated proof, target deployment, and
 deployment review are separate authorization boundaries. `EXIT_A` does not
 authorize implementation, host mutation, readiness, or deployment verification.
 
+M126A finalizes the bounded production trust-material and host trust-bootstrap
+authority contract as design/discovery/security-and-operations proof only. The
+selected model is offline production signing plus a separate OS-attested
+local-console bootstrap authority. The bootstrap authority root is the
+pre-Aether OS/image provisioning baseline at
+`/usr/lib/aether/host-bootstrap/authority-set.json`; it is not supplied by the
+candidate, OAS, ordinary runtime, or root possession. Release trust remains
+separate from Owner trust and does not authenticate an Owner, create an Aether
+Instance, authorize deployment, or activate software. No production private key,
+host trust object, trust-bootstrap helper, Owner deployment authority, target
+host mutation, or deployment verification is claimed.
+
+M126A is finalized with `IMPLEMENTATION_STATUS: NOT_IMPLEMENTED`,
+`VERIFICATION_STATUS: TEST_VERIFIED`, `DEPLOYMENT_VERIFIED: NO`, and
+`BUILD_AUTHORIZED: NO`. Its selected exit recommends only a separately
+authorized bounded trust-bootstrap Build for PM review; it does not authorize
+that Build or a successor milestone.
+
 The M121A static lock has one successor-compatibility correction: the obsolete
 assertions that M122A artifact paths must be absent were removed from the
 successor lock, while all substantive M121A document and authority assertions
@@ -796,6 +815,34 @@ PROGRESS_UPDATED: YES
 COMMIT_CREATED: YES
 TAG_CREATED: YES
 PUSH_PERFORMED: YES
+```
+
+The M126A evidence reference is:
+
+```text
+Evidence:
+docs/architecture/MILESTONE_126A_OAS_PRODUCTION_TRUST_MATERIAL_AND_HOST_TRUST_BOOTSTRAP_AUTHORITY_CONTRACT_PROOF.md
+Finalized artifact SHA-256: 96cba30eb249dde365ecd1a3fa81d1fa631e5ec71d886dff4f4c90aff678d16a
+Static-lock:
+tests/test_milestone_126a_oas_production_trust_material_and_host_trust_bootstrap_authority_contract_proof.py
+Finalized static-lock SHA-256: 0251de280e32e3063810e655f56fac62637f9bf3c89b5e93dc23a40ce968ef47
+M126A_AUTHORIZED: YES
+M126A_STARTED: YES
+M126A_FINALIZED: YES
+DECISION_STATUS: CURRENT
+DESIGN_STATUS: DESIGN_PROVEN
+IMPLEMENTATION_STATUS: NOT_IMPLEMENTED
+VERIFICATION_STATUS: TEST_VERIFIED
+DEPLOYMENT_VERIFIED: NO
+PRODUCTION_TRUST_MATERIAL_PROVEN: NO
+HOST_TRUST_OBJECTS_INSTALLED: NO
+TRUST_BOOTSTRAP_IMPLEMENTED: NO
+BUILD_AUTHORIZED: NO
+PROGRESS_UPDATED: YES
+COMMIT_CREATED: YES
+TAG_CREATED: YES
+PUSH_PERFORMED: YES
+SUCCESSOR_AUTHORIZED: NO
 ```
 
 The original M122A finalization commit is

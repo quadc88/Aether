@@ -39,6 +39,13 @@ OAS_INIT = ROOT / "aether/oas/__init__.py"
 M118A_KERNEL = ROOT / "aether/oas/security_kernel.py"
 M118A_LOCK = ROOT / "tests/test_m118a_security_kernel.py"
 PROGRESS = ROOT / "PROGRESS.md"
+M126A = ROOT / (
+    "docs/architecture/"
+    "MILESTONE_126A_OAS_PRODUCTION_TRUST_MATERIAL_AND_HOST_TRUST_BOOTSTRAP_AUTHORITY_CONTRACT_PROOF.md"
+)
+M126A_LOCK = ROOT / (
+    "tests/test_milestone_126a_oas_production_trust_material_and_host_trust_bootstrap_authority_contract_proof.py"
+)
 
 APPROVED_M117A_HASH = "a56d3d433cd787f7ee902c0861953b604fd20861d3e9adabcd5adcaefee9673b"
 APPROVED_M117A_LOCK_HASH = "b6c150821b9d996fe2f6982c2062b937d3c5bcc9381a152598d0446c88e19d85"
@@ -51,6 +58,8 @@ APPROVED_M120A_LOCK_HASH = "a98e0947ca7466d485e53c14e8560bbee6876277fcc9c27911be
 APPROVED_M121A_HASH = "0c3f81f9f8486f912ba28546fd6e23457a88ef4e75f2d9c66628e24f05ff48eb"
 ORIGINAL_M121A_LOCK_HASH = "6f670e78a3eec5c4ac386822f120c0a24ac557ba09ae946d9d33614dabd39d5c"
 APPROVED_M121A_LOCK_HASH = "32fe0862b6ac8dad5b243772630d4d33ffb30258702b7b8ed0df522ea08dd087"
+APPROVED_M126A_HASH = "96cba30eb249dde365ecd1a3fa81d1fa631e5ec71d886dff4f4c90aff678d16a"
+APPROVED_M126A_LOCK_HASH = "0251de280e32e3063810e655f56fac62637f9bf3c89b5e93dc23a40ce968ef47"
 BASELINE_PROTECTED_HASHES = {
     README: "5357e53635c7467332129048155b39ac9282d6aff268f5f910594a5b26d72cad",
     CONSTITUTION: "0055748f683bf753b3471a0317b68677752c312d4030b12fbc71684fd3af3ee1",
@@ -459,6 +468,52 @@ def test_m121a_contract_is_canonized_without_promoting_implementation_or_deploym
 def test_m121a_artifacts_are_byte_stable():
     assert _sha256(M121A) == APPROVED_M121A_HASH
     assert _sha256(M121A_LOCK) == APPROVED_M121A_LOCK_HASH
+
+
+def test_m126a_finalized_contract_is_canonized_without_promoting_implementation_or_deployment():
+    text = _text(SECURITY)
+    matrix = _section(
+        text,
+        "## 14. Current Security Status Matrix",
+        "## 15. Current Implemented Security Surface",
+    )
+    row = next(
+        line for line in matrix.splitlines()
+        if line.startswith("| production trust material and host trust-bootstrap authority contract |")
+    )
+    assert [part.strip() for part in row.split("|")[1:-1]][1:5] == [
+        "CURRENT",
+        "DESIGN_PROVEN",
+        "NOT_IMPLEMENTED",
+        "TEST_VERIFIED",
+    ]
+    traceability = text[text.index("The M126A evidence reference is:"):]
+    _assert_required(
+        traceability,
+        "MILESTONE_126A_OAS_PRODUCTION_TRUST_MATERIAL_AND_HOST_TRUST_BOOTSTRAP_AUTHORITY_CONTRACT_PROOF.md",
+        "tests/test_milestone_126a_oas_production_trust_material_and_host_trust_bootstrap_authority_contract_proof.py",
+        "M126A_AUTHORIZED: YES",
+        "M126A_STARTED: YES",
+        "M126A_FINALIZED: YES",
+        "DECISION_STATUS: CURRENT",
+        "DESIGN_STATUS: DESIGN_PROVEN",
+        "IMPLEMENTATION_STATUS: NOT_IMPLEMENTED",
+        "VERIFICATION_STATUS: TEST_VERIFIED",
+        "DEPLOYMENT_VERIFIED: NO",
+        "PRODUCTION_TRUST_MATERIAL_PROVEN: NO",
+        "HOST_TRUST_OBJECTS_INSTALLED: NO",
+        "TRUST_BOOTSTRAP_IMPLEMENTED: NO",
+        "BUILD_AUTHORIZED: NO",
+        "SUCCESSOR_AUTHORIZED: NO",
+        "PROGRESS_UPDATED: YES",
+        "COMMIT_CREATED: YES",
+        "TAG_CREATED: YES",
+        "PUSH_PERFORMED: YES",
+    )
+    assert "M126A_FINALIZED: NO" not in traceability
+    assert _normalized(M126A.read_text(encoding="utf-8")).find("M126A_FINALIZED: YES") >= 0
+    assert _sha256(M126A) == APPROVED_M126A_HASH
+    assert _sha256(M126A_LOCK) == APPROVED_M126A_LOCK_HASH
 
 
 def test_m122a_successor_artifact_boundary_is_distinct_and_non_deployed():
