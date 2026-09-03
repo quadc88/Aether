@@ -1,5 +1,7 @@
 # Aether Project Progress Ledger
 
+**M127A finalization:** PM-APPROVED / FINALIZED / GIT-DURABLE / COMMITTED / TAGGED / PUSHED; bounded isolated-root implementation only; `M127A_FINALIZED: YES`; `DECISION_STATUS: CURRENT`; `DESIGN_STATUS: DESIGN_PROVEN`; `IMPLEMENTATION_STATUS: IMPLEMENTED`; `VERIFICATION_STATUS: TEST_VERIFIED`; valid same-nonce and same-generation arbitration proven with test-only ephemeral authority; generation advancement, stale rejection, and burned-generation handling proven; terminal Observation and Verification required before `TRUST_SET_ACTIVE`; exact seven-path finalization scope; M127A behavioral 181/181 passed; finalized M127A static lock 11/11 passed; Security Architecture canonization 21/21 passed; pre-publication raw full suite 3825 passed with 3 historical changed-path scope-lock failures, and exact-node filtered full suite 3825 passed with 3 deselected; post-publication clean-worktree full suite passed; `DEPLOYMENT_VERIFIED: NO`; `DEPLOYMENT_STATE: NOT_DEPLOYED`; `DEPLOYMENT_PROFILE: ISOLATED_ROOT_ONLY`; no production keys, trust material, production signing capability, authority provenance, real host trust objects, live deployment, rollback, or target-host mutation; `SUCCESSOR_AUTHORIZED: NO`; `SUCCESSOR_NUMBER_ASSIGNED: NO`; exact finalization paths: `PROGRESS.md`, `docs/architecture/SECURITY_ARCHITECTURE.md`, `tests/test_security_architecture_canonization.py`, `aether/deployment/host_trust_bootstrap.py`, `tests/test_deployment_host_trust_bootstrap.py`, `docs/architecture/MILESTONE_127A_OAS_ISOLATED_HOST_TRUST_BOOTSTRAP_AUTHORIZATION_AND_DURABLE_PUBLICATION_TRANSACTION_FOUNDATION_BUILD.md`, `tests/test_milestone_127a_oas_isolated_host_trust_bootstrap_authorization_and_durable_publication_transaction_foundation_build.py`.
+
 **M126A finalization:** FINALIZED / PM-AUTHORIZED / GIT-DURABLE / COMMITTED / TAGGED / PUSHED; design/discovery/security-and-operations contract proof only; selected authority model `MODEL_A_OFFLINE_PRODUCTION_SIGNING_PLUS_SEPARATE_LOCAL_CONSOLE_HOST_TRUST_BOOTSTRAP`; bootstrap root `BOOTSTRAP_AUTHORITY_ROOT_MODEL_A_OS_IMAGE_PROVISIONING_BASELINE`; pre-instance model `PRE_INSTANCE_MODEL_B_HOST_RELEASE_TRUST_BEFORE_EXPLICIT_INSTANCE_BINDING`; `M126A_FINALIZED: YES`; `DECISION_STATUS: CURRENT`; `DESIGN_STATUS: DESIGN_PROVEN`; `IMPLEMENTATION_STATUS: NOT_IMPLEMENTED`; `VERIFICATION_STATUS: TEST_VERIFIED`; `DEPLOYMENT_VERIFIED: NO`; `DEPLOYMENT_STATE: NOT_DEPLOYED`; `TRUST_MATERIAL_CONTRACT_PROVEN: YES`; `PRODUCTION_TRUST_MATERIAL_PROVEN: NO`; `HOST_TRUST_OBJECTS_INSTALLED: NO`; `TRUST_BOOTSTRAP_IMPLEMENTED: NO`; `TRUTHFUL_OWNER_DEPLOYMENT_AUTHORITY_PROVEN: NO`; `LIVE_DEPLOYMENT_AUTHORIZED: NO`; `LIVE_ROLLBACK_AUTHORIZED: NO`; `TARGET_HOST_MUTATION_PERFORMED: NO`; `BUILD_AUTHORIZED: NO`; `SUCCESSOR_AUTHORIZED: NO`; `SUCCESSOR_NUMBER_ASSIGNED: NO`; `READY_FOR_PM_REVIEW: NO`; no private keys, host trust objects, host mutation, production implementation, deployment, live rollback, Owner deployment authority, Generic Act, Tool-Operation-Capability expansion, or successor authorization is claimed.
 **M126A finalization scope:** exactly five repository paths are authorized: `PROGRESS.md`; `docs/architecture/SECURITY_ARCHITECTURE.md`; `tests/test_security_architecture_canonization.py`; `docs/architecture/MILESTONE_126A_OAS_PRODUCTION_TRUST_MATERIAL_AND_HOST_TRUST_BOOTSTRAP_AUTHORITY_CONTRACT_PROOF.md`; `tests/test_milestone_126a_oas_production_trust_material_and_host_trust_bootstrap_authority_contract_proof.py`; the external finalization summary is evidence only and is outside repository scope.
 **M126A finalization validation:** focused M126A and canonical Security Architecture locks 36/36 passed; relevant M117A-M125A predecessor locks 181 passed, 2 deselected; deployment/OAS regressions 142/142 passed; filtered full suite 3633 passed, 2 deselected, 9 warnings; raw full suite 3633 passed, 2 expected historical M124A/M125A scope-lock failures, and 9 warnings; compile, conflict-marker, and `git diff --check` validation passed; finalized M126A design SHA-256 `96cba30eb249dde365ecd1a3fa81d1fa631e5ec71d886dff4f4c90aff678d16a`; finalized static-lock SHA-256 `0251de280e32e3063810e655f56fac62637f9bf3c89b5e93dc23a40ce968ef47`; no production implementation, private-key access, host trust-object installation, host mutation, deployment, live rollback, Owner deployment authority, Generic Act, Tool-Operation-Capability expansion, or successor work occurred.
@@ -621,7 +623,7 @@ This section is a historical archive. It does not override the canonical current
 
 **PROGRESS.md update:** This entry added for Milestone 75B.
 
-### 79A — Apply Executor Evidence Collector Contract Object 
+### 79A — Apply Executor Evidence Collector Contract Object
 
 **Status:** Complete
 **Implementation:** Created builder and endpoint, validated via live API
@@ -630,7 +632,7 @@ This section is a historical archive. It does not override the canonical current
 - `aether/interface/api_server.py` — added POST `/apply-executor-evidence-collection-plans/{id}/collector-contract` endpoint
 - `tests/test_apply_executor_evidence_collector_contract.py` — unit tests (35/35 passed)
 - `tests/test_chat_api.py` — added API tests (9/9 passed for Milestone 79A class)
- 
+
 Pipeline update:
 ```
 ... → approved_evidence_contract_intent
@@ -638,17 +640,17 @@ Pipeline update:
    → apply_executor_evidence_collection_plan_record (Milestone 78A)
    → apply_executor_evidence_collector_contract (Milestone 79A) ✓
 ```
- 
+
 The collector contract is purely declarative — does NOT collect evidence, execute tools, authorize apply, or modify state. All safety flags remain false. All unit and API tests pass.
 
 **PROGRESS.md update:** Milestone 79A marked complete.
 
 
-### 79B — Live API Apply Executor Evidence Collector Contract Validation 
+### 79B — Live API Apply Executor Evidence Collector Contract Validation
 
 **Status:** Complete
 **Validation cases:** All 18 validation cases passed
-**Test results:** 
+**Test results:**
 - Unit tests: 35/35 passed
 - API tests: 9/9 passed
 - Full pytest: 1347/1347 passed, 0 failures, 0 errors

@@ -400,6 +400,7 @@ does not promote that target to implementation or deployment verification.
 | bootstrap and broker fail-closed operation boundary | CURRENT | DESIGN_PROVEN | IMPLEMENTED | TEST_VERIFIED | M120A endpoint-specific allowlists return NOT_IMPLEMENTED without canonical mutation; authentication and authorization remain unimplemented |
 | repository-to-host activation and rollback contract | CURRENT | DESIGN_PROVEN | NOT_IMPLEMENTED | TEST_VERIFIED | M121A design-only root-owned release identity, activation, quiesce, generation, signing, and rollback contract; no Build or host deployment |
 | production trust material and host trust-bootstrap authority contract | CURRENT | DESIGN_PROVEN | NOT_IMPLEMENTED | TEST_VERIFIED | M126A finalized design proof; selected offline signing plus separate OS/image-baselined local-console bootstrap authority; no production keys, host objects, implementation, or deployment |
+| isolated host trust-bootstrap authorization and durable publication transaction foundation | CURRENT | DESIGN_PROVEN | IMPLEMENTED | TEST_VERIFIED | M127A bounded isolated-root transaction foundation; test-only valid authorization arbitration and generation reservation evidence; no production trust material or deployment |
 
 ## 15. Current Implemented Security Surface
 
@@ -466,6 +467,23 @@ Direct repository inspection identifies only lower-level safeguards:
   the service therefore never reports a successful status after expiry, but a slow
    underlying read may remain an outstanding worker beyond a bounded shutdown call.
    This is a documented M120A limitation and remains deployment-unverified.
+
+- M127A implements context-bound authenticated authorization verification, an
+  isolated-root durable host trust-bootstrap transaction, SQLite WAL/FULL state
+  and audit, RESERVED/ACTIVE/BURNED generation reservations, nonce and
+  generation arbitration, exact five-object isolated publication, terminal
+  Observation and Verification, prior-generation restoration, and fail-closed
+  retry, concurrency, and corruption handling.
+- M127A's valid same-nonce and same-generation arbitration, generation
+  advancement, stale rejection, and burned-generation handling are proven only
+  with test-only ephemeral authority. Test private keys are temporary pytest
+  material and are not production trust material, persisted evidence, or
+  deployment authority.
+- M127A remains isolated-root-only. Production trust material, production key
+  custody or signing, production OS/image provenance, truthful Owner deployment
+  authority, real host trust objects, cross-directory filesystem atomicity,
+  live deployment or rollback, and host mutation remain unproven. The lifecycle
+  capability is process-bound, and no Generic Act authority is introduced.
 
 M121A canonizes a repository-to-host deployment and rollback contract as design and
 discovery evidence only. The contract uses one root-owned authoritative activation
@@ -844,6 +862,59 @@ TAG_CREATED: YES
 PUSH_PERFORMED: YES
 SUCCESSOR_AUTHORIZED: NO
 ```
+
+The M127A implementation and finalization evidence reference is:
+
+```text
+Evidence:
+docs/architecture/MILESTONE_127A_OAS_ISOLATED_HOST_TRUST_BOOTSTRAP_AUTHORIZATION_AND_DURABLE_PUBLICATION_TRANSACTION_FOUNDATION_BUILD.md
+SHA-256: 401e12e097ed5aa9b87617fa74e1d2c705523f3a1f6047f1cbc73353425ef3de
+Behavioral implementation:
+aether/deployment/host_trust_bootstrap.py
+SHA-256: e5a0092e6c7af0edf298ca2d126d9e1a924e46a943a162521354574dd405b168
+tests/test_deployment_host_trust_bootstrap.py
+SHA-256: 970096e76a63c322cbe4fb4309cbdc504d1ab1c35b890d46cfe86f28b18260f3
+Static-lock:
+tests/test_milestone_127a_oas_isolated_host_trust_bootstrap_authorization_and_durable_publication_transaction_foundation_build.py
+SHA-256: b7ca3c13c52dad5b3dfe320ec5273a9b2cf3134cc1213d544cc1f6050c79634f
+M127A_AUTHORIZED: YES
+M127A_STARTED: YES
+M127A_FINALIZED: YES
+DECISION_STATUS: CURRENT
+DESIGN_STATUS: DESIGN_PROVEN
+IMPLEMENTATION_STATUS: IMPLEMENTED
+VERIFICATION_STATUS: TEST_VERIFIED
+DEPLOYMENT_VERIFIED: NO
+DEPLOYMENT_STATE: NOT_DEPLOYED
+DEPLOYMENT_PROFILE: ISOLATED_ROOT_ONLY
+VALID_AUTHORIZATION_CONCURRENCY_PROVEN: YES_TEST_ONLY
+GENERATION_RESERVATION_SEMANTICS_PROVEN: YES_TEST_ONLY
+PRODUCTION_TRUST_MATERIAL_PROVEN: NO
+PRODUCTION_PRIVATE_KEYS_CREATED: NO
+PRODUCTION_PRIVATE_KEYS_ACCESSED: NO
+PRODUCTION_SIGNING_CAPABILITY_IMPLEMENTED: NO
+TEST_ONLY_EPHEMERAL_KEYS_USED: YES
+TEST_PRIVATE_KEYS_PERSISTED: NO
+TEST_PRIVATE_KEYS_ENTERED_GIT_ARTIFACTS: NO
+HOST_TRUST_OBJECTS_INSTALLED: NO
+TRUTHFUL_OWNER_DEPLOYMENT_AUTHORITY_PROVEN: NO
+LIVE_DEPLOYMENT_AUTHORIZED: NO
+TARGET_HOST_MUTATION_PERFORMED: NO
+GENERIC_ACT_AUTHORIZED: NO
+PROGRESS_UPDATED: YES
+SECURITY_ARCHITECTURE_UPDATED: YES
+COMMIT_CREATED: YES
+TAG_CREATED: YES
+PUSH_PERFORMED: YES
+SUCCESSOR_AUTHORIZED: NO
+SUCCESSOR_NUMBER_ASSIGNED: NO
+READY_FOR_PM_REVIEW: NO
+```
+
+M127A is finalized as a bounded implementation/security transaction
+foundation only. Its test-only disposable signatures do not establish
+production trust material, signing custody, authority provenance, deployment,
+or Owner authority. No successor milestone is authorized or numbered.
 
 The original M122A finalization commit is
 `76901b6fb619776e0fbc53c5a30995faa5bcf070`, and the original milestone tag is

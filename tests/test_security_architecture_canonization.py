@@ -46,6 +46,13 @@ M126A = ROOT / (
 M126A_LOCK = ROOT / (
     "tests/test_milestone_126a_oas_production_trust_material_and_host_trust_bootstrap_authority_contract_proof.py"
 )
+M127A = ROOT / (
+    "docs/architecture/"
+    "MILESTONE_127A_OAS_ISOLATED_HOST_TRUST_BOOTSTRAP_AUTHORIZATION_AND_DURABLE_PUBLICATION_TRANSACTION_FOUNDATION_BUILD.md"
+)
+M127A_LOCK = ROOT / (
+    "tests/test_milestone_127a_oas_isolated_host_trust_bootstrap_authorization_and_durable_publication_transaction_foundation_build.py"
+)
 
 APPROVED_M117A_HASH = "a56d3d433cd787f7ee902c0861953b604fd20861d3e9adabcd5adcaefee9673b"
 APPROVED_M117A_LOCK_HASH = "b6c150821b9d996fe2f6982c2062b937d3c5bcc9381a152598d0446c88e19d85"
@@ -60,6 +67,10 @@ ORIGINAL_M121A_LOCK_HASH = "6f670e78a3eec5c4ac386822f120c0a24ac557ba09ae946d9d33
 APPROVED_M121A_LOCK_HASH = "32fe0862b6ac8dad5b243772630d4d33ffb30258702b7b8ed0df522ea08dd087"
 APPROVED_M126A_HASH = "96cba30eb249dde365ecd1a3fa81d1fa631e5ec71d886dff4f4c90aff678d16a"
 APPROVED_M126A_LOCK_HASH = "0251de280e32e3063810e655f56fac62637f9bf3c89b5e93dc23a40ce968ef47"
+APPROVED_M127A_IMPLEMENTATION_HASH = "e5a0092e6c7af0edf298ca2d126d9e1a924e46a943a162521354574dd405b168"
+APPROVED_M127A_BEHAVIORAL_HASH = "970096e76a63c322cbe4fb4309cbdc504d1ab1c35b890d46cfe86f28b18260f3"
+APPROVED_M127A_DOCUMENT_HASH = "401e12e097ed5aa9b87617fa74e1d2c705523f3a1f6047f1cbc73353425ef3de"
+APPROVED_M127A_LOCK_HASH = "b7ca3c13c52dad5b3dfe320ec5273a9b2cf3134cc1213d544cc1f6050c79634f"
 BASELINE_PROTECTED_HASHES = {
     README: "5357e53635c7467332129048155b39ac9282d6aff268f5f910594a5b26d72cad",
     CONSTITUTION: "0055748f683bf753b3471a0317b68677752c312d4030b12fbc71684fd3af3ee1",
@@ -514,6 +525,68 @@ def test_m126a_finalized_contract_is_canonized_without_promoting_implementation_
     assert _normalized(M126A.read_text(encoding="utf-8")).find("M126A_FINALIZED: YES") >= 0
     assert _sha256(M126A) == APPROVED_M126A_HASH
     assert _sha256(M126A_LOCK) == APPROVED_M126A_LOCK_HASH
+
+
+def test_m127a_finalized_implementation_is_canonized_without_promoting_deployment():
+    text = _text(SECURITY)
+    matrix = _section(
+        text,
+        "## 14. Current Security Status Matrix",
+        "## 15. Current Implemented Security Surface",
+    )
+    row = next(
+        line for line in matrix.splitlines()
+        if line.startswith("| isolated host trust-bootstrap authorization and durable publication transaction foundation |")
+    )
+    assert [part.strip() for part in row.split("|")[1:-1]][1:5] == [
+        "CURRENT",
+        "DESIGN_PROVEN",
+        "IMPLEMENTED",
+        "TEST_VERIFIED",
+    ]
+    traceability = text[text.index("The M127A implementation and finalization evidence reference is:"):]
+    _assert_required(
+        traceability,
+        "MILESTONE_127A_OAS_ISOLATED_HOST_TRUST_BOOTSTRAP_AUTHORIZATION_AND_DURABLE_PUBLICATION_TRANSACTION_FOUNDATION_BUILD.md",
+        APPROVED_M127A_DOCUMENT_HASH,
+        "aether/deployment/host_trust_bootstrap.py",
+        APPROVED_M127A_IMPLEMENTATION_HASH,
+        "tests/test_deployment_host_trust_bootstrap.py",
+        APPROVED_M127A_BEHAVIORAL_HASH,
+        "tests/test_milestone_127a_oas_isolated_host_trust_bootstrap_authorization_and_durable_publication_transaction_foundation_build.py",
+        APPROVED_M127A_LOCK_HASH,
+        "VALID_AUTHORIZATION_CONCURRENCY_PROVEN: YES_TEST_ONLY",
+        "GENERATION_RESERVATION_SEMANTICS_PROVEN: YES_TEST_ONLY",
+        "TEST_ONLY_EPHEMERAL_KEYS_USED: YES",
+        "TEST_PRIVATE_KEYS_PERSISTED: NO",
+        "PRODUCTION_SIGNING_CAPABILITY_IMPLEMENTED: NO",
+        "PRODUCTION_TRUST_MATERIAL_PROVEN: NO",
+        "DEPLOYMENT_VERIFIED: NO",
+        "TARGET_HOST_MUTATION_PERFORMED: NO",
+        "GENERIC_ACT_AUTHORIZED: NO",
+        "SUCCESSOR_AUTHORIZED: NO",
+        "SUCCESSOR_NUMBER_ASSIGNED: NO",
+        "M127A_FINALIZED: YES",
+        "READY_FOR_PM_REVIEW: NO",
+    )
+    _assert_required(
+        _normalized(text),
+        "context-bound authenticated authorization verification",
+        "SQLite WAL/FULL state",
+        "RESERVED/ACTIVE/BURNED",
+        "terminal Observation and Verification",
+        "prior-generation restoration",
+        "fail-closed retry, concurrency, and corruption handling",
+        "M127A remains isolated-root-only",
+        "truthful Owner deployment authority",
+        "cross-directory filesystem atomicity",
+        "no Generic Act authority",
+    )
+    assert "M127A_FINALIZED: NO" not in traceability
+    assert _sha256(M127A) == APPROVED_M127A_DOCUMENT_HASH
+    assert _sha256(M127A_LOCK) == APPROVED_M127A_LOCK_HASH
+    assert _sha256(ROOT / "aether/deployment/host_trust_bootstrap.py") == APPROVED_M127A_IMPLEMENTATION_HASH
+    assert _sha256(ROOT / "tests/test_deployment_host_trust_bootstrap.py") == APPROVED_M127A_BEHAVIORAL_HASH
 
 
 def test_m122a_successor_artifact_boundary_is_distinct_and_non_deployed():
