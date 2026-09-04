@@ -15,6 +15,7 @@ ALLOWED_REPOSITORY_PATHS = {
     DOCUMENT.relative_to(ROOT).as_posix(),
     Path(__file__).relative_to(ROOT).as_posix(),
 }
+HISTORICAL_FINALIZATION_COMMIT = "3aaff2a8ec188650ecb4e132a74d6ef92d3245a6"
 
 CANONICAL_STATUS = {
     "M124A_AUTHORIZED": "YES",
@@ -158,19 +159,30 @@ def _rollback_blocks(document: str) -> dict[str, str]:
     return {match.group(1): match.group(2) for match in matches}
 
 
-def _changed_paths() -> set[str]:
+def _historical_commit_paths() -> set[str]:
+    resolved = subprocess.run(
+        ["git", "rev-parse", "--verify", f"{HISTORICAL_FINALIZATION_COMMIT}^{{commit}}"],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    assert resolved == HISTORICAL_FINALIZATION_COMMIT
     lines = subprocess.run(
-        ["git", "status", "--short", "--untracked-files=all"],
+        [
+            "git", "diff-tree", "--root", "--no-commit-id", "--name-only", "-r",
+            HISTORICAL_FINALIZATION_COMMIT,
+        ],
         cwd=ROOT,
         check=True,
         capture_output=True,
         text=True,
     ).stdout.splitlines()
-    return {line[3:] for line in lines if len(line) >= 4 and line[:2] in {" M", "??", "A ", "AM"}}
+    return set(lines)
 
 
 def test_repository_scope_is_exactly_the_two_m124a_artifacts():
-    assert _changed_paths() == ALLOWED_REPOSITORY_PATHS
+    assert _historical_commit_paths() == ALLOWED_REPOSITORY_PATHS
 
 
 def test_authoritative_status_is_exact_and_uses_only_the_m124a_schema():

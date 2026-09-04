@@ -41,6 +41,14 @@ FINALIZATION_SUMMARY = Path(
     "/home/aether/summaries/"
     "milestone_128A_privileged_host_trust_bootstrap_runner_process_recovery_and_exact_root_authority_contract_proof_finalization_summary.txt"
 )
+RECOVERY_SUMMARY = Path(
+    "/home/aether/summaries/"
+    "milestone_128A_finalization_recovery_and_git_closure_summary.txt"
+)
+M124A_SCOPE_LOCK = ROOT / (
+    "tests/"
+    "test_milestone_124a_oas_controlled_first_install_deployment_transaction_authorization_proof.py"
+)
 M127_IMPLEMENTATION = ROOT / "aether/deployment/host_trust_bootstrap.py"
 M127_BEHAVIOR = ROOT / "tests/test_deployment_host_trust_bootstrap.py"
 M127_DOCUMENT = ROOT / (
@@ -58,6 +66,7 @@ FINAL_REPOSITORY_PATHS = {
     "tests/test_security_architecture_canonization.py",
     DOCUMENT.relative_to(ROOT).as_posix(),
     Path(__file__).relative_to(ROOT).as_posix(),
+    M124A_SCOPE_LOCK.relative_to(ROOT).as_posix(),
 }
 
 PROTECTED_M127_HASHES = {
@@ -178,6 +187,7 @@ def test_scope_title_and_all_summaries_are_preserved():
         FOURTH_TARGETED_CORRECTIVE_SUMMARY: "4c88c29578bae8cf3c8c263bcde9237935035962f8d788ecd17a6bc40645b5a7",
         FIFTH_TARGETED_CORRECTIVE_SUMMARY: "3631a4147d001bec413974f9b3da9ed11ce7f40182e723f59374b4c6b6205e29",
         FINALIZATION_SUMMARY: None,
+        RECOVERY_SUMMARY: None,
     }.items():
         assert str(summary) in text
         if expected is not None:
@@ -199,6 +209,25 @@ def test_status_exit_and_negative_finalization_state_are_structured():
     assert "TAG_CREATED: YES" in text
     assert "PUSH_PERFORMED: YES" in text
     assert "READY_FOR_PM_REVIEW: NO" in text
+
+
+def test_two_commit_recovery_scope_and_historical_m124a_gate_are_structured():
+    text = _flat(_text())
+    for marker in (
+        "INITIAL_FINALIZATION_COMMIT: 02d47587826c8abc9db30b2031419b133573c34c",
+        "FINALIZATION_RECOVERY_COMMIT: THIS_COMMIT",
+        "INITIAL_FINALIZATION_SCOPE: FIVE_PATHS",
+        "FINALIZATION_RECOVERY_SCOPE: SIX_PATHS",
+        "FINAL_TAG_TARGET: FINALIZATION_RECOVERY_COMMIT",
+        "The additional path is a historical test-governance correction",
+        "not M128A production implementation or scope expansion",
+        "3846 passed, 1 failed, 9 warnings",
+        "historical M124A live-worktree scope assertion",
+        "checking the immutable M124A finalization commit directly",
+        "final tag and branch push remain conditional",
+    ):
+        assert marker in text
+    assert "3aaff2a8ec188650ecb4e132a74d6ef92d3245a6" in text
 
 
 def test_landlock_host_precondition_and_exit_a_scope_are_explicit():

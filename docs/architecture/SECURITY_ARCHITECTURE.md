@@ -557,7 +557,19 @@ The current probe host does not support Landlock (`EOPNOTSUPP`) and is not
 deployment-ready. No Build, deployment, host mutation, or successor is
 authorized. These status dimensions remain orthogonal and are not collapsed:
 
+M128A Git closure is a two-commit transaction. The initial finalization commit
+was `02d47587826c8abc9db30b2031419b133573c34c` and contained the original five
+M128A paths. The separately authorized recovery commit contains those five
+paths plus the M124A historical scope-lock test correction. The final tag
+targets the recovery commit; the additional path is test governance only, not
+implementation or scope expansion. The historical M124A finalization commit
+is `3aaff2a8ec188650ecb4e132a74d6ef92d3245a6`.
+
 ```text
+INITIAL_FINALIZATION_COMMIT: 02d47587826c8abc9db30b2031419b133573c34c
+FINALIZATION_RECOVERY_COMMIT: THIS_COMMIT
+INITIAL_FINALIZATION_SCOPE: FIVE_PATHS
+FINALIZATION_RECOVERY_SCOPE: SIX_PATHS
 M128A_FINALIZED: YES
 DECISION_STATUS: CURRENT
 DESIGN_STATUS: DESIGN_PROVEN

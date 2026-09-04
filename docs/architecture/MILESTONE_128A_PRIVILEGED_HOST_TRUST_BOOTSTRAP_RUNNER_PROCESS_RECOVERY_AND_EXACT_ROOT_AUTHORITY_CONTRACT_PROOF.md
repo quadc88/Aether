@@ -1106,7 +1106,51 @@ failure injection, and deployment authorization. Build, production
 implementation, deployment, rollback, target-host mutation, and successor work
 remain unauthorized.
 
-## 20. External Evidence Summaries
+## 20. Git Finalization Transaction and Recovery Scope
+
+M128A Git closure is a two-commit finalization transaction. The initial
+finalization commit contains the original five-path M128A scope. The interrupted
+post-commit gate is resumed by one separately authorized recovery commit:
+
+```text
+INITIAL_FINALIZATION_COMMIT: 02d47587826c8abc9db30b2031419b133573c34c
+FINALIZATION_RECOVERY_COMMIT: THIS_COMMIT
+INITIAL_FINALIZATION_SCOPE: FIVE_PATHS
+FINALIZATION_RECOVERY_SCOPE: SIX_PATHS
+FINAL_TAG_TARGET: FINALIZATION_RECOVERY_COMMIT
+```
+
+The original five paths are `PROGRESS.md`,
+`docs/architecture/SECURITY_ARCHITECTURE.md`,
+`tests/test_security_architecture_canonization.py`, this M128A contract, and
+the M128A static lock. The recovery scope contains those five paths plus
+`tests/test_milestone_124a_oas_controlled_first_install_deployment_transaction_authorization_proof.py`.
+The additional path is a historical test-governance correction for M124A's
+commit-scope assertion. The corrected historical M124A finalization commit is
+`3aaff2a8ec188650ecb4e132a74d6ef92d3245a6`; the check reads its immutable
+commit-tree path set rather than the live worktree. This is not M128A
+production implementation or scope expansion. The final annotated tag must
+point to the recovery commit, not the initial finalization commit.
+
+The initial commit's clean-worktree gate produced `3846 passed, 1 failed, 9
+warnings`; the sole failure was the historical M124A live-worktree scope
+assertion. No functional or M128A failure occurred, and no tag or push occurred
+after that failure. The separately authorized recovery commit repairs that
+historical test by checking the immutable M124A finalization commit directly.
+The final tag and branch push remain conditional on a successful clean-worktree
+full suite after this recovery commit.
+
+Recovery pre-commit validation recorded `3845 passed, 3 failed, 9 warnings` in
+the raw full suite; the three failures were the expected historical dirty-
+worktree scope guards for M125A, M126A, and M127A. The originally prescribed
+filtered expression did not match those repositories' actual test names and
+therefore reproduced those three expected failures. With the actual three
+historical guard names additionally excluded, the filtered suite passed `3844`
+tests with `4 deselected` and `9 warnings`. The focused M124A/M128A/Security
+Architecture set passed `50/50`; compilation, conflict-marker, whitespace,
+and `git diff --check` validation passed.
+
+## 21. External Evidence Summaries
 
 The initial and first-corrective summaries are preserved unchanged:
 
@@ -1147,11 +1191,18 @@ The finalization summary is evidence only and is outside repository scope:
 /home/aether/summaries/milestone_128A_privileged_host_trust_bootstrap_runner_process_recovery_and_exact_root_authority_contract_proof_finalization_summary.txt
 ```
 
+The recovery and Git closure summary is evidence only and is outside repository
+scope:
+
+```text
+/home/aether/summaries/milestone_128A_finalization_recovery_and_git_closure_summary.txt
+```
+
 The finalization record updates `PROGRESS.md` and
 `SECURITY_ARCHITECTURE.md` as the only current architectural/status ledgers;
 the milestone contract remains otherwise unchanged.
 
-## 21. Authoritative M128A Status
+## 22. Authoritative M128A Status
 
 ```text
 AUTHORITATIVE_M128A_STATUS_BEGIN
