@@ -53,6 +53,14 @@ M127A = ROOT / (
 M127A_LOCK = ROOT / (
     "tests/test_milestone_127a_oas_isolated_host_trust_bootstrap_authorization_and_durable_publication_transaction_foundation_build.py"
 )
+M128A = ROOT / (
+    "docs/architecture/"
+    "MILESTONE_128A_PRIVILEGED_HOST_TRUST_BOOTSTRAP_RUNNER_PROCESS_RECOVERY_AND_EXACT_ROOT_AUTHORITY_CONTRACT_PROOF.md"
+)
+M128A_LOCK = ROOT / (
+    "tests/"
+    "test_milestone_128a_privileged_host_trust_bootstrap_runner_process_recovery_and_exact_root_authority_contract_proof.py"
+)
 
 APPROVED_M117A_HASH = "a56d3d433cd787f7ee902c0861953b604fd20861d3e9adabcd5adcaefee9673b"
 APPROVED_M117A_LOCK_HASH = "b6c150821b9d996fe2f6982c2062b937d3c5bcc9381a152598d0446c88e19d85"
@@ -587,6 +595,66 @@ def test_m127a_finalized_implementation_is_canonized_without_promoting_deploymen
     assert _sha256(M127A_LOCK) == APPROVED_M127A_LOCK_HASH
     assert _sha256(ROOT / "aether/deployment/host_trust_bootstrap.py") == APPROVED_M127A_IMPLEMENTATION_HASH
     assert _sha256(ROOT / "tests/test_deployment_host_trust_bootstrap.py") == APPROVED_M127A_BEHAVIORAL_HASH
+
+
+def test_m128a_finalized_contract_is_canonized_without_live_security_claims():
+    text = _text(SECURITY)
+    section = text[
+        text.index("### M128A Finalized Privileged Host Trust-Bootstrap Contract"):
+        text.index("The post-finalization correction state is explicit:")
+    ]
+    _assert_required(
+        _normalized(section),
+        "M128A is finalized design/discovery/security/operations evidence only",
+        "privileged runner is an OS/deployment organ, not Aether, OAS, Owner, or an intent interpreter",
+        "admitter is transport only and cannot mint bootstrap authorization",
+        "M126A evidence remains the cryptographic authority",
+        "root possession is not authorization",
+        "complete sealed raw evidence and exact bytes for the five fixed objects",
+        "`authorization_detached_signature` must exactly equal the signature encoded in `authorization_envelope_raw`",
+        "MOUNT_NAMESPACE_POLICY: PID1_INITIAL_HOST_MOUNT_NAMESPACE_REQUIRED",
+        "SYSTEMD_PRIVATE_NETWORK_NAMESPACE: NOT_SELECTED",
+        "SYSTEMD_PRIVATE_MOUNT_NAMESPACE: FORBIDDEN",
+        "pre-opened-dirfd plus irreversible Landlock model",
+        "Landlock ABI 3 or newer",
+        "irreversible TSYNC seccomp",
+        "SQLite is the sole canonical durable transaction and audit authority",
+        "Terminal success requires both Observation and Verification",
+        "current probe host does not support Landlock",
+        "not deployment-ready",
+        "No Build, deployment, host mutation, or successor is authorized",
+        "M128A_FINALIZED: YES",
+        "DECISION_STATUS: CURRENT",
+        "DESIGN_STATUS: DESIGN_PROVEN",
+        "IMPLEMENTATION_STATUS: NOT_IMPLEMENTED",
+        "VERIFICATION_STATUS: TEST_VERIFIED",
+        "DEPLOYMENT_VERIFIED: NO",
+        "CURRENT_PROBE_HOST_LANDLOCK_STATUS: UNSUPPORTED_EOPNOTSUPP",
+        "CURRENT_PROBE_HOST_SUCCESS_PATH_RUNNABLE: NO",
+        "CURRENT_HOST_DEPLOYMENT_READY: NO",
+        "BUILD_AUTHORIZED: NO",
+        "SUCCESSOR_AUTHORIZED: NO",
+        "SUCCESSOR_NUMBER_ASSIGNED: NO",
+    )
+    assert M128A.is_file()
+    assert M128A_LOCK.is_file()
+    for forbidden in (
+        "LIVE_RUNNER_IMPLEMENTED: YES",
+        "LIVE_ADMITTER_IMPLEMENTED: YES",
+        "DEPLOYMENT_VERIFIED: YES",
+        "CURRENT_HOST_DEPLOYMENT_READY: YES",
+        "BUILD_AUTHORIZED: YES",
+        "GENERIC_ACT_AUTHORIZED: YES",
+        "SUCCESSOR_AUTHORIZED: YES",
+        "M128A_IMPLEMENTED: YES",
+        "M128A_DEPLOYED: YES",
+        "completion without Observation and Verification",
+        "Tool-Operation-Capability expansion",
+        "multi-instance runtime",
+        "multi-agent runtime",
+        "public Internet",
+    ):
+        assert forbidden not in section
 
 
 def test_m122a_successor_artifact_boundary_is_distinct_and_non_deployed():

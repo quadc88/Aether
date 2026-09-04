@@ -528,6 +528,50 @@ M118A is a separately authorized bounded foundation Build recorded below as
 started and historically finalized; this finalization does not authorize a
 successor. Its PM acceptance is distinct from Git finalization.
 
+### M128A Finalized Privileged Host Trust-Bootstrap Contract
+
+M128A is finalized design/discovery/security/operations evidence only. The
+privileged runner is an OS/deployment organ, not Aether, OAS, Owner, or an
+intent interpreter. The separately confined admitter is transport only and
+cannot mint bootstrap authorization. M126A evidence remains the cryptographic
+authority; root possession is not authorization.
+
+The contract requires complete sealed raw evidence and exact bytes for the five
+fixed objects. `authorization_detached_signature` must exactly equal the
+signature encoded in `authorization_envelope_raw`. The runner and admitter
+remain in PID 1's initial host mount namespace:
+
+```text
+MOUNT_NAMESPACE_POLICY: PID1_INITIAL_HOST_MOUNT_NAMESPACE_REQUIRED
+SYSTEMD_PRIVATE_NETWORK_NAMESPACE: NOT_SELECTED
+SYSTEMD_PRIVATE_MOUNT_NAMESPACE: FORBIDDEN
+```
+
+Private network and private mount namespaces are not selected. Filesystem
+confinement is the pre-opened-dirfd plus irreversible Landlock model, requiring
+Landlock ABI 3 or newer. Post-start process, exec, and socket confinement uses
+irreversible TSYNC seccomp. SQLite is the sole canonical durable transaction and
+audit authority. Terminal success requires both Observation and Verification.
+
+The current probe host does not support Landlock (`EOPNOTSUPP`) and is not
+deployment-ready. No Build, deployment, host mutation, or successor is
+authorized. These status dimensions remain orthogonal and are not collapsed:
+
+```text
+M128A_FINALIZED: YES
+DECISION_STATUS: CURRENT
+DESIGN_STATUS: DESIGN_PROVEN
+IMPLEMENTATION_STATUS: NOT_IMPLEMENTED
+VERIFICATION_STATUS: TEST_VERIFIED
+DEPLOYMENT_VERIFIED: NO
+CURRENT_PROBE_HOST_LANDLOCK_STATUS: UNSUPPORTED_EOPNOTSUPP
+CURRENT_PROBE_HOST_SUCCESS_PATH_RUNNABLE: NO
+CURRENT_HOST_DEPLOYMENT_READY: NO
+BUILD_AUTHORIZED: NO
+SUCCESSOR_AUTHORIZED: NO
+SUCCESSOR_NUMBER_ASSIGNED: NO
+```
+
 The post-finalization correction state is explicit:
 
 ```text
